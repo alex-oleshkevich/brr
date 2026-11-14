@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>form</title>
+<meta name="description" content="a form fixture">
+<style>@media (prefers-color-scheme: dark) { body { background: #111; color: #eee; } } body { min-height: 3000px; }</style>
+</head>
+<body>
+<h1>Form fixture</h1>
+<p id="status">idle</p>
+<button id="go" type="button" onclick="document.getElementById('status').textContent = 'clicked'">Go</button>
+<input id="name" type="text" placeholder="name">
+<select id="color"><option value="red">Red</option><option value="blue">Blue</option></select>
+<label><input id="agree" type="checkbox"> Agree</label>
+<input id="file" type="file" onchange="document.getElementById('status').textContent = 'file:' + this.files[0].name + ':' + this.files[0].size">
+<a id="more" href="article.html">More</a>
+<script>
+console.log('form ready');
+// A new URL each load, so a reload really requests it (a cached image would skip request rules).
+const pic = new Image();
+pic.id = 'pic';
+pic.src = 'pic.svg?' + Date.now();
+document.body.appendChild(pic);
+document.getElementById('name').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('status').textContent = 'enter'; });
+</script>
+</body>
+</html>

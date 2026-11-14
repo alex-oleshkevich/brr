@@ -1,0 +1,213 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 var(--text-base-size) / var(--text-base-line) var(--font-sans);
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+}
+
+a {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.prose a:hover {
+  text-decoration: underline;
+}
+
+code {
+  font: 400 var(--text-sm-size) / var(--text-sm-line) var(--font-mono);
+  background: var(--bg-muted);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1);
+}
+
+::selection {
+  background: var(--accent-subtle);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+td :focus-visible,
+.nav-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.right {
+  text-align: right;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+
+  .skeleton,
+  .status-dot-pulse,
+  .progress-indeterminate {
+    animation: none;
+  }
+}
+
+/* Form fields shared by Input, Textarea and Select. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field-label {
+  font-size: var(--text-sm-size);
+  line-height: var(--text-sm-line);
+  font-weight: 500;
+  color: var(--text);
+}
+
+.field-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: calc(var(--space-1) - var(--space-2));
+}
+
+.field-hint,
+.field-error {
+  font-size: var(--text-sm-size);
+  line-height: var(--text-sm-line);
+}
+
+.field-hint {
+  color: var(--text-tertiary);
+}
+
+.field-error {
+  color: var(--danger-fg);
+}
+
+/* A link inside running text can't rely on colour alone. */
+.field-hint a {
+  text-decoration: underline;
+}
+
+.control {
+  width: 100%;
+  height: var(--control-h-md);
+  padding: 0 var(--space-3);
+  background: var(--bg);
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base-size);
+  line-height: var(--text-base-line);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.control::placeholder {
+  color: var(--text-tertiary);
+}
+
+.control:disabled {
+  background: var(--bg-muted);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+.control[readonly] {
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+}
+
+.control[aria-invalid='true'] {
+  border-color: var(--danger-solid);
+}
+
+textarea.control {
+  height: auto;
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+}
+
+[aria-invalid='true'] {
+  scroll-margin-top: calc(var(--topbar-h) + var(--space-6));
+  scroll-margin-bottom: calc(var(--space-12) + var(--space-8));
+}
+
+.tooltip {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: var(--bg);
+  font-size: var(--text-sm-size);
+  line-height: var(--text-sm-line);
+  pointer-events: none;
+  white-space: nowrap;
+}

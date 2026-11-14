@@ -1,0 +1,12 @@
+Third-party code in brr
+=======================
+
+autoconsent (MPL-2.0)
+  The cookie-banner bundle compiled into the brr binary is @duckduckgo/autoconsent 18.3.0
+  (autoconsent.standalone.js). Its license is autoconsent/LICENSE; the bundle and its version are
+  in autoconsent/. The source is the npm package @duckduckgo/autoconsent 18.3.0 and
+  https://github.com/duckduckgo/autoconsent (release 18.3.0).
+
+Playwright (Apache-2.0)
+  The injected script compiled into the brr binary is built from Playwright's source.
+  playwright/playwright-LICENSE and playwright/playwright-NOTICE are Playwright's (v1.62.1). Source: https://github.com/microsoft/playwright

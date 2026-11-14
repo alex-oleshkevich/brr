@@ -1,0 +1,8 @@
+name,url,username,password,note
+example,https://example.com/login,alice,pw1,
+acme,https://Acme.test:443/sign-in,"dan,smith",pw2,"She said ""hi"""
+multi,http://multi.test/a?b=1,erin,pw3,"line one
+line two"
+settings,chrome://settings,frank,pw4,
+plain,https://plain.test,gina,pw5,remember me
+broken,https://broken.test,heidi

@@ -1,0 +1,113 @@
+{
+  "timestamp": "2026-11-12T14:13:31.291Z",
+  "channels": {
+    "Stable": {
+      "channel": "Stable",
+      "version": "157.0.8103.78",
+      "revision": "1717349",
+      "downloads": {
+        "chrome": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/157.0.8103.78/linux-arm64/chrome-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/157.0.8103.78/linux64/chrome-linux64.zip"
+          }
+        ],
+        "chrome-headless-shell": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/157.0.8103.78/linux-arm64/chrome-headless-shell-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/157.0.8103.78/linux64/chrome-headless-shell-linux64.zip"
+          }
+        ]
+      }
+    },
+    "Beta": {
+      "channel": "Beta",
+      "version": "158.0.8127.18",
+      "revision": "1727472",
+      "downloads": {
+        "chrome": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/158.0.8127.18/linux-arm64/chrome-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/158.0.8127.18/linux64/chrome-linux64.zip"
+          }
+        ],
+        "chrome-headless-shell": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/158.0.8127.18/linux-arm64/chrome-headless-shell-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/158.0.8127.18/linux64/chrome-headless-shell-linux64.zip"
+          }
+        ]
+      }
+    },
+    "Dev": {
+      "channel": "Dev",
+      "version": "159.0.8144.0",
+      "revision": "1735750",
+      "downloads": {
+        "chrome": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/159.0.8144.0/linux-arm64/chrome-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/159.0.8144.0/linux64/chrome-linux64.zip"
+          }
+        ],
+        "chrome-headless-shell": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/159.0.8144.0/linux-arm64/chrome-headless-shell-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/159.0.8144.0/linux64/chrome-headless-shell-linux64.zip"
+          }
+        ]
+      }
+    },
+    "Canary": {
+      "channel": "Canary",
+      "version": "160.0.8157.0",
+      "revision": "1742402",
+      "downloads": {
+        "chrome": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8157.0/linux-arm64/chrome-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8157.0/linux64/chrome-linux64.zip"
+          }
+        ],
+        "chrome-headless-shell": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8157.0/linux-arm64/chrome-headless-shell-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8157.0/linux64/chrome-headless-shell-linux64.zip"
+          }
+        ]
+      }
+    }
+  }
+}

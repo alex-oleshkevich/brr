@@ -1,0 +1,49 @@
+[package]
+name = "brr-daemon"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+brr-builds.workspace = true
+brr-camoufox.workspace = true
+brr-core.workspace = true
+brr-netproxy.workspace = true
+brr-captcha.workspace = true
+brr-engine.workspace = true
+brr-cdp.workspace = true
+brr-proto.workspace = true
+brr-store.workspace = true
+brr-storage.workspace = true
+brr-content.workspace = true
+brr-vault.workspace = true
+tokio.workspace = true
+futures.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_path_to_error.workspace = true
+schemars.workspace = true
+inventory.workspace = true
+reqwest.workspace = true
+bytes.workspace = true
+nix.workspace = true
+tracing.workspace = true
+axum.workspace = true
+rust-embed.workspace = true
+rmcp.workspace = true
+tokio-tungstenite.workspace = true
+tar.workspace = true
+zip.workspace = true
+sha2.workspace = true
+base64.workspace = true
+rand.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+test-case.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
+tracing-subscriber.workspace = true

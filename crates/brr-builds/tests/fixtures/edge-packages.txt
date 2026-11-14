@@ -1,0 +1,27 @@
+Package: microsoft-edge-stable
+Version: 141.0.9.9-1
+Architecture: amd64
+Section: web
+Priority: optional
+Installed-Size: 665278
+Maintainer: Microsoft Edge for Linux Team <EdgeLinuxDev@microsoft.com>
+Description: The web browser from Microsoft
+ Microsoft Edge is a browser that combines a minimal design with sophisticated technology to make the web faster, safer, and easier.
+Provides: www-browser
+SHA256: 3fe98f5e0d20556aa526a052d85fd3b9fe36062927b4f3b447af77c0f0122907
+Size: 194001122
+Filename: pool/main/m/microsoft-edge-stable/microsoft-edge-stable_141.0.9.9-1_amd64.deb
+
+Package: microsoft-edge-stable
+Version: 142.0.1.2-1
+Architecture: amd64
+Section: web
+Priority: optional
+Installed-Size: 665278
+Maintainer: Microsoft Edge for Linux Team <EdgeLinuxDev@microsoft.com>
+Description: The web browser from Microsoft
+ Microsoft Edge is a browser that combines a minimal design with sophisticated technology to make the web faster, safer, and easier.
+Provides: www-browser
+SHA256: 3e53834d9d6e505bc57e6bff44d92cfe8cf0bed9064e88efc5b0d8f1c75f70fa
+Size: 194357122
+Filename: pool/main/m/microsoft-edge-stable/microsoft-edge-stable_142.0.1.2-1_amd64.deb

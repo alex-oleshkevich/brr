@@ -1,0 +1,88 @@
+[workspace]
+members = ["crates/*"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96"
+publish = false
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+
+[workspace.dependencies]
+tokio = { version = "1.54", features = ["full"] }
+axum = { version = "0.8.9", features = ["ws"] }
+tokio-tungstenite = "0.30"
+tokio-rustls = "0.26"
+rustls = "0.23"
+rustls-platform-verifier = "0.7"
+futures = "0.3"
+reqwest = { version = "0.13", features = ["json", "stream", "query"] }
+rmcp = { version = "=3.9.0", features = ["server", "transport-io", "transport-streamable-http-server", "schemars"] }
+serde = { version = "1", features = ["derive"] }
+# Without it a parsed float can be one ULP off, which reorders fpgen probability ties
+serde_json = { version = "1", features = ["float_roundtrip"] }
+serde_path_to_error = "0.1"
+schemars = "1.2"
+inventory = "0.3"
+rusqlite = { version = "0.41", features = ["bundled"] }
+rusqlite_migration = "2.7"
+ulid = "3"
+toml = "1.2"
+toml_edit = "0.25"
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+clap = { version = "4.6", features = ["derive", "env", "string"] }
+bytes = "1"
+libc = "0.2"
+nix = { version = "0.31", features = ["process", "signal", "fs", "user"] }
+command-fds = { version = "0.3", features = ["tokio"] }
+object_store = { version = "0.14", features = ["aws"] }
+rust-embed = { version = "8", features = ["mime-guess"] }
+chacha20poly1305 = { version = "0.11", features = ["zeroize"] }
+keyring = "4.2"
+totp-rs = "6"
+age = "0.12"
+tar = "0.4"
+zstd = "0.14"
+zip = { version = "9", default-features = false, features = ["deflate"] }
+sha2 = "0.11"
+zeroize = "1"
+aes = "0.9"
+cbc = { version = "0.2", features = ["alloc"] }
+base64 = "0.23"
+rand = "0.10"
+dom_smoothie = "0.19"
+htmd = "0.5"
+adblock = "0.13"
+maxminddb = { version = "0.33", features = ["mmap"] }
+test-case = "3"
+tempfile = "3"
+
+brr-core = { path = "crates/brr-core" }
+brr-store = { path = "crates/brr-store" }
+brr-proto = { path = "crates/brr-proto" }
+brr-cdp = { path = "crates/brr-cdp" }
+brr-juggler = { path = "crates/brr-juggler" }
+brr-camoufox = { path = "crates/brr-camoufox" }
+brr-engine = { path = "crates/brr-engine" }
+brr-builds = { path = "crates/brr-builds" }
+brr-storage = { path = "crates/brr-storage" }
+brr-vault = { path = "crates/brr-vault" }
+brr-captcha = { path = "crates/brr-captcha" }
+brr-content = { path = "crates/brr-content" }
+brr-netproxy = { path = "crates/brr-netproxy" }
+brr-daemon = { path = "crates/brr-daemon" }
+brr = { path = "crates/brr" }
+
+# Keep the shared dev target small: line tables for our code, no debuginfo for dependencies.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Why Small Browsers Win</title>
+  <meta name="description" content="A short essay on running many small browsers.">
+</head>
+<body>
+  <nav>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/archive">Archive</a></li>
+      <li><a href="/about">About</a></li>
+    </ul>
+  </nav>
+  <div class="layout">
+    <aside class="sidebar">
+      <h3>Popular posts</h3>
+      <ul>
+        <li><a href="/p/1">Ten tabs, one daemon</a></li>
+        <li><a href="/p/2">Idle reaping explained</a></li>
+      </ul>
+      <p>Subscribe to the newsletter for weekly notes.</p>
+    </aside>
+    <main>
+      <article>
+        <h1>Why Small Browsers Win</h1>
+        <p class="byline">By Jane Doe</p>
+        <p>Running a browser for every task is wasteful. Most tasks need one page, a few clicks and a copy of the text, so a fresh process per task spends far more than it ever gets back.</p>
+        <p>A small, supervised browser that starts on demand and goes away when it is idle keeps memory flat and makes failures easy to see.</p>
+        <p>For the next step, read <a href="/b">the follow-up essay on lease handoff</a>, which covers how a second client takes over a tab.</p>
+        <p>Throughput comes from reuse, not from larger machines. A pool of warm browsers that clients borrow and return serves many more requests than one cold start each.</p>
+      </article>
+    </main>
+  </div>
+  <footer>
+    <p>Copyright 2026 Example Blog. All rights reserved.</p>
+  </footer>
+</body>
+</html>

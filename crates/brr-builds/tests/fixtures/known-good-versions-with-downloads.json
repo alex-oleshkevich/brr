@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-11-12T14:13:31.301Z",
+  "versions": [
+    {
+      "version": "160.0.8156.0",
+      "revision": "1741650",
+      "downloads": {
+        "chrome": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8156.0/linux-arm64/chrome-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8156.0/linux64/chrome-linux64.zip"
+          }
+        ],
+        "chrome-headless-shell": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8156.0/linux-arm64/chrome-headless-shell-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8156.0/linux64/chrome-headless-shell-linux64.zip"
+          }
+        ]
+      }
+    },
+    {
+      "version": "160.0.8157.0",
+      "revision": "1742402",
+      "downloads": {
+        "chrome": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8157.0/linux-arm64/chrome-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8157.0/linux64/chrome-linux64.zip"
+          }
+        ],
+        "chrome-headless-shell": [
+          {
+            "platform": "linux-arm64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8157.0/linux-arm64/chrome-headless-shell-linux-arm64.zip"
+          },
+          {
+            "platform": "linux64",
+            "url": "https://storage.googleapis.com/chrome-for-testing-public/160.0.8157.0/linux64/chrome-headless-shell-linux64.zip"
+          }
+        ]
+      }
+    }
+  ]
+}

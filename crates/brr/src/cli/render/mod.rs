@@ -1,0 +1,197 @@
+use std::{collections::BTreeSet, path::Path};
+
+use brr_core::Error;
+
+use serde_json::{Map, Value};
+
+use super::{
+    args::OutputFile,
+    files,
+    format::{self, Group},
+};
+
+#[cfg(test)]
+mod tests;
+
+const NEXT_CURSOR: &str = "next_cursor";
+const NAME_FIELDS: [&str; 3] = ["name", "id", "seq"];
+const CELL_FIELDS: [&str; 5] = ["state", "kind", "source", "version", "url"];
+
+pub enum Plan<'a> {
+    List {
+        group: Group,
+        next_cursor: Option<String>,
+    },
+    Record(Vec<(&'a str, String)>),
+    Text(String),
+}
+
+pub enum Printed {
+    Wrote { path: String, bytes: u64 },
+    Text(String),
+}
+
+// Binary output has nowhere to go without -o, so this runs before the op does.
+pub fn require_path(file: &OutputFile, path: Option<&Path>, json: bool) -> Result<(), Error> {
+    if file.base64 && path.is_none() && !json {
+        return Err(Error::InvalidArgument {
+            field: "output".to_string(),
+            message: "binary output; pass -o <path>".to_string(),
+        });
+    }
+
+    Ok(())
+}
+
+pub fn output(
+    value: &Value,
+    json: bool,
+    file: Option<&OutputFile>,
+    path: Option<&Path>,
+) -> anyhow::Result<()> {
+    if let Some(file) = file
+        && let Some(printed) = file_output(value, json, file, path)?
+    {
+        return match printed {
+            Printed::Wrote { path, bytes } => {
+                format::status("Wrote", &format!("{path} ({bytes} bytes)"))?;
+
+                if json {
+                    format::data(&written(value, &file.field, &path, bytes).to_string())?;
+                }
+
+                Ok(())
+            }
+            Printed::Text(text) => Ok(format::data(&text)?),
+        };
+    }
+
+    Ok(print(value, json)?)
+}
+
+// None: nothing file-specific to do, print the output like any other.
+pub fn file_output(
+    value: &Value,
+    json: bool,
+    file: &OutputFile,
+    path: Option<&Path>,
+) -> anyhow::Result<Option<Printed>> {
+    let field = value.get(&file.field).unwrap_or(&Value::Null);
+
+    if let Some(path) = path {
+        let bytes = files::write_output(path, field, file.base64)?;
+
+        return Ok(Some(Printed::Wrote {
+            path: path.display().to_string(),
+            bytes,
+        }));
+    }
+
+    if json || file.base64 {
+        return Ok(None);
+    }
+
+    Ok(Some(Printed::Text(text(field))))
+}
+
+// The output with its file field replaced, without copying the file's bytes.
+fn written(value: &Value, field: &str, path: &str, bytes: u64) -> Value {
+    let mut whole: Map<String, Value> = value
+        .as_object()
+        .into_iter()
+        .flatten()
+        .filter(|(key, _)| *key != field)
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect();
+    whole.insert(
+        field.to_string(),
+        serde_json::json!({ "written": path, "bytes": bytes }),
+    );
+
+    Value::Object(whole)
+}
+
+fn print(value: &Value, json: bool) -> std::io::Result<()> {
+    if json {
+        return format::data(&value.to_string());
+    }
+
+    match plan(value) {
+        Plan::List { group, next_cursor } => {
+            format::list(&[group])?;
+
+            match next_cursor {
+                Some(cursor) => format::status("More", &format!("pass --cursor {cursor}")),
+                None => Ok(()),
+            }
+        }
+        Plan::Record(fields) => format::record(&fields),
+        Plan::Text(text) => format::data(&text),
+    }
+}
+
+pub fn plan(value: &Value) -> Plan<'_> {
+    let Some(object) = value.as_object() else {
+        return Plan::Text(text(value));
+    };
+
+    match list_field(object) {
+        Some((field, items)) => Plan::List {
+            group: group(field, items),
+            next_cursor: object
+                .get(NEXT_CURSOR)
+                .and_then(Value::as_str)
+                .map(str::to_string),
+        },
+        None => Plan::Record(
+            object
+                .iter()
+                .map(|(key, value)| (key.as_str(), text(value)))
+                .collect(),
+        ),
+    }
+}
+
+// A list output is one array field, optionally with the page cursor beside it.
+fn list_field(object: &Map<String, Value>) -> Option<(&str, &[Value])> {
+    let mut fields = object.iter().filter(|(key, _)| *key != NEXT_CURSOR);
+    let (key, value) = fields.next()?;
+
+    match value.as_array() {
+        Some(items) if fields.next().is_none() => Some((key, items)),
+        _ => None,
+    }
+}
+
+fn group(field: &str, items: &[Value]) -> Group {
+    let columns: BTreeSet<usize> = items
+        .iter()
+        .flat_map(|item| {
+            CELL_FIELDS
+                .iter()
+                .enumerate()
+                .filter(|(_, name)| item.get(**name).is_some_and(|cell| !cell.is_null()))
+                .map(|(column, _)| column)
+        })
+        .collect();
+
+    items.iter().fold(Group::new(field), |group, item| {
+        let name = NAME_FIELDS
+            .iter()
+            .find_map(|name| item.get(name).filter(|value| !value.is_null()))
+            .map_or_else(|| text(item), text);
+        let cells: Vec<String> = columns
+            .iter()
+            .map(|column| item.get(CELL_FIELDS[*column]).map(text).unwrap_or_default())
+            .collect();
+
+        group.entry(&name, &cells)
+    })
+}
+
+fn text(value: &Value) -> String {
+    match value {
+        Value::String(text) => text.clone(),
+        other => other.to_string(),
+    }
+}

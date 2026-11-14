@@ -1,0 +1,105 @@
+{
+ "name": "voices_config_missing_field",
+ "kwargs": {
+  "executable_path": "<BUNDLE>/camoufox-bin",
+  "env": {
+   "HOME": "<HOME>"
+  },
+  "fingerprint": {
+   "navigator": {
+    "appName": "Netscape",
+    "product": "Gecko",
+    "productSub": "20100101",
+    "appCodeName": "Mozilla",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0",
+    "languages": [
+     "en-US",
+     "en"
+    ],
+    "language": "en-US",
+    "deviceMemory": "undefined",
+    "hardwareConcurrency": 10,
+    "platform": "MacIntel",
+    "appVersion": "5.0 (Macintosh)",
+    "doNotTrack": "1",
+    "oscpu": "Intel Mac OS X 10.15",
+    "maxTouchPoints": 0
+   },
+   "screen": {
+    "availWidth": 1512,
+    "availHeight": 882,
+    "availLeft": 0,
+    "availTop": 38,
+    "width": 1512,
+    "height": 982,
+    "colorDepth": 30,
+    "pixelDepth": 30
+   },
+   "window": {
+    "innerWidth": 1363,
+    "innerHeight": 841,
+    "outerWidth": 1512,
+    "outerHeight": 881,
+    "devicePixelRatio": 2,
+    "screenX": 0,
+    "screenY": 38,
+    "pageYOffset": 0
+   },
+   "headers": {
+    "accept-language": [
+     "en-US,en;q=0.5"
+    ],
+    "accept-encoding": [
+     "gzip, deflate, br, zstd"
+    ],
+    "accept": [
+     "*/*"
+    ],
+    "priority": [
+     "u=4"
+    ],
+    "sec-ch-ua": null,
+    "sec-ch-ua-mobile": null,
+    "sec-ch-ua-platform": null,
+    "sec-fetch-dest": [
+     "empty"
+    ],
+    "sec-fetch-mode": [
+     "cors"
+    ],
+    "sec-fetch-site": [
+     "same-site"
+    ],
+    "sec-gpc": null,
+    "user-agent": [
+     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0"
+    ]
+   }
+  },
+  "os": "macos",
+  "config": {
+   "voices": [
+    {
+     "lang": "en-US"
+    }
+   ]
+  }
+ },
+ "special": {},
+ "error": {
+  "type": "InvalidPropertyType",
+  "message": "Invalid voices[0]: missing name, voiceUri, isDefault, isLocalService. Every voice needs {lang, name, voiceUri, isDefault, isLocalService}."
+ },
+ "warnings": [
+  {
+   "category": "LeakWarning",
+   "message": "Passing your own fingerprint is not recommended. Fingerprints are automatically generated within Camoufox based on the provided `os` and `screen` constraints.\nIf this is intentional, pass `i_know_what_im_doing=True`."
+  },
+  {
+   "category": "LeakWarning",
+   "message": "Canvas and WebGL readback return random data, as privacy.resistFingerprinting does in LibreWolf, Tor Browser and Mullvad Browser. Stock Firefox does not do this, so the browser reads as a privacy-hardened Firefox. It is on because the identity claims another OS or GPU than this machine's, whose canvas would show the real one. Pass `canvas_noise=False` to keep stock canvas behaviour.\nIf this is intentional, pass `i_know_what_im_doing=True`."
+  }
+ ],
+ "stdout": "",
+ "calls": []
+}

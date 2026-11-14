@@ -1,0 +1,70 @@
+[
+  {
+    "tag_name": "156.0.8078.79-1",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "ungoogled-chromium-156.0.8078.79-1-arm64_linux.tar.xz",
+        "browser_download_url": "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/156.0.8078.79-1/ungoogled-chromium-156.0.8078.79-1-arm64_linux.tar.xz",
+        "digest": "sha256:f759d37ae119dd984ecc9398c4445ef8766476602e78c95628fe5cdc91b5a26e"
+      },
+      {
+        "name": "ungoogled-chromium-156.0.8078.79-1-x86_64_linux.tar.xz",
+        "browser_download_url": "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/156.0.8078.79-1/ungoogled-chromium-156.0.8078.79-1-x86_64_linux.tar.xz",
+        "digest": "sha256:d35a9064068274af1a2efa8bcb9b42306e590f9b5c929789f2e0e51a35880499"
+      }
+    ]
+  },
+  {
+    "tag_name": "156.0.8078.73-1",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "ungoogled-chromium-156.0.8078.73-1-arm64_linux.tar.xz",
+        "browser_download_url": "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/156.0.8078.73-1/ungoogled-chromium-156.0.8078.73-1-arm64_linux.tar.xz",
+        "digest": "sha256:746bca2a8355892948dc40072439304bf1bf2c21d662a5a86e7c39a226813b79"
+      },
+      {
+        "name": "ungoogled-chromium-156.0.8078.73-1-x86_64_linux.tar.xz",
+        "browser_download_url": "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/156.0.8078.73-1/ungoogled-chromium-156.0.8078.73-1-x86_64_linux.tar.xz",
+        "digest": "sha256:a76beb1f486b0c7343f857730abc7f6cfc15a9b6e1878172d16e25398958f1f7"
+      }
+    ]
+  },
+  {
+    "tag_name": "156.0.8078.47-1",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "ungoogled-chromium-156.0.8078.47-1-arm64_linux.tar.xz",
+        "browser_download_url": "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/156.0.8078.47-1/ungoogled-chromium-156.0.8078.47-1-arm64_linux.tar.xz",
+        "digest": "sha256:1973127a5ae83b0227bdd74b0194983e2412fb478d6ba81cd338912eb87d7ab8"
+      },
+      {
+        "name": "ungoogled-chromium-156.0.8078.47-1-x86_64_linux.tar.xz",
+        "browser_download_url": "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/156.0.8078.47-1/ungoogled-chromium-156.0.8078.47-1-x86_64_linux.tar.xz",
+        "digest": "sha256:3fd4ff6bc398a622f77c728ef80f00df41a10846fb60a647392a7983dc6ad28e"
+      }
+    ]
+  },
+  {
+    "tag_name": "155.0.8059.84-1",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "ungoogled-chromium-155.0.8059.84-1-arm64_linux.tar.xz",
+        "browser_download_url": "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/155.0.8059.84-1/ungoogled-chromium-155.0.8059.84-1-arm64_linux.tar.xz",
+        "digest": "sha256:5b4de24d19d7a5e5240233a4efd2f1f62be50f82793ee1b90673479148474ade"
+      },
+      {
+        "name": "ungoogled-chromium-155.0.8059.84-1-x86_64_linux.tar.xz",
+        "browser_download_url": "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/155.0.8059.84-1/ungoogled-chromium-155.0.8059.84-1-x86_64_linux.tar.xz",
+        "digest": "sha256:7e376c47b2650f846984f32e4962b33703e5abe09681009cf4f3f336e1125f13"
+      }
+    ]
+  }
+]

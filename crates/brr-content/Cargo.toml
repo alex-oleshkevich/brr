@@ -1,0 +1,22 @@
+[package]
+name = "brr-content"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+brr-core.workspace = true
+dom_smoothie.workspace = true
+htmd.workspace = true
+adblock = { workspace = true, features = ["css-validation"] }
+futures.workspace = true
+reqwest.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+axum.workspace = true

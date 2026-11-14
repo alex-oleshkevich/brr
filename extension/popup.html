@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>brr companion</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>brr companion</h1>
+    <section id="idle">
+      <p id="consent"></p>
+      <label>Daemon URL <input id="url" type="text" spellcheck="false" /></label>
+      <div class="buttons">
+        <button id="allow">Allow and connect</button>
+        <button id="cancel">Cancel</button>
+      </div>
+    </section>
+    <section id="connected" hidden>
+      <p id="connected-info"></p>
+      <div class="buttons"><button id="disconnect">Disconnect</button></div>
+    </section>
+    <p id="notice"></p>
+    <p id="error" class="error"></p>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

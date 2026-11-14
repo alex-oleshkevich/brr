@@ -1,0 +1,140 @@
+{
+ "name": "block_all_ikwid",
+ "kwargs": {
+  "executable_path": "<BUNDLE>/camoufox-bin",
+  "env": {
+   "HOME": "<HOME>"
+  },
+  "fingerprint": {
+   "navigator": {
+    "appName": "Netscape",
+    "product": "Gecko",
+    "productSub": "20100101",
+    "appCodeName": "Mozilla",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0",
+    "languages": [
+     "en-GB",
+     "en"
+    ],
+    "language": "en-GB",
+    "deviceMemory": "undefined",
+    "hardwareConcurrency": 2,
+    "platform": "Win32",
+    "appVersion": "5.0 (Windows)",
+    "doNotTrack": "unspecified",
+    "oscpu": "Windows NT 10.0; Win64; x64",
+    "maxTouchPoints": 0
+   },
+   "screen": {
+    "availWidth": 1920,
+    "availHeight": 1032,
+    "availLeft": 0,
+    "availTop": 0,
+    "width": 1920,
+    "height": 1080,
+    "colorDepth": 24,
+    "pixelDepth": 24
+   },
+   "window": {
+    "innerWidth": 1722,
+    "innerHeight": 884,
+    "outerWidth": 1738,
+    "outerHeight": 978,
+    "devicePixelRatio": 1,
+    "screenX": 0,
+    "screenY": 4,
+    "pageYOffset": 0
+   },
+   "headers": {
+    "accept-language": [
+     "en-GB,en;q=0.5"
+    ],
+    "accept-encoding": [
+     "gzip, deflate, br, zstd"
+    ],
+    "accept": [
+     "*/*"
+    ],
+    "priority": [
+     "u=4"
+    ],
+    "sec-ch-ua": null,
+    "sec-ch-ua-mobile": null,
+    "sec-ch-ua-platform": null,
+    "sec-fetch-dest": [
+     "empty"
+    ],
+    "sec-fetch-mode": [
+     "cors"
+    ],
+    "sec-fetch-site": [
+     "same-site"
+    ],
+    "sec-gpc": [
+     "1"
+    ],
+    "user-agent": [
+     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0"
+    ]
+   }
+  },
+  "os": "windows",
+  "block_images": true,
+  "block_webrtc": true,
+  "block_webgl": true,
+  "disable_coop": true,
+  "i_know_what_im_doing": true
+ },
+ "special": {},
+ "warnings": [],
+ "stdout": "Skipping unknown patch input:windowsKeyboard : True\n",
+ "calls": [],
+ "result": {
+  "options": {
+   "executable_path": "<BUNDLE>/camoufox-bin",
+   "args": [],
+   "firefox_user_prefs": {
+    "ui.useOverlayScrollbars": 1,
+    "javascript.options.use_ucrt_math": true,
+    "layout.word_select.eat_space_to_next_word": true,
+    "general.autoScroll": true,
+    "middlemouse.paste": false,
+    "middlemouse.scrollbarPosition": false,
+    "full-screen-api.transition-duration.enter": "200 200",
+    "full-screen-api.transition-duration.leave": "200 200",
+    "ui.scrollToClick": 0,
+    "slider.snapMultiplier": 6,
+    "layout.scrollbars.click_and_hold_track.continue_to_end": false,
+    "widget.non-native-theme.scrollbar.style": 5,
+    "dom.quotaManager.temporaryStorage.fixedLimit": 250000000,
+    "privacy.donottrackheader.enabled": false,
+    "privacy.globalprivacycontrol.enabled": false,
+    "intl.locale.requested": "en-US",
+    "permissions.default.image": 2,
+    "media.peerconnection.enabled": false,
+    "browser.tabs.remote.useCrossOriginOpenerPolicy": false,
+    "privacy.baselineFingerprintingProtection.overrides": "+CanvasImageExtractionPrompt,+CanvasExtractionBeforeUserInputIsBlocked,+CanvasExtractionFromThirdPartiesIsBlocked",
+    "webgl.disabled": true,
+    "dom.webgpu.enabled": true,
+    "gfx.blacklist.webgpu": 4
+   },
+   "headless": false
+  },
+  "env": {
+   "FONTCONFIG_FILE": "<CACHE>/fontconfig/fonts-<HASH>.conf",
+   "HOME": "<HOME>"
+  },
+  "config_chunks": [
+   6994
+  ],
+  "prefs_chunks": [
+   1009
+  ],
+  "config_blob_js": "{\"addons\":[\"<BUNDLE>/addons/UBO\"],\"navigator.userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0\",\"navigator.hardwareConcurrency\":16,\"navigator.platform\":\"Win32\",\"navigator.appVersion\":\"5.0 (Windows)\",\"navigator.oscpu\":\"Windows NT 10.0; Win64; x64\",\"screen.availWidth\":1920,\"screen.availHeight\":1032,\"screen.width\":1920,\"screen.height\":1080,\"screen.colorDepth\":24,\"screen.pixelDepth\":24,\"window.outerWidth\":1738,\"window.outerHeight\":978,\"window.screenY\":4,\"fonts\":[\"Arial\",\"Arial Black\",\"Bahnschrift\",\"Calibri\",\"Calibri Light\",\"Cambria\",\"Cambria Math\",\"Candara\",\"Candara Light\",\"Comic Sans MS\",\"Consolas\",\"Constantia\",\"Corbel\",\"Corbel Light\",\"Courier\",\"Courier New\",\"Ebrima\",\"Franklin Gothic Medium\",\"Gabriola\",\"Gadugi\",\"Georgia\",\"Helvetica\",\"Impact\",\"Ink Free\",\"Javanese Text\",\"Leelawadee UI\",\"Leelawadee UI Semilight\",\"Lucida Console\",\"Lucida Sans Unicode\",\"MS Gothic\",\"MS PGothic\",\"MS Sans Serif\",\"MS Serif\",\"MS UI Gothic\",\"MV Boli\",\"Malgun Gothic\",\"Malgun Gothic Semilight\",\"Marlett\",\"Microsoft Himalaya\",\"Microsoft JhengHei\",\"Microsoft JhengHei Light\",\"Microsoft JhengHei UI\",\"Microsoft JhengHei UI Light\",\"Microsoft New Tai Lue\",\"Microsoft PhagsPa\",\"Microsoft Sans Serif\",\"Microsoft Tai Le\",\"Microsoft YaHei\",\"Microsoft YaHei Light\",\"Microsoft YaHei UI\",\"Microsoft YaHei UI Light\",\"Microsoft Yi Baiti\",\"MingLiU-ExtB\",\"MingLiU_HKSCS-ExtB\",\"MingLiU_MSCS-ExtB\",\"Mongolian Baiti\",\"Myanmar Text\",\"NSimSun\",\"Nirmala Text\",\"Nirmala Text Semilight\",\"Nirmala UI\",\"Nirmala UI Semilight\",\"PMingLiU-ExtB\",\"Palatino Linotype\",\"Roman\",\"Sans Serif Collection\",\"Segoe Fluent Icons\",\"Segoe MDL2 Assets\",\"Segoe Print\",\"Segoe Script\",\"Segoe UI\",\"Segoe UI Black\",\"Segoe UI Emoji\",\"Segoe UI Historic\",\"Segoe UI Light\",\"Segoe UI Semibold\",\"Segoe UI Semilight\",\"Segoe UI Symbol\",\"Segoe UI Variable\",\"Segoe UI Variable Display\",\"Segoe UI Variable Small\",\"Segoe UI Variable Text\",\"SimSun\",\"SimSun-ExtB\",\"Sitka Banner\",\"Sitka Display\",\"Sitka Heading\",\"Sitka Small\",\"Sitka Subheading\",\"Sitka Text\",\"Small Fonts\",\"Sylfaen\",\"Symbol\",\"Tahoma\",\"Times\",\"Times New Roman\",\"Trebuchet MS\",\"Twemoji Mozilla\",\"Verdana\",\"Webdings\",\"Wingdings\",\"Yu Gothic\",\"Yu Gothic Light\",\"Yu Gothic Medium\",\"Yu Gothic UI\",\"Yu Gothic UI Light\",\"Yu Gothic UI Semibold\",\"Yu Gothic UI Semilight\",\"宋体\",\"微軟正黑體\",\"微軟正黑體 Light\",\"微软雅黑\",\"微软雅黑 Light\",\"新宋体\",\"新細明體-ExtB\",\"游ゴシック\",\"游ゴシック Light\",\"游ゴシック Medium\",\"細明體-ExtB\",\"細明體_HKSCS-ExtB\",\"細明體_MSCS-ExtB\",\"맑은 고딕\",\"맑은 고딕 Semilight\",\"ＭＳ ゴシック\",\"ＭＳ Ｐゴシック\",\"Bodoni MT Condensed\",\"Stencil\",\"Perpetua Titling MT\",\"Haettenschweiler\",\"Matura MT Script Capitals\",\"Elephant\",\"Gill Sans MT Ext Condensed Bold\",\"Palace Script MT\",\"Modern No. 20\",\"Perpetua\",\"Wide Latin\",\"Kunstler Script\",\"Rockwell Extra Bold\",\"Bell MT\",\"Harrington\",\"Vivaldi\",\"Gill Sans Ultra Bold\",\"Bookshelf Symbol 7\",\"Rage Italic\",\"Agency FB\",\"Eras Bold ITC\",\"Old English Text MT\",\"Broadway\",\"Copperplate Gothic Light\",\"Snap ITC\",\"Forte\",\"Gigi\",\"Rockwell Condensed\",\"Colonna MT\",\"Bauhaus 93\",\"Poor Richard\",\"Gill Sans MT\",\"Centaur\",\"MS Reference Specialty\",\"Imprint MT Shadow\",\"Copperplate Gothic Bold\",\"Playbill\",\"Harlow Solid Italic\",\"Footlight MT Light\",\"Viner Hand ITC\",\"Bradley Hand ITC\",\"Calisto MT\",\"Eras Light ITC\",\"Parchment\",\"Bodoni MT Black\",\"Engravers MT\",\"Mistral\",\"Goudy Stout\",\"Pristina\",\"Brush Script MT\",\"High Tower Text\",\"Niagara Solid\",\"Ravie\",\"Gill Sans MT Condensed\",\"Informal Roman\",\"Algerian\",\"Maiandra GD\",\"Tw Cen MT Condensed\",\"Edwardian Script ITC\",\"Britannic Bold\",\"OCR A Extended\",\"Bodoni MT Poster Compressed\",\"Tempus Sans ITC\",\"Eras Demi ITC\",\"Jokerman\",\"Niagara Engraved\",\"Magneto\",\"French Script MT\",\"Tw Cen MT\",\"Berlin Sans FB Demi\",\"Tw Cen MT Condensed Extra Bold\",\"Castellar\",\"Script MT Bold\",\"Freestyle Script\",\"Blackadder ITC\",\"Gloucester MT Extra Condensed\",\"Bernard MT Condensed\",\"Curlz MT\",\"Felix Titling\",\"Baskerville Old Face\",\"Vladimir Script\",\"Rockwell\",\"Onyx\",\"Kristen ITC\",\"Bodoni MT\",\"Cooper Black\",\"Eras Medium ITC\",\"Californian FB\",\"Goudy Old Style\",\"Gill Sans Ultra Bold Condensed\",\"Papyrus\",\"Chiller\",\"Showcard Gothic\",\"Juice ITC\",\"Berlin Sans FB\",\"MT Extra\",\"Book Antiqua\",\"Bookman Old Style\",\"Century\",\"Century Gothic\",\"Century Schoolbook\",\"Dubai\",\"Franklin Gothic Book\",\"Franklin Gothic Demi\",\"Franklin Gothic Demi Cond\",\"Franklin Gothic Heavy\",\"Garamond\",\"Lucida Bright\",\"Lucida Calligraphy\",\"Lucida Fax\",\"Lucida Handwriting\",\"Lucida Sans Typewriter\",\"Monotype Corsiva\",\"MS Outlook\",\"MS Reference Sans Serif\",\"Titillium Web\",\"Cabin\",\"Open Sans\",\"Oswald\",\"Nunito\",\"HoloLens MDL2 Assets\"],\"mediaDevices:enabled\":true,\"mediaDevices:micros\":2,\"mediaDevices:webcams\":2,\"mediaDevices:speakers\":2,\"mediaDevices:microphoneLabels\":[\"Microphone (Realtek(R) Audio)\",\"Microphone (Microsoft® LifeCam HD-3000)\"],\"mediaDevices:microphoneGroups\":[\"hw-1\",\"hw-4\"],\"mediaDevices:webcamLabels\":[\"HD Webcam\",\"Microsoft® LifeCam HD-3000\"],\"mediaDevices:webcamGroups\":[\"hw-2\",\"hw-4\"],\"mediaDevices:speakerLabels\":[\"Speakers (Realtek(R) Audio)\",\"Acer XV272U (AMD High Definition Audio Device)\"],\"mediaDevices:speakerGroups\":[\"hw-1\",\"hw-3\"],\"input:windowsKeyboard\":true,\"voices\":[{\"name\":\"Microsoft David - English (United States)\",\"lang\":\"en-US\",\"voiceUri\":\"urn:moz-tts:sapi:Microsoft David - English (United States)?en-US\",\"isDefault\":false,\"isLocalService\":true},{\"name\":\"Microsoft Mark - English (United States)\",\"lang\":\"en-US\",\"voiceUri\":\"urn:moz-tts:sapi:Microsoft Mark - English (United States)?en-US\",\"isDefault\":false,\"isLocalService\":true},{\"name\":\"Microsoft Zira - English (United States)\",\"lang\":\"en-US\",\"voiceUri\":\"urn:moz-tts:sapi:Microsoft Zira - English (United States)?en-US\",\"isDefault\":false,\"isLocalService\":true},{\"name\":\"Microsoft Helena - Spanish (Spain)\",\"lang\":\"es-ES\",\"voiceUri\":\"urn:moz-tts:sapi:Microsoft Helena - Spanish (Spain)?es-ES\",\"isDefault\":false,\"isLocalService\":true},{\"name\":\"Microsoft Laura - Spanish (Spain)\",\"lang\":\"es-ES\",\"voiceUri\":\"urn:moz-tts:sapi:Microsoft Laura - Spanish (Spain)?es-ES\",\"isDefault\":false,\"isLocalService\":true},{\"name\":\"Microsoft Pablo - Spanish (Spain)\",\"lang\":\"es-ES\",\"voiceUri\":\"urn:moz-tts:sapi:Microsoft Pablo - Spanish (Spain)?es-ES\",\"isDefault\":false,\"isLocalService\":true},{\"name\":\"Microsoft Linda - English (Canada)\",\"lang\":\"en-CA\",\"voiceUri\":\"urn:moz-tts:sapi:Microsoft Linda - English (Canada)?en-CA\",\"isDefault\":false,\"isLocalService\":true},{\"name\":\"Microsoft Richard - English (Canada)\",\"lang\":\"en-CA\",\"voiceUri\":\"urn:moz-tts:sapi:Microsoft Richard - English (Canada)?en-CA\",\"isDefault\":false,\"isLocalService\":true},{\"name\":\"Microsoft David Desktop - English (United States)\",\"lang\":\"en-US\",\"voiceUri\":\"urn:moz-tts:sapi:Microsoft David Desktop - English (United States)?en-US\",\"isDefault\":false,\"isLocalService\":true},{\"name\":\"Microsoft Zira Desktop - English (United States)\",\"lang\":\"en-US\",\"voiceUri\":\"urn:moz-tts:sapi:Microsoft Zira Desktop - English (United States)?en-US\",\"isDefault\":false,\"isLocalService\":true}],\"voices:blockIfNotDefined\":true}",
+  "prefs_blob": "{\"ui.useOverlayScrollbars\":1,\"javascript.options.use_ucrt_math\":true,\"layout.word_select.eat_space_to_next_word\":true,\"general.autoScroll\":true,\"middlemouse.paste\":false,\"middlemouse.scrollbarPosition\":false,\"full-screen-api.transition-duration.enter\":\"200 200\",\"full-screen-api.transition-duration.leave\":\"200 200\",\"ui.scrollToClick\":0,\"slider.snapMultiplier\":6,\"layout.scrollbars.click_and_hold_track.continue_to_end\":false,\"widget.non-native-theme.scrollbar.style\":5,\"dom.quotaManager.temporaryStorage.fixedLimit\":250000000,\"privacy.donottrackheader.enabled\":false,\"privacy.globalprivacycontrol.enabled\":false,\"intl.locale.requested\":\"en-US\",\"permissions.default.image\":2,\"media.peerconnection.enabled\":false,\"browser.tabs.remote.useCrossOriginOpenerPolicy\":false,\"privacy.baselineFingerprintingProtection.overrides\":\"+CanvasImageExtractionPrompt,+CanvasExtractionBeforeUserInputIsBlocked,+CanvasExtractionFromThirdPartiesIsBlocked\",\"webgl.disabled\":true,\"dom.webgpu.enabled\":true,\"gfx.blacklist.webgpu\":4}",
+  "fontconfig": {
+   "path": "<CACHE>/fontconfig/fonts-<HASH>.conf",
+   "content": "<?xml version=\"1.0\"?>\n<!DOCTYPE fontconfig SYSTEM \"fonts.dtd\">\n<!-- Minimal stand-in for the bundled fonts.conf (windows); only the dir line matters. -->\n<fontconfig>\n\t<dir><BUNDLE>/fonts/W</dir>\n\t<dir><BUNDLE>/fonts/LW</dir>\n\t<dir><BUNDLE>/fonts/MW</dir>\n\t<dir><BUNDLE>/fonts/LMW</dir>\n\t<cachedir prefix=\"xdg\">fontconfig</cachedir>\n</fontconfig>\n"
+  }
+ }
+}

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Inventory</title>
+  <style>.row { display: flex; }</style>
+</head>
+<body>
+  <div id="root">
+    <header><span>Inventory dashboard</span></header>
+    <div class="row">
+      <button>Add item</button>
+      <input placeholder="Search items">
+    </div>
+    <table>
+      <tr><td>Widgets</td><td>12</td></tr>
+      <tr><td>Gadgets</td><td>7</td></tr>
+    </table>
+    <p>Last synced 3 minutes ago.</p>
+  </div>
+  <script>window.state = { items: [] };</script>
+</body>
+</html>

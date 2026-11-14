@@ -1,0 +1,50 @@
+[
+  {
+    "tag_name": "150.0.7871.186",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "ungoogled-chromium-150.0.7871.186-1-x86_64_linux.tar.xz",
+        "browser_download_url": "https://github.com/adryfish/fingerprint-chromium/releases/download/150.0.7871.186/ungoogled-chromium-150.0.7871.186-1-x86_64_linux.tar.xz",
+        "digest": "sha256:48eff860053efd9ad498d51370f0a1f59f983df39c02a72ad2a8682cdead4055"
+      }
+    ]
+  },
+  {
+    "tag_name": "148.0.7778.215",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "ungoogled-chromium-148.0.7778.215-1-x86_64_linux.tar.xz",
+        "browser_download_url": "https://github.com/adryfish/fingerprint-chromium/releases/download/148.0.7778.215/ungoogled-chromium-148.0.7778.215-1-x86_64_linux.tar.xz",
+        "digest": "sha256:70d239830332e5820aa34dfcb284161cac0429eee25da642830afe04bda717f4"
+      }
+    ]
+  },
+  {
+    "tag_name": "144.0.7559.132",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "ungoogled-chromium-144.0.7559.132-1-x86_64_linux.tar.xz",
+        "browser_download_url": "https://github.com/adryfish/fingerprint-chromium/releases/download/144.0.7559.132/ungoogled-chromium-144.0.7559.132-1-x86_64_linux.tar.xz",
+        "digest": "sha256:bb4c44840bae7e881f6258ed5b33f972f284384d898b6289e1f0c0bf47555ede"
+      }
+    ]
+  },
+  {
+    "tag_name": "138.0.7204.183",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "ungoogled-chromium-138.0.7204.183-1_linux.tar.xz",
+        "browser_download_url": "https://github.com/adryfish/fingerprint-chromium/releases/download/138.0.7204.183/ungoogled-chromium-138.0.7204.183-1_linux.tar.xz",
+        "digest": "sha256:0040f94d11d0039505328a90b2ff48968db873e9e7967307631bf40ef5679275"
+      }
+    ]
+  }
+]

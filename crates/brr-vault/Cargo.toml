@@ -1,0 +1,23 @@
+[package]
+name = "brr-vault"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+age.workspace = true
+brr-core.workspace = true
+chacha20poly1305.workspace = true
+keyring.workspace = true
+rand.workspace = true
+tar.workspace = true
+totp-rs = { workspace = true, features = ["otpauth"] }
+zeroize.workspace = true
+zstd.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

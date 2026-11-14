@@ -1,0 +1,170 @@
+/* Inter is not bundled. The fallback borrows its vertical metrics so text sits centred in
+   buttons, inputs and menus whichever system font is used. */
+@font-face {
+  font-family: 'Inter Fallback';
+  src: local('Helvetica Neue'), local('Arial'), local('Liberation Sans'), local('Nimbus Sans'), local('Helvetica');
+  ascent-override: 92%;
+  descent-override: 24.2%;
+  line-gap-override: 0%;
+}
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #ffffff;
+  --bg-subtle: #fafafa;
+  --bg-muted: #f4f4f5;
+  --bg-emphasis: #e4e4e7;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --border-control: #8b8b94;
+  --segment-selected-bg: #ffffff;
+  --segment-selected-border: transparent;
+  --text: #18181b;
+  --text-secondary: #52525b;
+  --text-tertiary: #6b6b75;
+  --text-disabled: #a1a1aa;
+
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-fg: #ffffff;
+  --accent-text: #4338ca;
+  --accent-subtle: #eef2ff;
+  --accent-border: #c7d2fe;
+  --focus-ring: #4f46e5;
+
+  --success-fg: #15803d;
+  --success-bg: #f0fdf4;
+  --success-border: #bbf7d0;
+  --success-solid: #16a34a;
+  --warning-fg: #b45309;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-solid: #d97706;
+  --danger-fg: #b91c1c;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+  --danger-solid: #dc2626;
+  --neutral-fg: #3f3f46;
+  --neutral-bg: #f4f4f5;
+  --neutral-border: #e4e4e7;
+  --neutral-solid: #71717a;
+
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --overlay: rgba(9, 9, 11, 0.32);
+  --shadow-sm: 0 1px 2px rgba(9, 9, 11, 0.05);
+  --shadow-md: 0 1px 3px rgba(9, 9, 11, 0.06), 0 6px 16px rgba(9, 9, 11, 0.08);
+  --shadow-lg: 0 2px 6px rgba(9, 9, 11, 0.06), 0 16px 48px rgba(9, 9, 11, 0.16);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #09090b;
+  --bg-subtle: #0f0f12;
+  --bg-muted: #1c1c20;
+  --bg-emphasis: #26262b;
+  --surface: #111114;
+  --surface-raised: #18181b;
+  --border: #232328;
+  --border-strong: #2e2e35;
+  --border-control: #6b6b75;
+  --segment-selected-bg: var(--bg-emphasis);
+  --segment-selected-border: var(--border-control);
+  --text: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #8b8b94;
+  --text-disabled: #52525b;
+
+  --accent: #5b5bd6;
+  --accent-hover: #6461e6;
+  --accent-fg: #ffffff;
+  --accent-text: #a5b4fc;
+  --accent-subtle: #1e1b4b;
+  --accent-border: #3730a3;
+  --focus-ring: #818cf8;
+
+  --success-fg: #4ade80;
+  --success-bg: #052e16;
+  --success-border: #14532d;
+  --success-solid: #22c55e;
+  --warning-fg: #fbbf24;
+  --warning-bg: #2b1d07;
+  --warning-border: #78350f;
+  --warning-solid: #f59e0b;
+  --danger-fg: #f87171;
+  --danger-bg: #2b0b0b;
+  --danger-border: #7f1d1d;
+  --danger-solid: #ef4444;
+  --neutral-fg: #d4d4d8;
+  --neutral-bg: #1f1f23;
+  --neutral-border: #3f3f46;
+  --neutral-solid: #71717a;
+
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 0 0 1px #232328, 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 0 0 1px #2e2e35, 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+:root {
+  --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  --text-xs-size: 11px;
+  --text-xs-line: 16px;
+  --text-sm-size: 12px;
+  --text-sm-line: 16px;
+  --text-base-size: 13px;
+  --text-base-line: 20px;
+  --text-md-size: 14px;
+  --text-md-line: 20px;
+  --text-lg-size: 16px;
+  --text-lg-line: 24px;
+  --text-xl-size: 20px;
+  --text-xl-line: 28px;
+  --text-2xl-size: 28px;
+  --text-2xl-line: 36px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  --control-h-sm: 28px;
+  --control-h-md: 32px;
+  --sidebar-w: 232px;
+  --topbar-h: 48px;
+  --content-max: 1200px;
+  --row-h: 40px;
+  --row-h-header: 32px;
+  --dialog-w-sm: 400px;
+  --dialog-w-md: 520px;
+  --dialog-w-lg: 680px;
+  --toast-w: 360px;
+  --menu-min-w: 180px;
+
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}

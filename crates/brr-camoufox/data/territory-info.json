@@ -1,0 +1,8266 @@
+[
+ {
+  "type": "AC",
+  "population": 940,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 99
+   }
+  ]
+ },
+ {
+  "type": "AD",
+  "population": 85370,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "ca",
+    "populationPercent": 51,
+    "officialStatus": "official"
+   },
+   {
+    "type": "es",
+    "populationPercent": 43
+   },
+   {
+    "type": "fr",
+    "populationPercent": 6.8
+   }
+  ]
+ },
+ {
+  "type": "AE",
+  "population": 10032200,
+  "literacyPercent": 90,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 78,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 50
+   },
+   {
+    "type": "ml",
+    "populationPercent": 7
+   },
+   {
+    "type": "ps",
+    "populationPercent": 2.9
+   },
+   {
+    "type": "bal",
+    "populationPercent": 2.3
+   },
+   {
+    "type": "fa",
+    "populationPercent": 1.9
+   }
+  ]
+ },
+ {
+  "type": "AF",
+  "population": 40121600,
+  "literacyPercent": 28.1,
+  "languages": [
+   {
+    "type": "fa",
+    "populationPercent": 50,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ps",
+    "populationPercent": 43,
+    "officialStatus": "official"
+   },
+   {
+    "type": "haz",
+    "populationPercent": 5.9
+   },
+   {
+    "type": "uz_Arab",
+    "populationPercent": 4.7,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "tk",
+    "populationPercent": 1.7,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "prd",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "bgn",
+    "populationPercent": 0.63
+   },
+   {
+    "type": "kaa",
+    "populationPercent": 0.0084
+   },
+   {
+    "type": "ug",
+    "populationPercent": 0.0075
+   },
+   {
+    "type": "kk_Arab",
+    "populationPercent": 0.005
+   }
+  ]
+ },
+ {
+  "type": "AG",
+  "population": 102634,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 86,
+    "officialStatus": "official"
+   },
+   {
+    "type": "pt",
+    "populationPercent": 1.6
+   }
+  ]
+ },
+ {
+  "type": "AI",
+  "population": 19416,
+  "literacyPercent": 95,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "AL",
+  "population": 3107100,
+  "literacyPercent": 96.8,
+  "languages": [
+   {
+    "type": "sq",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "el",
+    "populationPercent": 1.9
+   },
+   {
+    "type": "mk",
+    "populationPercent": 0.47
+   }
+  ]
+ },
+ {
+  "type": "AM",
+  "population": 2976770,
+  "literacyPercent": 99.6,
+  "languages": [
+   {
+    "type": "hy",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ku",
+    "populationPercent": 3.3
+   },
+   {
+    "type": "az",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "AO",
+  "population": 37202100,
+  "literacyPercent": 70.4,
+  "languages": [
+   {
+    "type": "pt",
+    "populationPercent": 67,
+    "officialStatus": "official"
+   },
+   {
+    "type": "umb",
+    "populationPercent": 29
+   },
+   {
+    "type": "kmb",
+    "populationPercent": 25
+   },
+   {
+    "type": "ln",
+    "populationPercent": 0.67
+   }
+  ]
+ },
+ {
+  "type": "AQ",
+  "population": 300,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "und",
+    "populationPercent": 100
+   }
+  ]
+ },
+ {
+  "type": "AR",
+  "population": 46994400,
+  "literacyPercent": 97.9,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 7
+   },
+   {
+    "type": "cy",
+    "populationPercent": 0.066
+   },
+   {
+    "type": "gn",
+    "populationPercent": 0.047
+   }
+  ]
+ },
+ {
+  "type": "AS",
+  "population": 43895,
+  "literacyPercent": 97,
+  "languages": [
+   {
+    "type": "sm",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 97,
+    "officialStatus": "de_facto_official"
+   }
+  ]
+ },
+ {
+  "type": "AT",
+  "population": 8967980,
+  "literacyPercent": 98,
+  "languages": [
+   {
+    "type": "de",
+    "populationPercent": 97,
+    "officialStatus": "official"
+   },
+   {
+    "type": "bar",
+    "populationPercent": 95
+   },
+   {
+    "type": "en",
+    "populationPercent": 73
+   },
+   {
+    "type": "fr",
+    "populationPercent": 11
+   },
+   {
+    "type": "it",
+    "populationPercent": 9
+   },
+   {
+    "type": "hr",
+    "populationPercent": 1.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "sl",
+    "populationPercent": 0.37,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "hu",
+    "populationPercent": 0.26,
+    "officialStatus": "official_regional"
+   }
+  ]
+ },
+ {
+  "type": "AU",
+  "population": 26768600,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 96,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 2.1
+   },
+   {
+    "type": "it",
+    "populationPercent": 1.9
+   },
+   {
+    "type": "wbp",
+    "populationPercent": 0.0093
+   },
+   {
+    "type": "hnj",
+    "populationPercent": 0.0082
+   }
+  ]
+ },
+ {
+  "type": "AW",
+  "population": 125063,
+  "literacyPercent": 96.8,
+  "languages": [
+   {
+    "type": "nl",
+    "populationPercent": 97,
+    "officialStatus": "official"
+   },
+   {
+    "type": "pap",
+    "populationPercent": 61,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 2.4
+   }
+  ]
+ },
+ {
+  "type": "AX",
+  "population": 26200,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "sv",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "AZ",
+  "population": 10650200,
+  "literacyPercent": 99.8,
+  "languages": [
+   {
+    "type": "az",
+    "populationPercent": 89,
+    "officialStatus": "official"
+   },
+   {
+    "type": "az_Cyrl",
+    "populationPercent": 9.9,
+    "officialStatus": "official"
+   },
+   {
+    "type": "tly",
+    "populationPercent": 9.8
+   },
+   {
+    "type": "ku",
+    "populationPercent": 0.24
+   },
+   {
+    "type": "ttt",
+    "populationPercent": 0.22
+   },
+   {
+    "type": "tkr",
+    "populationPercent": 0.16
+   }
+  ]
+ },
+ {
+  "type": "BA",
+  "population": 3798670,
+  "literacyPercent": 98,
+  "languages": [
+   {
+    "type": "bs",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   },
+   {
+    "type": "bs_Cyrl",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 45
+   },
+   {
+    "type": "hr",
+    "populationPercent": 12,
+    "officialStatus": "official"
+   },
+   {
+    "type": "sr",
+    "populationPercent": 10,
+    "officialStatus": "official"
+   },
+   {
+    "type": "sr_Latn",
+    "populationPercent": 10,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "BB",
+  "population": 304139,
+  "literacyPercent": 99.7,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "BD",
+  "population": 168697000,
+  "literacyPercent": 57.7,
+  "languages": [
+   {
+    "type": "bn",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 18
+   },
+   {
+    "type": "rkt",
+    "populationPercent": 6.5
+   },
+   {
+    "type": "syl",
+    "populationPercent": 5
+   },
+   {
+    "type": "rhg",
+    "populationPercent": 0.53
+   },
+   {
+    "type": "ccp",
+    "populationPercent": 0.22
+   },
+   {
+    "type": "my",
+    "populationPercent": 0.21
+   },
+   {
+    "type": "grt",
+    "populationPercent": 0.073
+   },
+   {
+    "type": "mro",
+    "populationPercent": 0.018
+   },
+   {
+    "type": "mni",
+    "populationPercent": 0.011
+   }
+  ]
+ },
+ {
+  "type": "BE",
+  "population": 11977600,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 59
+   },
+   {
+    "type": "nl",
+    "populationPercent": 55,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 38,
+    "officialStatus": "official"
+   },
+   {
+    "type": "de",
+    "populationPercent": 22,
+    "officialStatus": "official"
+   },
+   {
+    "type": "vls",
+    "populationPercent": 10
+   },
+   {
+    "type": "wa",
+    "populationPercent": 5.8
+   }
+  ]
+ },
+ {
+  "type": "BF",
+  "population": 23042200,
+  "literacyPercent": 28.7,
+  "languages": [
+   {
+    "type": "mos",
+    "populationPercent": 40
+   },
+   {
+    "type": "dyu",
+    "populationPercent": 32
+   },
+   {
+    "type": "fr",
+    "populationPercent": 22,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ff",
+    "populationPercent": 0
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "BG",
+  "population": 6782660,
+  "literacyPercent": 98.4,
+  "languages": [
+   {
+    "type": "bg",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 25
+   },
+   {
+    "type": "ru",
+    "populationPercent": 23
+   },
+   {
+    "type": "tr",
+    "populationPercent": 11
+   },
+   {
+    "type": "de",
+    "populationPercent": 8
+   }
+  ]
+ },
+ {
+  "type": "BH",
+  "population": 1566890,
+  "literacyPercent": 94.6,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 87,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ml",
+    "populationPercent": 3.3
+   }
+  ]
+ },
+ {
+  "type": "BI",
+  "population": 13590100,
+  "literacyPercent": 67.2,
+  "languages": [
+   {
+    "type": "rn",
+    "populationPercent": 63,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 59,
+    "officialStatus": "official"
+   },
+   {
+    "type": "sw",
+    "populationPercent": 0.047
+   },
+   {
+    "type": "en",
+    "populationPercent": 0.046,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "BJ",
+  "population": 14697100,
+  "literacyPercent": 42.4,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 35,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fon",
+    "populationPercent": 25
+   },
+   {
+    "type": "yo",
+    "populationPercent": 6.7
+   },
+   {
+    "type": "blo",
+    "populationPercent": 0.3
+   }
+  ]
+ },
+ {
+  "type": "BL",
+  "population": 7086,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 97,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "BM",
+  "population": 72800,
+  "literacyPercent": 98,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 92,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "BN",
+  "population": 491900,
+  "literacyPercent": 95.4,
+  "languages": [
+   {
+    "type": "ms",
+    "populationPercent": 93,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 11
+   },
+   {
+    "type": "ms_Arab",
+    "populationPercent": 5,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 1.6
+   }
+  ]
+ },
+ {
+  "type": "BO",
+  "population": 12312000,
+  "literacyPercent": 91.2,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 61,
+    "officialStatus": "official"
+   },
+   {
+    "type": "qu",
+    "populationPercent": 32,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ay",
+    "populationPercent": 20,
+    "officialStatus": "official"
+   },
+   {
+    "type": "gn",
+    "populationPercent": 0.45
+   },
+   {
+    "type": "aro",
+    "populationPercent": 0.0009
+   }
+  ]
+ },
+ {
+  "type": "BQ",
+  "population": 20000,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "pap",
+    "populationPercent": 81
+   },
+   {
+    "type": "nl",
+    "populationPercent": 8,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "BR",
+  "population": 220052000,
+  "literacyPercent": 90.4,
+  "languages": [
+   {
+    "type": "pt",
+    "populationPercent": 91,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 8
+   },
+   {
+    "type": "de",
+    "populationPercent": 0.84
+   },
+   {
+    "type": "it",
+    "populationPercent": 0.28
+   },
+   {
+    "type": "vec",
+    "populationPercent": 0.24,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ja",
+    "populationPercent": 0.21
+   },
+   {
+    "type": "es",
+    "populationPercent": 0.036
+   },
+   {
+    "type": "kgp",
+    "populationPercent": 0.024
+   },
+   {
+    "type": "ko",
+    "populationPercent": 0.021
+   },
+   {
+    "type": "yrl",
+    "populationPercent": 0.01
+   },
+   {
+    "type": "gub",
+    "populationPercent": 0.0084
+   },
+   {
+    "type": "xav",
+    "populationPercent": 0.0045
+   }
+  ]
+ },
+ {
+  "type": "BS",
+  "population": 410862,
+  "literacyPercent": 95.6,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "BT",
+  "population": 884546,
+  "literacyPercent": 52.8,
+  "languages": [
+   {
+    "type": "dz",
+    "populationPercent": 47,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ne",
+    "populationPercent": 17
+   },
+   {
+    "type": "tsj",
+    "populationPercent": 15
+   },
+   {
+    "type": "en",
+    "populationPercent": 11
+   },
+   {
+    "type": "lep",
+    "populationPercent": 3.9
+   }
+  ]
+ },
+ {
+  "type": "BV",
+  "population": 1,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "und",
+    "populationPercent": 100
+   }
+  ]
+ },
+ {
+  "type": "BW",
+  "population": 2450670,
+  "literacyPercent": 85.1,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 81,
+    "officialStatus": "official"
+   },
+   {
+    "type": "tn",
+    "populationPercent": 62,
+    "officialStatus": "official"
+   },
+   {
+    "type": "af",
+    "populationPercent": 0.24
+   }
+  ]
+ },
+ {
+  "type": "BY",
+  "population": 9501450,
+  "literacyPercent": 99.6,
+  "languages": [
+   {
+    "type": "be",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ru",
+    "populationPercent": 12,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "BZ",
+  "population": 415789,
+  "literacyPercent": 76.9,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "es",
+    "populationPercent": 28
+   }
+  ]
+ },
+ {
+  "type": "CA",
+  "population": 38794800,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 86,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 30,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zh",
+    "populationPercent": 1.8
+   },
+   {
+    "type": "yue",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "es",
+    "populationPercent": 1.6
+   },
+   {
+    "type": "pa",
+    "populationPercent": 1.6
+   },
+   {
+    "type": "ar",
+    "populationPercent": 1.5
+   },
+   {
+    "type": "fil",
+    "populationPercent": 1.5
+   },
+   {
+    "type": "it",
+    "populationPercent": 0.91
+   },
+   {
+    "type": "de",
+    "populationPercent": 0.78
+   },
+   {
+    "type": "ur",
+    "populationPercent": 0.76
+   },
+   {
+    "type": "fa",
+    "populationPercent": 0.65
+   },
+   {
+    "type": "pt",
+    "populationPercent": 0.61
+   },
+   {
+    "type": "ru",
+    "populationPercent": 0.56
+   },
+   {
+    "type": "hi",
+    "populationPercent": 0.5
+   },
+   {
+    "type": "ta",
+    "populationPercent": 0.49
+   },
+   {
+    "type": "vi",
+    "populationPercent": 0.49
+   },
+   {
+    "type": "pl",
+    "populationPercent": 0.46
+   },
+   {
+    "type": "ko",
+    "populationPercent": 0.45
+   },
+   {
+    "type": "gu",
+    "populationPercent": 0.36
+   },
+   {
+    "type": "el",
+    "populationPercent": 0.33
+   },
+   {
+    "type": "ro",
+    "populationPercent": 0.27
+   },
+   {
+    "type": "bn",
+    "populationPercent": 0.24
+   },
+   {
+    "type": "pdt",
+    "populationPercent": 0.24
+   },
+   {
+    "type": "uk",
+    "populationPercent": 0.2
+   },
+   {
+    "type": "sr",
+    "populationPercent": 0.17
+   },
+   {
+    "type": "nl",
+    "populationPercent": 0.15
+   },
+   {
+    "type": "ja",
+    "populationPercent": 0.14
+   },
+   {
+    "type": "hu",
+    "populationPercent": 0.13
+   },
+   {
+    "type": "so",
+    "populationPercent": 0.13
+   },
+   {
+    "type": "hr",
+    "populationPercent": 0.12
+   },
+   {
+    "type": "iu",
+    "populationPercent": 0.12,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "iu_Latn",
+    "populationPercent": 0.12,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "tr",
+    "populationPercent": 0.1
+   },
+   {
+    "type": "oj",
+    "populationPercent": 0.063
+   },
+   {
+    "type": "ojs",
+    "populationPercent": 0.04
+   },
+   {
+    "type": "chp",
+    "populationPercent": 0.034,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "moe",
+    "populationPercent": 0.032
+   },
+   {
+    "type": "cr",
+    "populationPercent": 0.023,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "mic",
+    "populationPercent": 0.02
+   },
+   {
+    "type": "atj",
+    "populationPercent": 0.017
+   },
+   {
+    "type": "bla",
+    "populationPercent": 0.013
+   },
+   {
+    "type": "crk",
+    "populationPercent": 0.011
+   },
+   {
+    "type": "den",
+    "populationPercent": 0.0059,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "dgr",
+    "populationPercent": 0.0055,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "csw",
+    "populationPercent": 0.0046
+   },
+   {
+    "type": "moh",
+    "populationPercent": 0.0045
+   },
+   {
+    "type": "nsk",
+    "populationPercent": 0.0036
+   },
+   {
+    "type": "dak",
+    "populationPercent": 0.0031
+   },
+   {
+    "type": "clc",
+    "populationPercent": 0.0022
+   },
+   {
+    "type": "hur",
+    "populationPercent": 0.0018
+   },
+   {
+    "type": "crg",
+    "populationPercent": 0.0018
+   },
+   {
+    "type": "war",
+    "populationPercent": 0.0018
+   },
+   {
+    "type": "lil",
+    "populationPercent": 0.0014
+   },
+   {
+    "type": "oka",
+    "populationPercent": 0.0013
+   },
+   {
+    "type": "pqm",
+    "populationPercent": 0.0013
+   },
+   {
+    "type": "crl",
+    "populationPercent": 0.001
+   },
+   {
+    "type": "kwk",
+    "populationPercent": 0.001
+   },
+   {
+    "type": "gwi",
+    "populationPercent": 0.0007,
+    "officialStatus": "official_regional"
+   }
+  ]
+ },
+ {
+  "type": "CC",
+  "population": 593,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "ms_Arab",
+    "populationPercent": 84
+   },
+   {
+    "type": "en",
+    "populationPercent": 17,
+    "officialStatus": "de_facto_official"
+   }
+  ]
+ },
+ {
+  "type": "CD",
+  "population": 115403000,
+  "literacyPercent": 66.8,
+  "languages": [
+   {
+    "type": "sw",
+    "populationPercent": 50,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "lua",
+    "populationPercent": 9.6,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 3.8,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ln",
+    "populationPercent": 3.1,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "lu",
+    "populationPercent": 2.3
+   },
+   {
+    "type": "kg",
+    "populationPercent": 1.5,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "lol",
+    "populationPercent": 0.61
+   },
+   {
+    "type": "rw",
+    "populationPercent": 0.38
+   }
+  ]
+ },
+ {
+  "type": "CF",
+  "population": 5650960,
+  "literacyPercent": 56.6,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 49,
+    "officialStatus": "official"
+   },
+   {
+    "type": "sg",
+    "populationPercent": 49,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ln",
+    "populationPercent": 0.24
+   }
+  ]
+ },
+ {
+  "type": "CG",
+  "population": 6097670,
+  "literacyPercent": 83.8,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 84,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ln",
+    "populationPercent": 2.4
+   }
+  ]
+ },
+ {
+  "type": "CH",
+  "population": 8860570,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "de",
+    "populationPercent": 73,
+    "officialStatus": "official"
+   },
+   {
+    "type": "gsw",
+    "populationPercent": 65,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 61
+   },
+   {
+    "type": "fr",
+    "populationPercent": 21,
+    "officialStatus": "official"
+   },
+   {
+    "type": "it",
+    "populationPercent": 4.3,
+    "officialStatus": "official"
+   },
+   {
+    "type": "lmo",
+    "populationPercent": 4.1
+   },
+   {
+    "type": "pt",
+    "populationPercent": 3.4
+   },
+   {
+    "type": "rm",
+    "populationPercent": 0.5,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "rmo",
+    "populationPercent": 0.29
+   },
+   {
+    "type": "wae",
+    "populationPercent": 0.11
+   }
+  ]
+ },
+ {
+  "type": "CI",
+  "population": 29981800,
+  "literacyPercent": 56.9,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 49,
+    "officialStatus": "official"
+   },
+   {
+    "type": "bci",
+    "populationPercent": 11
+   },
+   {
+    "type": "sef",
+    "populationPercent": 4.3
+   },
+   {
+    "type": "dnj",
+    "populationPercent": 4
+   },
+   {
+    "type": "kfo",
+    "populationPercent": 0.23
+   },
+   {
+    "type": "bqv",
+    "populationPercent": 0.17
+   }
+  ]
+ },
+ {
+  "type": "CK",
+  "population": 7761,
+  "literacyPercent": 95,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "CL",
+  "population": 18664700,
+  "literacyPercent": 98.6,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 9.5
+   },
+   {
+    "type": "arn",
+    "populationPercent": 1.5
+   }
+  ]
+ },
+ {
+  "type": "CM",
+  "population": 30966100,
+  "literacyPercent": 71.3,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 68,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 38,
+    "officialStatus": "official"
+   },
+   {
+    "type": "bum",
+    "populationPercent": 4.6
+   },
+   {
+    "type": "ff",
+    "populationPercent": 3.6
+   },
+   {
+    "type": "ewo",
+    "populationPercent": 3.1
+   },
+   {
+    "type": "ybb",
+    "populationPercent": 1.6
+   },
+   {
+    "type": "bbj",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "nnh",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "bkm",
+    "populationPercent": 1.3
+   },
+   {
+    "type": "bas",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "bax",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "byv",
+    "populationPercent": 1.1
+   },
+   {
+    "type": "mua",
+    "populationPercent": 1
+   },
+   {
+    "type": "maf",
+    "populationPercent": 0.74
+   },
+   {
+    "type": "bfd",
+    "populationPercent": 0.57
+   },
+   {
+    "type": "bss",
+    "populationPercent": 0.54
+   },
+   {
+    "type": "kkj",
+    "populationPercent": 0.54
+   },
+   {
+    "type": "dua",
+    "populationPercent": 0.48
+   },
+   {
+    "type": "mgo",
+    "populationPercent": 0.47
+   },
+   {
+    "type": "ar",
+    "populationPercent": 0.39
+   },
+   {
+    "type": "jgo",
+    "populationPercent": 0.34
+   },
+   {
+    "type": "ksf",
+    "populationPercent": 0.32
+   },
+   {
+    "type": "ken",
+    "populationPercent": 0.25
+   },
+   {
+    "type": "agq",
+    "populationPercent": 0.14
+   },
+   {
+    "type": "ha_Arab",
+    "populationPercent": 0.14
+   },
+   {
+    "type": "nmg",
+    "populationPercent": 0.029
+   },
+   {
+    "type": "yav",
+    "populationPercent": 0.0074
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "CN",
+  "population": 1416040000,
+  "literacyPercent": 95.1,
+  "languages": [
+   {
+    "type": "zh",
+    "populationPercent": 90,
+    "officialStatus": "official"
+   },
+   {
+    "type": "wuu",
+    "populationPercent": 6
+   },
+   {
+    "type": "yue",
+    "populationPercent": 5.2
+   },
+   {
+    "type": "yue_Hans",
+    "populationPercent": 5.2
+   },
+   {
+    "type": "hsn",
+    "populationPercent": 2.9
+   },
+   {
+    "type": "hak",
+    "populationPercent": 2.3
+   },
+   {
+    "type": "nan",
+    "populationPercent": 1.9
+   },
+   {
+    "type": "gan",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "ii",
+    "populationPercent": 0.6
+   },
+   {
+    "type": "ug",
+    "populationPercent": 0.55,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "za",
+    "populationPercent": 0.31,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "mn_Mong",
+    "populationPercent": 0.26,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "bo",
+    "populationPercent": 0.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ko",
+    "populationPercent": 0.15,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "kk_Arab",
+    "populationPercent": 0.085
+   },
+   {
+    "type": "lis",
+    "populationPercent": 0.045
+   },
+   {
+    "type": "ky_Arab",
+    "populationPercent": 0.034
+   },
+   {
+    "type": "nxq",
+    "populationPercent": 0.024
+   },
+   {
+    "type": "khb",
+    "populationPercent": 0.019
+   },
+   {
+    "type": "tdd",
+    "populationPercent": 0.019
+   },
+   {
+    "type": "lcp",
+    "populationPercent": 0.0058
+   },
+   {
+    "type": "en",
+    "populationPercent": 0.0045
+   },
+   {
+    "type": "hnj",
+    "populationPercent": 0.004
+   },
+   {
+    "type": "ru",
+    "populationPercent": 0.001
+   },
+   {
+    "type": "vi",
+    "populationPercent": 0.0005
+   },
+   {
+    "type": "uz_Cyrl",
+    "populationPercent": 0.0004
+   },
+   {
+    "type": "lzh",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "CO",
+  "population": 49588400,
+  "literacyPercent": 93.6,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 93,
+    "officialStatus": "official"
+   },
+   {
+    "type": "guc",
+    "populationPercent": 0.27
+   },
+   {
+    "type": "yrl",
+    "populationPercent": 0.006
+   }
+  ]
+ },
+ {
+  "type": "CP",
+  "population": 1,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "und",
+    "populationPercent": 100
+   }
+  ]
+ },
+ {
+  "type": "CQ",
+  "population": 492,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "CR",
+  "population": 5265580,
+  "literacyPercent": 96.3,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "CU",
+  "population": 10966000,
+  "literacyPercent": 99.8,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "CV",
+  "population": 611014,
+  "literacyPercent": 84.9,
+  "languages": [
+   {
+    "type": "kea",
+    "populationPercent": 91
+   },
+   {
+    "type": "pt",
+    "populationPercent": 76,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "CW",
+  "population": 153289,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "pap",
+    "populationPercent": 81,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "nl",
+    "populationPercent": 8,
+    "officialStatus": "official"
+   },
+   {
+    "type": "es",
+    "populationPercent": 3.7
+   }
+  ]
+ },
+ {
+  "type": "CX",
+  "population": 1692,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 83,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "CY",
+  "population": 1320530,
+  "literacyPercent": 98.7,
+  "languages": [
+   {
+    "type": "el",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 73
+   },
+   {
+    "type": "tr",
+    "populationPercent": 23,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 7
+   },
+   {
+    "type": "hy",
+    "populationPercent": 0.21
+   },
+   {
+    "type": "ar",
+    "populationPercent": 0.098
+   }
+  ]
+ },
+ {
+  "type": "CZ",
+  "population": 10837900,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "cs",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 27
+   },
+   {
+    "type": "sk",
+    "populationPercent": 16
+   },
+   {
+    "type": "de",
+    "populationPercent": 15
+   },
+   {
+    "type": "pl",
+    "populationPercent": 0.49
+   }
+  ]
+ },
+ {
+  "type": "DE",
+  "population": 84119100,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "de",
+    "populationPercent": 91,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 64
+   },
+   {
+    "type": "fr",
+    "populationPercent": 18
+   },
+   {
+    "type": "bar",
+    "populationPercent": 17
+   },
+   {
+    "type": "nds",
+    "populationPercent": 12
+   },
+   {
+    "type": "nl",
+    "populationPercent": 9
+   },
+   {
+    "type": "it",
+    "populationPercent": 7
+   },
+   {
+    "type": "es",
+    "populationPercent": 6
+   },
+   {
+    "type": "ru",
+    "populationPercent": 6
+   },
+   {
+    "type": "vmf",
+    "populationPercent": 6
+   },
+   {
+    "type": "tr",
+    "populationPercent": 2.5
+   },
+   {
+    "type": "gsw",
+    "populationPercent": 2.3
+   },
+   {
+    "type": "da",
+    "populationPercent": 2
+   },
+   {
+    "type": "swg",
+    "populationPercent": 1
+   },
+   {
+    "type": "hr",
+    "populationPercent": 0.79
+   },
+   {
+    "type": "ku",
+    "populationPercent": 0.66
+   },
+   {
+    "type": "el",
+    "populationPercent": 0.38
+   },
+   {
+    "type": "ksh",
+    "populationPercent": 0.3
+   },
+   {
+    "type": "pl",
+    "populationPercent": 0.29
+   },
+   {
+    "type": "hsb",
+    "populationPercent": 0.016
+   },
+   {
+    "type": "frr",
+    "populationPercent": 0.012,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "dsb",
+    "populationPercent": 0.0083
+   },
+   {
+    "type": "frs",
+    "populationPercent": 0.0024
+   },
+   {
+    "type": "stq",
+    "populationPercent": 0.0012
+   },
+   {
+    "type": "pfl",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "DG",
+  "population": 500,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 99,
+    "officialStatus": "de_facto_official"
+   }
+  ]
+ },
+ {
+  "type": "DJ",
+  "population": 994974,
+  "literacyPercent": 67.9,
+  "languages": [
+   {
+    "type": "aa",
+    "populationPercent": 42
+   },
+   {
+    "type": "so",
+    "populationPercent": 41
+   },
+   {
+    "type": "ar",
+    "populationPercent": 7.3,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 2.1,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "DK",
+  "population": 5973140,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "da",
+    "populationPercent": 93,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 86
+   },
+   {
+    "type": "de",
+    "populationPercent": 47,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "sv",
+    "populationPercent": 13
+   },
+   {
+    "type": "fo",
+    "populationPercent": 0.38
+   },
+   {
+    "type": "kl",
+    "populationPercent": 0.12,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "jut",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "DM",
+  "population": 74661,
+  "literacyPercent": 94,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 94,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "DO",
+  "population": 10815900,
+  "literacyPercent": 90.1,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 78,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 0.074
+   }
+  ]
+ },
+ {
+  "type": "DZ",
+  "population": 47022500,
+  "literacyPercent": 72.6,
+  "languages": [
+   {
+    "type": "arq",
+    "populationPercent": 83
+   },
+   {
+    "type": "ar",
+    "populationPercent": 74,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 20,
+    "officialStatus": "official"
+   },
+   {
+    "type": "kab",
+    "populationPercent": 7.8
+   },
+   {
+    "type": "en",
+    "populationPercent": 7
+   }
+  ]
+ },
+ {
+  "type": "EA",
+  "population": 150000,
+  "literacyPercent": 97.7,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "EC",
+  "population": 18310000,
+  "literacyPercent": 91.6,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 96,
+    "officialStatus": "official"
+   },
+   {
+    "type": "qu",
+    "populationPercent": 17,
+    "officialStatus": "official"
+   },
+   {
+    "type": "qug",
+    "populationPercent": 5.7
+   }
+  ]
+ },
+ {
+  "type": "EE",
+  "population": 1193790,
+  "literacyPercent": 99.8,
+  "languages": [
+   {
+    "type": "et",
+    "populationPercent": 71,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ru",
+    "populationPercent": 56
+   },
+   {
+    "type": "en",
+    "populationPercent": 50
+   },
+   {
+    "type": "fi",
+    "populationPercent": 21
+   },
+   {
+    "type": "vro",
+    "populationPercent": 5.7
+   },
+   {
+    "type": "ie",
+    "populationPercent": 0.0001
+   }
+  ]
+ },
+ {
+  "type": "EG",
+  "population": 111247000,
+  "literacyPercent": 73.9,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 94,
+    "officialStatus": "official"
+   },
+   {
+    "type": "arz",
+    "populationPercent": 64
+   },
+   {
+    "type": "en",
+    "populationPercent": 35
+   },
+   {
+    "type": "el",
+    "populationPercent": 0.061
+   }
+  ]
+ },
+ {
+  "type": "EH",
+  "population": 652271,
+  "literacyPercent": 50,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "ER",
+  "population": 6343960,
+  "literacyPercent": 68.9,
+  "languages": [
+   {
+    "type": "ti",
+    "populationPercent": 60,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 59,
+    "officialStatus": "official"
+   },
+   {
+    "type": "tig",
+    "populationPercent": 18
+   },
+   {
+    "type": "ar",
+    "populationPercent": 4.9,
+    "officialStatus": "official"
+   },
+   {
+    "type": "aa",
+    "populationPercent": 3.6
+   },
+   {
+    "type": "ssy",
+    "populationPercent": 3.6
+   },
+   {
+    "type": "byn",
+    "populationPercent": 1.3
+   }
+  ]
+ },
+ {
+  "type": "ES",
+  "population": 47280400,
+  "literacyPercent": 97.7,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 24
+   },
+   {
+    "type": "ca",
+    "populationPercent": 17,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "gl",
+    "populationPercent": 7,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "eu",
+    "populationPercent": 2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ast",
+    "populationPercent": 1.3,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ext",
+    "populationPercent": 0.49
+   },
+   {
+    "type": "an",
+    "populationPercent": 0.052
+   },
+   {
+    "type": "oc",
+    "populationPercent": 0.01,
+    "officialStatus": "official_regional"
+   }
+  ]
+ },
+ {
+  "type": "ET",
+  "population": 118550000,
+  "literacyPercent": 39,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 43
+   },
+   {
+    "type": "am",
+    "populationPercent": 33,
+    "officialStatus": "official"
+   },
+   {
+    "type": "om",
+    "populationPercent": 32
+   },
+   {
+    "type": "so",
+    "populationPercent": 6
+   },
+   {
+    "type": "ti",
+    "populationPercent": 6
+   },
+   {
+    "type": "sid",
+    "populationPercent": 3.5
+   },
+   {
+    "type": "wal",
+    "populationPercent": 1.8
+   },
+   {
+    "type": "aa",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "gez",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "FI",
+  "population": 5626410,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "fi",
+    "populationPercent": 94,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 70
+   },
+   {
+    "type": "sv",
+    "populationPercent": 44,
+    "officialStatus": "official"
+   },
+   {
+    "type": "de",
+    "populationPercent": 18
+   },
+   {
+    "type": "ru",
+    "populationPercent": 0.81
+   },
+   {
+    "type": "et",
+    "populationPercent": 0.11
+   },
+   {
+    "type": "rmf",
+    "populationPercent": 0.089
+   },
+   {
+    "type": "se",
+    "populationPercent": 0.036
+   },
+   {
+    "type": "smn",
+    "populationPercent": 0.011
+   },
+   {
+    "type": "sms",
+    "populationPercent": 0.011,
+    "officialStatus": "official_regional"
+   }
+  ]
+ },
+ {
+  "type": "FJ",
+  "population": 951611,
+  "literacyPercent": 93.7,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 94,
+    "officialStatus": "official"
+   },
+   {
+    "type": "hi",
+    "populationPercent": 44
+   },
+   {
+    "type": "hif",
+    "populationPercent": 41,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fj",
+    "populationPercent": 39,
+    "officialStatus": "official"
+   },
+   {
+    "type": "rtm",
+    "populationPercent": 0.26
+   }
+  ]
+ },
+ {
+  "type": "FK",
+  "population": 3662,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 77,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "FM",
+  "population": 99603,
+  "literacyPercent": 89,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 57,
+    "officialStatus": "official"
+   },
+   {
+    "type": "chk",
+    "populationPercent": 30
+   },
+   {
+    "type": "pon",
+    "populationPercent": 23
+   },
+   {
+    "type": "kos",
+    "populationPercent": 8
+   },
+   {
+    "type": "yap",
+    "populationPercent": 6.6
+   },
+   {
+    "type": "uli",
+    "populationPercent": 3
+   }
+  ]
+ },
+ {
+  "type": "FO",
+  "population": 52933,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "fo",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "FR",
+  "population": 68374600,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 39
+   },
+   {
+    "type": "es",
+    "populationPercent": 13
+   },
+   {
+    "type": "de",
+    "populationPercent": 5
+   },
+   {
+    "type": "oc",
+    "populationPercent": 3
+   },
+   {
+    "type": "it",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "pt",
+    "populationPercent": 1.3
+   },
+   {
+    "type": "pcd",
+    "populationPercent": 1.1
+   },
+   {
+    "type": "gsw",
+    "populationPercent": 0.91
+   },
+   {
+    "type": "br",
+    "populationPercent": 0.83
+   },
+   {
+    "type": "co",
+    "populationPercent": 0.24
+   },
+   {
+    "type": "hnj",
+    "populationPercent": 0.19
+   },
+   {
+    "type": "ca",
+    "populationPercent": 0.17
+   },
+   {
+    "type": "nl",
+    "populationPercent": 0.13
+   },
+   {
+    "type": "eu",
+    "populationPercent": 0.13
+   },
+   {
+    "type": "frp",
+    "populationPercent": 0.094
+   },
+   {
+    "type": "ia",
+    "populationPercent": 0.0002
+   }
+  ]
+ },
+ {
+  "type": "GA",
+  "population": 2455110,
+  "literacyPercent": 89,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 63,
+    "officialStatus": "official"
+   },
+   {
+    "type": "puu",
+    "populationPercent": 9
+   }
+  ]
+ },
+ {
+  "type": "GB",
+  "population": 68459100,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 23
+   },
+   {
+    "type": "de",
+    "populationPercent": 9
+   },
+   {
+    "type": "es",
+    "populationPercent": 8
+   },
+   {
+    "type": "pl",
+    "populationPercent": 4
+   },
+   {
+    "type": "pa",
+    "populationPercent": 3.6
+   },
+   {
+    "type": "ur",
+    "populationPercent": 3.5
+   },
+   {
+    "type": "ta",
+    "populationPercent": 3.2
+   },
+   {
+    "type": "gu",
+    "populationPercent": 2.9
+   },
+   {
+    "type": "sco",
+    "populationPercent": 2.5
+   },
+   {
+    "type": "cy",
+    "populationPercent": 1.3,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ro",
+    "populationPercent": 0.8
+   },
+   {
+    "type": "bn",
+    "populationPercent": 0.4
+   },
+   {
+    "type": "ar",
+    "populationPercent": 0.3
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 0.3
+   },
+   {
+    "type": "it",
+    "populationPercent": 0.2
+   },
+   {
+    "type": "lt",
+    "populationPercent": 0.2
+   },
+   {
+    "type": "pt",
+    "populationPercent": 0.2
+   },
+   {
+    "type": "so",
+    "populationPercent": 0.2
+   },
+   {
+    "type": "tr",
+    "populationPercent": 0.2
+   },
+   {
+    "type": "ga",
+    "populationPercent": 0.15,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "gd",
+    "populationPercent": 0.11,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "kw",
+    "populationPercent": 0.0029
+   },
+   {
+    "type": "en_Shaw",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "GD",
+  "population": 114621,
+  "literacyPercent": 96,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 96,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "GE",
+  "population": 4900960,
+  "literacyPercent": 99.7,
+  "languages": [
+   {
+    "type": "ka",
+    "populationPercent": 86,
+    "officialStatus": "official"
+   },
+   {
+    "type": "xmf",
+    "populationPercent": 11
+   },
+   {
+    "type": "ru",
+    "populationPercent": 9
+   },
+   {
+    "type": "hy",
+    "populationPercent": 7
+   },
+   {
+    "type": "ab",
+    "populationPercent": 2.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "os",
+    "populationPercent": 2.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ku",
+    "populationPercent": 0.89
+   }
+  ]
+ },
+ {
+  "type": "GF",
+  "population": 199509,
+  "literacyPercent": 83,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 77,
+    "officialStatus": "official"
+   },
+   {
+    "type": "gcr",
+    "populationPercent": 26
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 2.5
+   },
+   {
+    "type": "hnj",
+    "populationPercent": 2.4
+   }
+  ]
+ },
+ {
+  "type": "GG",
+  "population": 67787,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "GH",
+  "population": 34589100,
+  "literacyPercent": 71.5,
+  "languages": [
+   {
+    "type": "ak",
+    "populationPercent": 39,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "en",
+    "populationPercent": 21,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ee",
+    "populationPercent": 11,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "abr",
+    "populationPercent": 5
+   },
+   {
+    "type": "gur",
+    "populationPercent": 3.5
+   },
+   {
+    "type": "ada",
+    "populationPercent": 3
+   },
+   {
+    "type": "gaa",
+    "populationPercent": 2.8,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "nzi",
+    "populationPercent": 1
+   },
+   {
+    "type": "ha",
+    "populationPercent": 0.86
+   },
+   {
+    "type": "saf",
+    "populationPercent": 0.012
+   },
+   {
+    "type": "ff",
+    "populationPercent": 0
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "GI",
+  "population": 29683,
+  "literacyPercent": 80,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 80,
+    "officialStatus": "official"
+   },
+   {
+    "type": "es",
+    "populationPercent": 50
+   }
+  ]
+ },
+ {
+  "type": "GL",
+  "population": 57751,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "kl",
+    "populationPercent": 84,
+    "officialStatus": "official"
+   },
+   {
+    "type": "da",
+    "populationPercent": 14
+   }
+  ]
+ },
+ {
+  "type": "GM",
+  "population": 2523330,
+  "literacyPercent": 51.1,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 40,
+    "officialStatus": "official"
+   },
+   {
+    "type": "man",
+    "populationPercent": 29
+   },
+   {
+    "type": "ff",
+    "populationPercent": 0
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "GN",
+  "population": 13986200,
+  "literacyPercent": 41,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 29,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ff",
+    "populationPercent": 26
+   },
+   {
+    "type": "man_Nkoo",
+    "populationPercent": 23
+   },
+   {
+    "type": "sus",
+    "populationPercent": 11
+   },
+   {
+    "type": "nqo",
+    "populationPercent": 5
+   },
+   {
+    "type": "kpe",
+    "populationPercent": 3.8
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "GP",
+  "population": 452776,
+  "literacyPercent": 90,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 90,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "GQ",
+  "population": 1795830,
+  "literacyPercent": 94.2,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 87,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fan",
+    "populationPercent": 51
+   },
+   {
+    "type": "fr",
+    "populationPercent": 8.8,
+    "officialStatus": "official"
+   },
+   {
+    "type": "bvb",
+    "populationPercent": 7.9
+   },
+   {
+    "type": "pt",
+    "populationPercent": 0.0001,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "GR",
+  "population": 10461100,
+  "literacyPercent": 97.3,
+  "languages": [
+   {
+    "type": "el",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 51
+   },
+   {
+    "type": "fr",
+    "populationPercent": 9
+   },
+   {
+    "type": "de",
+    "populationPercent": 5
+   },
+   {
+    "type": "pnt",
+    "populationPercent": 3.7
+   },
+   {
+    "type": "mk",
+    "populationPercent": 1.6
+   },
+   {
+    "type": "tr",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "bg",
+    "populationPercent": 0.27
+   },
+   {
+    "type": "sq",
+    "populationPercent": 0.096
+   },
+   {
+    "type": "tsd",
+    "populationPercent": 0.0019
+   }
+  ]
+ },
+ {
+  "type": "GS",
+  "population": 20,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "und",
+    "populationPercent": 100
+   }
+  ]
+ },
+ {
+  "type": "GT",
+  "population": 18255200,
+  "literacyPercent": 75.9,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 93,
+    "officialStatus": "official"
+   },
+   {
+    "type": "quc",
+    "populationPercent": 7,
+    "officialStatus": "official_regional"
+   }
+  ]
+ },
+ {
+  "type": "GU",
+  "population": 169532,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 91,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "ch",
+    "populationPercent": 22,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "GW",
+  "population": 2132330,
+  "literacyPercent": 55.3,
+  "languages": [
+   {
+    "type": "pt",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "knf",
+    "populationPercent": 2.6
+   },
+   {
+    "type": "ff",
+    "populationPercent": 0
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "GY",
+  "population": 794099,
+  "literacyPercent": 91.8,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "HK",
+  "population": 7297820,
+  "literacyPercent": 93.5,
+  "languages": [
+   {
+    "type": "zh_Hant",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   },
+   {
+    "type": "yue",
+    "populationPercent": 90
+   },
+   {
+    "type": "en",
+    "populationPercent": 51,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zh",
+    "populationPercent": 5
+   }
+  ]
+ },
+ {
+  "type": "HM",
+  "population": 1,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "und",
+    "populationPercent": 100
+   }
+  ]
+ },
+ {
+  "type": "HN",
+  "population": 9529190,
+  "literacyPercent": 85.1,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 78,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 0.44
+   }
+  ]
+ },
+ {
+  "type": "HR",
+  "population": 4150120,
+  "literacyPercent": 98.9,
+  "languages": [
+   {
+    "type": "hr",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 49
+   },
+   {
+    "type": "it",
+    "populationPercent": 1.6,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "vec",
+    "populationPercent": 0.7,
+    "officialStatus": "official_regional"
+   }
+  ]
+ },
+ {
+  "type": "HT",
+  "population": 11753900,
+  "literacyPercent": 48.7,
+  "languages": [
+   {
+    "type": "ht",
+    "populationPercent": 81,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 4.7,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "HU",
+  "population": 9855750,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "hu",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 20
+   },
+   {
+    "type": "de",
+    "populationPercent": 18
+   },
+   {
+    "type": "fr",
+    "populationPercent": 3
+   },
+   {
+    "type": "ro",
+    "populationPercent": 0.99
+   },
+   {
+    "type": "hr",
+    "populationPercent": 0.32
+   },
+   {
+    "type": "sk",
+    "populationPercent": 0.12
+   },
+   {
+    "type": "sl",
+    "populationPercent": 0.051
+   }
+  ]
+ },
+ {
+  "type": "IC",
+  "population": 2098590,
+  "literacyPercent": 97.7,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "ID",
+  "population": 281562000,
+  "literacyPercent": 92.8,
+  "languages": [
+   {
+    "type": "id",
+    "populationPercent": 64,
+    "officialStatus": "official"
+   },
+   {
+    "type": "jv",
+    "populationPercent": 34
+   },
+   {
+    "type": "su",
+    "populationPercent": 12
+   },
+   {
+    "type": "mad",
+    "populationPercent": 6.3
+   },
+   {
+    "type": "ms",
+    "populationPercent": 3.4
+   },
+   {
+    "type": "min",
+    "populationPercent": 3
+   },
+   {
+    "type": "bew",
+    "populationPercent": 2.1
+   },
+   {
+    "type": "ban",
+    "populationPercent": 1.8
+   },
+   {
+    "type": "bug",
+    "populationPercent": 1.6
+   },
+   {
+    "type": "bjn",
+    "populationPercent": 1.5
+   },
+   {
+    "type": "ace",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "ms_Arab",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "sas",
+    "populationPercent": 0.97
+   },
+   {
+    "type": "bbc",
+    "populationPercent": 0.92
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 0.92
+   },
+   {
+    "type": "mak",
+    "populationPercent": 0.73
+   },
+   {
+    "type": "ljp",
+    "populationPercent": 0.69
+   },
+   {
+    "type": "rej",
+    "populationPercent": 0.46
+   },
+   {
+    "type": "gor",
+    "populationPercent": 0.41
+   },
+   {
+    "type": "nij",
+    "populationPercent": 0.37
+   },
+   {
+    "type": "kge",
+    "populationPercent": 0.32
+   },
+   {
+    "type": "aoz",
+    "populationPercent": 0.27
+   },
+   {
+    "type": "kvr",
+    "populationPercent": 0.14
+   },
+   {
+    "type": "lbw",
+    "populationPercent": 0.13
+   },
+   {
+    "type": "gay",
+    "populationPercent": 0.12
+   },
+   {
+    "type": "rob",
+    "populationPercent": 0.11
+   },
+   {
+    "type": "mdr",
+    "populationPercent": 0.092
+   },
+   {
+    "type": "sxn",
+    "populationPercent": 0.092
+   },
+   {
+    "type": "sly",
+    "populationPercent": 0.054
+   },
+   {
+    "type": "mwv",
+    "populationPercent": 0.024
+   }
+  ]
+ },
+ {
+  "type": "IE",
+  "population": 5233460,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ga",
+    "populationPercent": 22,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 17
+   }
+  ]
+ },
+ {
+  "type": "IL",
+  "population": 9402620,
+  "literacyPercent": 97.1,
+  "languages": [
+   {
+    "type": "he",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 85
+   },
+   {
+    "type": "ar",
+    "populationPercent": 20,
+    "officialStatus": "official"
+   },
+   {
+    "type": "apc",
+    "populationPercent": 17
+   },
+   {
+    "type": "ru",
+    "populationPercent": 11
+   },
+   {
+    "type": "ro",
+    "populationPercent": 3.7
+   },
+   {
+    "type": "yi",
+    "populationPercent": 3
+   },
+   {
+    "type": "pl",
+    "populationPercent": 1.5
+   },
+   {
+    "type": "lad",
+    "populationPercent": 1.3
+   },
+   {
+    "type": "hu",
+    "populationPercent": 1
+   },
+   {
+    "type": "am",
+    "populationPercent": 0.59
+   },
+   {
+    "type": "ti",
+    "populationPercent": 0.11
+   },
+   {
+    "type": "ml",
+    "populationPercent": 0.085
+   }
+  ]
+ },
+ {
+  "type": "IM",
+  "population": 92269,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "gv",
+    "populationPercent": 1.8,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "IN",
+  "population": 1409130000,
+  "literacyPercent": 62.8,
+  "languages": [
+   {
+    "type": "hi",
+    "populationPercent": 41,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 19,
+    "officialStatus": "official"
+   },
+   {
+    "type": "bn",
+    "populationPercent": 8.1,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "te",
+    "populationPercent": 7.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "mr",
+    "populationPercent": 7,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ta",
+    "populationPercent": 5.9,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ur",
+    "populationPercent": 5,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "gu",
+    "populationPercent": 4.5,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "kn",
+    "populationPercent": 3.7,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ml",
+    "populationPercent": 3.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "or",
+    "populationPercent": 3.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "pa",
+    "populationPercent": 2.8,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "bho",
+    "populationPercent": 2.3
+   },
+   {
+    "type": "awa",
+    "populationPercent": 1.9
+   },
+   {
+    "type": "as",
+    "populationPercent": 1.3,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "bgc",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "mag",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "mwr",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "mai",
+    "populationPercent": 1.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "hne",
+    "populationPercent": 1.1
+   },
+   {
+    "type": "dcc",
+    "populationPercent": 0.99
+   },
+   {
+    "type": "bjj",
+    "populationPercent": 0.56
+   },
+   {
+    "type": "ne",
+    "populationPercent": 0.56,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "sat",
+    "populationPercent": 0.55,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "wtm",
+    "populationPercent": 0.46
+   },
+   {
+    "type": "rkt",
+    "populationPercent": 0.43
+   },
+   {
+    "type": "ks",
+    "populationPercent": 0.41,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "knn",
+    "populationPercent": 0.37
+   },
+   {
+    "type": "kok",
+    "populationPercent": 0.32,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "swv",
+    "populationPercent": 0.28
+   },
+   {
+    "type": "gbm",
+    "populationPercent": 0.27
+   },
+   {
+    "type": "lmn",
+    "populationPercent": 0.27
+   },
+   {
+    "type": "sd",
+    "populationPercent": 0.26,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "gon",
+    "populationPercent": 0.24
+   },
+   {
+    "type": "kfy",
+    "populationPercent": 0.22
+   },
+   {
+    "type": "doi",
+    "populationPercent": 0.2
+   },
+   {
+    "type": "kru",
+    "populationPercent": 0.19
+   },
+   {
+    "type": "sck",
+    "populationPercent": 0.18
+   },
+   {
+    "type": "wbq",
+    "populationPercent": 0.18
+   },
+   {
+    "type": "xnr",
+    "populationPercent": 0.16
+   },
+   {
+    "type": "tcy",
+    "populationPercent": 0.15
+   },
+   {
+    "type": "wbr",
+    "populationPercent": 0.15
+   },
+   {
+    "type": "khn",
+    "populationPercent": 0.15
+   },
+   {
+    "type": "sd_Deva",
+    "populationPercent": 0.14,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "brx",
+    "populationPercent": 0.14
+   },
+   {
+    "type": "noe",
+    "populationPercent": 0.13
+   },
+   {
+    "type": "bhb",
+    "populationPercent": 0.12
+   },
+   {
+    "type": "mni",
+    "populationPercent": 0.11
+   },
+   {
+    "type": "raj",
+    "populationPercent": 0.1
+   },
+   {
+    "type": "hi_Latn",
+    "populationPercent": 0.1
+   },
+   {
+    "type": "hoc",
+    "populationPercent": 0.099
+   },
+   {
+    "type": "mtr",
+    "populationPercent": 0.097
+   },
+   {
+    "type": "unr",
+    "populationPercent": 0.094
+   },
+   {
+    "type": "bhi",
+    "populationPercent": 0.092
+   },
+   {
+    "type": "hoj",
+    "populationPercent": 0.082
+   },
+   {
+    "type": "kha",
+    "populationPercent": 0.08,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "kfr",
+    "populationPercent": 0.075
+   },
+   {
+    "type": "grt",
+    "populationPercent": 0.053
+   },
+   {
+    "type": "unx",
+    "populationPercent": 0.048
+   },
+   {
+    "type": "bfy",
+    "populationPercent": 0.037
+   },
+   {
+    "type": "srx",
+    "populationPercent": 0.035
+   },
+   {
+    "type": "saz",
+    "populationPercent": 0.029
+   },
+   {
+    "type": "ccp",
+    "populationPercent": 0.028
+   },
+   {
+    "type": "bfq",
+    "populationPercent": 0.023
+   },
+   {
+    "type": "njo",
+    "populationPercent": 0.023
+   },
+   {
+    "type": "ria",
+    "populationPercent": 0.013
+   },
+   {
+    "type": "bo",
+    "populationPercent": 0.011
+   },
+   {
+    "type": "bpy",
+    "populationPercent": 0.0068
+   },
+   {
+    "type": "bft",
+    "populationPercent": 0.0062
+   },
+   {
+    "type": "bra",
+    "populationPercent": 0.0041
+   },
+   {
+    "type": "lep",
+    "populationPercent": 0.0035
+   },
+   {
+    "type": "kxv",
+    "populationPercent": 0.0029
+   },
+   {
+    "type": "btv",
+    "populationPercent": 0.0026
+   },
+   {
+    "type": "lif",
+    "populationPercent": 0.0026
+   },
+   {
+    "type": "lah",
+    "populationPercent": 0.0025
+   },
+   {
+    "type": "sa",
+    "populationPercent": 0.0012,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "kht",
+    "populationPercent": 0.0006
+   },
+   {
+    "type": "dv",
+    "populationPercent": 0.0003
+   },
+   {
+    "type": "dz",
+    "populationPercent": 0.0002
+   }
+  ]
+ },
+ {
+  "type": "IO",
+  "population": 3500,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "IQ",
+  "population": 42083400,
+  "literacyPercent": 78.5,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 68,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 35
+   },
+   {
+    "type": "ckb",
+    "populationPercent": 20,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "az_Arab",
+    "populationPercent": 1.8,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "fa",
+    "populationPercent": 0.87
+   },
+   {
+    "type": "lrc",
+    "populationPercent": 0.61
+   },
+   {
+    "type": "syr",
+    "populationPercent": 0.5
+   }
+  ]
+ },
+ {
+  "type": "IR",
+  "population": 88386900,
+  "literacyPercent": 85,
+  "languages": [
+   {
+    "type": "fa",
+    "populationPercent": 75,
+    "officialStatus": "official"
+   },
+   {
+    "type": "az_Arab",
+    "populationPercent": 24
+   },
+   {
+    "type": "mzn",
+    "populationPercent": 5
+   },
+   {
+    "type": "glk",
+    "populationPercent": 4.6
+   },
+   {
+    "type": "ckb",
+    "populationPercent": 3.9
+   },
+   {
+    "type": "sdh",
+    "populationPercent": 3.7
+   },
+   {
+    "type": "tk",
+    "populationPercent": 2.8
+   },
+   {
+    "type": "lrc",
+    "populationPercent": 2.1
+   },
+   {
+    "type": "ar",
+    "populationPercent": 2
+   },
+   {
+    "type": "bal",
+    "populationPercent": 2
+   },
+   {
+    "type": "rmt",
+    "populationPercent": 1.9
+   },
+   {
+    "type": "bqi",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "luz",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "lki",
+    "populationPercent": 0.76
+   },
+   {
+    "type": "kaa",
+    "populationPercent": 0.67
+   },
+   {
+    "type": "bgn",
+    "populationPercent": 0.56
+   },
+   {
+    "type": "prd",
+    "populationPercent": 0.5
+   },
+   {
+    "type": "hy",
+    "populationPercent": 0.24
+   },
+   {
+    "type": "ps",
+    "populationPercent": 0.16
+   },
+   {
+    "type": "ka",
+    "populationPercent": 0.071
+   },
+   {
+    "type": "gbz",
+    "populationPercent": 0.0091
+   },
+   {
+    "type": "kk_Arab",
+    "populationPercent": 0.0034
+   }
+  ]
+ },
+ {
+  "type": "IS",
+  "population": 364036,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "is",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "da",
+    "populationPercent": 0.62
+   }
+  ]
+ },
+ {
+  "type": "IT",
+  "population": 60964900,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "it",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 34
+   },
+   {
+    "type": "fr",
+    "populationPercent": 6.3,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "lmo",
+    "populationPercent": 5.7
+   },
+   {
+    "type": "sc",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "de",
+    "populationPercent": 1.6
+   },
+   {
+    "type": "vec",
+    "populationPercent": 1.3,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "nap",
+    "populationPercent": 0.97
+   },
+   {
+    "type": "lij",
+    "populationPercent": 0.86
+   },
+   {
+    "type": "scn",
+    "populationPercent": 0.82
+   },
+   {
+    "type": "sl",
+    "populationPercent": 0.17
+   },
+   {
+    "type": "sdc",
+    "populationPercent": 0.17
+   },
+   {
+    "type": "fur",
+    "populationPercent": 0.06
+   },
+   {
+    "type": "egl",
+    "populationPercent": 0.05
+   },
+   {
+    "type": "lld",
+    "populationPercent": 0.048
+   },
+   {
+    "type": "ca",
+    "populationPercent": 0.035
+   },
+   {
+    "type": "el",
+    "populationPercent": 0.035
+   },
+   {
+    "type": "pms",
+    "populationPercent": 0.01
+   },
+   {
+    "type": "hr",
+    "populationPercent": 0.0057
+   },
+   {
+    "type": "mhn",
+    "populationPercent": 0.0023
+   },
+   {
+    "type": "rgn",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "JE",
+  "population": 103387,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "JM",
+  "population": 2823710,
+  "literacyPercent": 87,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   },
+   {
+    "type": "jam",
+    "populationPercent": 95
+   }
+  ]
+ },
+ {
+  "type": "JO",
+  "population": 11174000,
+  "literacyPercent": 95.9,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "apc",
+    "populationPercent": 66
+   },
+   {
+    "type": "en",
+    "populationPercent": 45
+   }
+  ]
+ },
+ {
+  "type": "JP",
+  "population": 123202000,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "ja",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ryu",
+    "populationPercent": 0.77
+   },
+   {
+    "type": "ko",
+    "populationPercent": 0.52
+   }
+  ]
+ },
+ {
+  "type": "KE",
+  "population": 58246400,
+  "literacyPercent": 87.4,
+  "languages": [
+   {
+    "type": "sw",
+    "populationPercent": 66,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 19,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ki",
+    "populationPercent": 17
+   },
+   {
+    "type": "luy",
+    "populationPercent": 11
+   },
+   {
+    "type": "luo",
+    "populationPercent": 9.8
+   },
+   {
+    "type": "kam",
+    "populationPercent": 7.6
+   },
+   {
+    "type": "kln",
+    "populationPercent": 7.6
+   },
+   {
+    "type": "guz",
+    "populationPercent": 4.9
+   },
+   {
+    "type": "mer",
+    "populationPercent": 4
+   },
+   {
+    "type": "mas",
+    "populationPercent": 1.6
+   },
+   {
+    "type": "ebu",
+    "populationPercent": 1.5
+   },
+   {
+    "type": "so",
+    "populationPercent": 1.3
+   },
+   {
+    "type": "dav",
+    "populationPercent": 0.82
+   },
+   {
+    "type": "teo",
+    "populationPercent": 0.74
+   },
+   {
+    "type": "pko",
+    "populationPercent": 0.69
+   },
+   {
+    "type": "om",
+    "populationPercent": 0.47
+   },
+   {
+    "type": "saq",
+    "populationPercent": 0.46
+   },
+   {
+    "type": "ar",
+    "populationPercent": 0.046
+   },
+   {
+    "type": "pa",
+    "populationPercent": 0.017
+   },
+   {
+    "type": "gu",
+    "populationPercent": 0.0086
+   }
+  ]
+ },
+ {
+  "type": "KG",
+  "population": 6172100,
+  "literacyPercent": 99.2,
+  "languages": [
+   {
+    "type": "ky",
+    "populationPercent": 48,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ru",
+    "populationPercent": 36,
+    "officialStatus": "official"
+   },
+   {
+    "type": "kaa",
+    "populationPercent": 0.019
+   }
+  ]
+ },
+ {
+  "type": "KH",
+  "population": 17063700,
+  "literacyPercent": 73.9,
+  "languages": [
+   {
+    "type": "km",
+    "populationPercent": 89,
+    "officialStatus": "official"
+   },
+   {
+    "type": "cja",
+    "populationPercent": 1.6
+   },
+   {
+    "type": "kdt",
+    "populationPercent": 0.11
+   }
+  ]
+ },
+ {
+  "type": "KI",
+  "population": 116545,
+  "literacyPercent": 96.8,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "gil",
+    "populationPercent": 60,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "KM",
+  "population": 900141,
+  "literacyPercent": 75.5,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 66,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 56,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zdj",
+    "populationPercent": 37,
+    "officialStatus": "official"
+   },
+   {
+    "type": "wni",
+    "populationPercent": 34,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "KN",
+  "population": 55133,
+  "literacyPercent": 97.8,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "KP",
+  "population": 26298700,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "ko",
+    "populationPercent": 88,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "KR",
+  "population": 52081800,
+  "literacyPercent": 97.9,
+  "languages": [
+   {
+    "type": "ko",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "KW",
+  "population": 3138360,
+  "literacyPercent": 93.9,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "KY",
+  "population": 66653,
+  "literacyPercent": 98.9,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "KZ",
+  "population": 20260000,
+  "literacyPercent": 99.7,
+  "languages": [
+   {
+    "type": "ru",
+    "populationPercent": 72,
+    "officialStatus": "official"
+   },
+   {
+    "type": "kk",
+    "populationPercent": 64,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 15
+   },
+   {
+    "type": "de",
+    "populationPercent": 6.4
+   },
+   {
+    "type": "ug_Cyrl",
+    "populationPercent": 2
+   },
+   {
+    "type": "kaa",
+    "populationPercent": 0.018
+   }
+  ]
+ },
+ {
+  "type": "LA",
+  "population": 7953560,
+  "literacyPercent": 72.7,
+  "languages": [
+   {
+    "type": "lo",
+    "populationPercent": 69,
+    "officialStatus": "official"
+   },
+   {
+    "type": "kjg",
+    "populationPercent": 5.8
+   },
+   {
+    "type": "hnj",
+    "populationPercent": 3
+   },
+   {
+    "type": "kdt",
+    "populationPercent": 0.96
+   }
+  ]
+ },
+ {
+  "type": "LB",
+  "population": 5364480,
+  "literacyPercent": 89.6,
+  "languages": [
+   {
+    "type": "apc",
+    "populationPercent": 100
+   },
+   {
+    "type": "ar",
+    "populationPercent": 86,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 40
+   },
+   {
+    "type": "hy",
+    "populationPercent": 5.2
+   },
+   {
+    "type": "ku_Arab",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "fr",
+    "populationPercent": 0.37
+   }
+  ]
+ },
+ {
+  "type": "LC",
+  "population": 168038,
+  "literacyPercent": 90.1,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 90,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "LI",
+  "population": 40272,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "de",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "gsw",
+    "populationPercent": 85,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "wae",
+    "populationPercent": 3.2
+   }
+  ]
+ },
+ {
+  "type": "LK",
+  "population": 21982600,
+  "literacyPercent": 91.2,
+  "languages": [
+   {
+    "type": "si",
+    "populationPercent": 68,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ta",
+    "populationPercent": 15,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 10
+   }
+  ]
+ },
+ {
+  "type": "LR",
+  "population": 5437250,
+  "literacyPercent": 60.8,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 83,
+    "officialStatus": "official"
+   },
+   {
+    "type": "kpe",
+    "populationPercent": 14
+   },
+   {
+    "type": "vai",
+    "populationPercent": 2.6
+   },
+   {
+    "type": "men",
+    "populationPercent": 0.48
+   },
+   {
+    "type": "ff",
+    "populationPercent": 0
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   },
+   {
+    "type": "vai_Latn",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "LS",
+  "population": 2227550,
+  "literacyPercent": 89.6,
+  "languages": [
+   {
+    "type": "st",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 27,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zu",
+    "populationPercent": 14
+   },
+   {
+    "type": "ss",
+    "populationPercent": 2.4
+   },
+   {
+    "type": "xh",
+    "populationPercent": 0.99
+   }
+  ]
+ },
+ {
+  "type": "LT",
+  "population": 2628190,
+  "literacyPercent": 99.7,
+  "languages": [
+   {
+    "type": "lt",
+    "populationPercent": 86,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ru",
+    "populationPercent": 80
+   },
+   {
+    "type": "en",
+    "populationPercent": 38
+   },
+   {
+    "type": "de",
+    "populationPercent": 14
+   },
+   {
+    "type": "sgs",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "LU",
+  "population": 671254,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 87,
+    "officialStatus": "official"
+   },
+   {
+    "type": "lb",
+    "populationPercent": 67,
+    "officialStatus": "official"
+   },
+   {
+    "type": "de",
+    "populationPercent": 63,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 56
+   },
+   {
+    "type": "pt",
+    "populationPercent": 16
+   }
+  ]
+ },
+ {
+  "type": "LV",
+  "population": 1801250,
+  "literacyPercent": 99.8,
+  "languages": [
+   {
+    "type": "lv",
+    "populationPercent": 61,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 46
+   },
+   {
+    "type": "ru",
+    "populationPercent": 38
+   },
+   {
+    "type": "ltg",
+    "populationPercent": 8.9
+   }
+  ]
+ },
+ {
+  "type": "LY",
+  "population": 7361260,
+  "literacyPercent": 89.5,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 74,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "MA",
+  "population": 37387600,
+  "literacyPercent": 67.1,
+  "languages": [
+   {
+    "type": "ary",
+    "populationPercent": 87
+   },
+   {
+    "type": "ar",
+    "populationPercent": 62,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zgh",
+    "populationPercent": 22
+   },
+   {
+    "type": "fr",
+    "populationPercent": 20,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 14
+   },
+   {
+    "type": "tzm",
+    "populationPercent": 9.8,
+    "officialStatus": "official"
+   },
+   {
+    "type": "shi",
+    "populationPercent": 8.7
+   },
+   {
+    "type": "shi_Latn",
+    "populationPercent": 8.7
+   },
+   {
+    "type": "rif",
+    "populationPercent": 4.9
+   },
+   {
+    "type": "rif_Tfng",
+    "populationPercent": 4.9
+   },
+   {
+    "type": "es",
+    "populationPercent": 0.065
+   }
+  ]
+ },
+ {
+  "type": "MC",
+  "population": 31813,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "MD",
+  "population": 3599530,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "ro",
+    "populationPercent": 63,
+    "officialStatus": "official"
+   },
+   {
+    "type": "uk",
+    "populationPercent": 14
+   },
+   {
+    "type": "bg",
+    "populationPercent": 9.4
+   },
+   {
+    "type": "gag",
+    "populationPercent": 3.3
+   },
+   {
+    "type": "ru",
+    "populationPercent": 3
+   }
+  ]
+ },
+ {
+  "type": "ME",
+  "population": 599849,
+  "literacyPercent": 98.5,
+  "languages": [
+   {
+    "type": "sr_Latn",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "sq",
+    "populationPercent": 7.9
+   },
+   {
+    "type": "sr",
+    "populationPercent": 5
+   }
+  ]
+ },
+ {
+  "type": "MF",
+  "population": 32996,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "MG",
+  "population": 29452700,
+  "literacyPercent": 64.5,
+  "languages": [
+   {
+    "type": "mg",
+    "populationPercent": 90,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 69,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 18,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "MH",
+  "population": 82011,
+  "literacyPercent": 93.7,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 93,
+    "officialStatus": "official"
+   },
+   {
+    "type": "mh",
+    "populationPercent": 73,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "MK",
+  "population": 2135620,
+  "literacyPercent": 97.4,
+  "languages": [
+   {
+    "type": "mk",
+    "populationPercent": 67,
+    "officialStatus": "official"
+   },
+   {
+    "type": "sq",
+    "populationPercent": 25,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "tr",
+    "populationPercent": 3.5
+   }
+  ]
+ },
+ {
+  "type": "ML",
+  "population": 21990600,
+  "literacyPercent": 33.4,
+  "languages": [
+   {
+    "type": "bm",
+    "populationPercent": 46
+   },
+   {
+    "type": "fr",
+    "populationPercent": 46,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ffm",
+    "populationPercent": 7.7
+   },
+   {
+    "type": "snk",
+    "populationPercent": 5.9
+   },
+   {
+    "type": "mwk",
+    "populationPercent": 5
+   },
+   {
+    "type": "ses",
+    "populationPercent": 3.4
+   },
+   {
+    "type": "tmh",
+    "populationPercent": 2.1
+   },
+   {
+    "type": "bm_Nkoo",
+    "populationPercent": 2
+   },
+   {
+    "type": "khq",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "dtm",
+    "populationPercent": 1.1
+   },
+   {
+    "type": "kao",
+    "populationPercent": 1
+   },
+   {
+    "type": "ar",
+    "populationPercent": 0.9
+   },
+   {
+    "type": "bmq",
+    "populationPercent": 0.86
+   },
+   {
+    "type": "bze",
+    "populationPercent": 0.85
+   }
+  ]
+ },
+ {
+  "type": "MM",
+  "population": 57527100,
+  "literacyPercent": 92.7,
+  "languages": [
+   {
+    "type": "my",
+    "populationPercent": 64,
+    "officialStatus": "official"
+   },
+   {
+    "type": "shn",
+    "populationPercent": 6.4
+   },
+   {
+    "type": "kac",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "rhg",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "mnw",
+    "populationPercent": 1.5
+   },
+   {
+    "type": "hnj",
+    "populationPercent": 0.022
+   },
+   {
+    "type": "kht",
+    "populationPercent": 0.0074
+   }
+  ]
+ },
+ {
+  "type": "MN",
+  "population": 3281680,
+  "literacyPercent": 97.4,
+  "languages": [
+   {
+    "type": "mn",
+    "populationPercent": 93,
+    "officialStatus": "official"
+   },
+   {
+    "type": "kk_Arab",
+    "populationPercent": 7.2
+   },
+   {
+    "type": "zh",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "ru",
+    "populationPercent": 0.12
+   },
+   {
+    "type": "ug_Cyrl",
+    "populationPercent": 0.03
+   }
+  ]
+ },
+ {
+  "type": "MO",
+  "population": 644426,
+  "literacyPercent": 95.6,
+  "languages": [
+   {
+    "type": "zh_Hant",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   },
+   {
+    "type": "pt",
+    "populationPercent": 5,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zh",
+    "populationPercent": 5
+   },
+   {
+    "type": "en",
+    "populationPercent": 2.3
+   }
+  ]
+ },
+ {
+  "type": "MP",
+  "population": 51118,
+  "literacyPercent": 97,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 97,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "ch",
+    "populationPercent": 18
+   }
+  ]
+ },
+ {
+  "type": "MQ",
+  "population": 436131,
+  "literacyPercent": 98,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "MR",
+  "population": 4328040,
+  "literacyPercent": 58.6,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 85,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 17
+   },
+   {
+    "type": "ff",
+    "populationPercent": 5.7
+   },
+   {
+    "type": "wo",
+    "populationPercent": 0.23
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "MS",
+  "population": 5468,
+  "literacyPercent": 97,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 64,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "MT",
+  "population": 469730,
+  "literacyPercent": 92.4,
+  "languages": [
+   {
+    "type": "mt",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 88,
+    "officialStatus": "official"
+   },
+   {
+    "type": "it",
+    "populationPercent": 56
+   },
+   {
+    "type": "fr",
+    "populationPercent": 11
+   }
+  ]
+ },
+ {
+  "type": "MU",
+  "population": 1310500,
+  "literacyPercent": 88.8,
+  "languages": [
+   {
+    "type": "mfe",
+    "populationPercent": 90
+   },
+   {
+    "type": "en",
+    "populationPercent": 72,
+    "officialStatus": "official"
+   },
+   {
+    "type": "bho",
+    "populationPercent": 27
+   },
+   {
+    "type": "ur",
+    "populationPercent": 5.2
+   },
+   {
+    "type": "fr",
+    "populationPercent": 3,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ta",
+    "populationPercent": 2.5
+   }
+  ]
+ },
+ {
+  "type": "MV",
+  "population": 388858,
+  "literacyPercent": 98.4,
+  "languages": [
+   {
+    "type": "dv",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 75
+   }
+  ]
+ },
+ {
+  "type": "MW",
+  "population": 21763300,
+  "literacyPercent": 74.8,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 63,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ny",
+    "populationPercent": 63,
+    "officialStatus": "official"
+   },
+   {
+    "type": "tum",
+    "populationPercent": 8.4
+   },
+   {
+    "type": "tog",
+    "populationPercent": 0.98
+   },
+   {
+    "type": "zu",
+    "populationPercent": 0.33
+   }
+  ]
+ },
+ {
+  "type": "MX",
+  "population": 130740000,
+  "literacyPercent": 93.5,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 83,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 13
+   },
+   {
+    "type": "yua",
+    "populationPercent": 0.67
+   },
+   {
+    "type": "nhe",
+    "populationPercent": 0.39
+   },
+   {
+    "type": "nhw",
+    "populationPercent": 0.39
+   },
+   {
+    "type": "maz",
+    "populationPercent": 0.34
+   },
+   {
+    "type": "nch",
+    "populationPercent": 0.19
+   },
+   {
+    "type": "vec",
+    "populationPercent": 0.0019,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "sei",
+    "populationPercent": 0.0007
+   }
+  ]
+ },
+ {
+  "type": "MY",
+  "population": 34564800,
+  "literacyPercent": 93.1,
+  "languages": [
+   {
+    "type": "ms",
+    "populationPercent": 75,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 21
+   },
+   {
+    "type": "zh",
+    "populationPercent": 17
+   },
+   {
+    "type": "ta",
+    "populationPercent": 4.2
+   },
+   {
+    "type": "iba",
+    "populationPercent": 2.5
+   },
+   {
+    "type": "jv",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "zmi",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "dtp",
+    "populationPercent": 0.56
+   },
+   {
+    "type": "ml",
+    "populationPercent": 0.15
+   },
+   {
+    "type": "bug",
+    "populationPercent": 0.079
+   },
+   {
+    "type": "bjn",
+    "populationPercent": 0.014
+   }
+  ]
+ },
+ {
+  "type": "MZ",
+  "population": 33351000,
+  "literacyPercent": 56.1,
+  "languages": [
+   {
+    "type": "pt",
+    "populationPercent": 27,
+    "officialStatus": "official"
+   },
+   {
+    "type": "vmw",
+    "populationPercent": 13
+   },
+   {
+    "type": "ndc",
+    "populationPercent": 9.9
+   },
+   {
+    "type": "ts",
+    "populationPercent": 7.9
+   },
+   {
+    "type": "ngl",
+    "populationPercent": 6.8
+   },
+   {
+    "type": "seh",
+    "populationPercent": 4.6
+   },
+   {
+    "type": "mgh",
+    "populationPercent": 4.5
+   },
+   {
+    "type": "rng",
+    "populationPercent": 3.4
+   },
+   {
+    "type": "ny",
+    "populationPercent": 2.6
+   },
+   {
+    "type": "yao",
+    "populationPercent": 2.4
+   },
+   {
+    "type": "sw",
+    "populationPercent": 0.028
+   },
+   {
+    "type": "zu",
+    "populationPercent": 0.0054
+   }
+  ]
+ },
+ {
+  "type": "NA",
+  "population": 2803660,
+  "literacyPercent": 88.8,
+  "languages": [
+   {
+    "type": "af",
+    "populationPercent": 75
+   },
+   {
+    "type": "kj",
+    "populationPercent": 35
+   },
+   {
+    "type": "ng",
+    "populationPercent": 21
+   },
+   {
+    "type": "naq",
+    "populationPercent": 11
+   },
+   {
+    "type": "hz",
+    "populationPercent": 9.1
+   },
+   {
+    "type": "en",
+    "populationPercent": 7,
+    "officialStatus": "official"
+   },
+   {
+    "type": "de",
+    "populationPercent": 0.9
+   },
+   {
+    "type": "tn",
+    "populationPercent": 0.56
+   }
+  ]
+ },
+ {
+  "type": "NC",
+  "population": 304167,
+  "literacyPercent": 96.2,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 96,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "NE",
+  "population": 26342800,
+  "literacyPercent": 28.7,
+  "languages": [
+   {
+    "type": "ha",
+    "populationPercent": 41
+   },
+   {
+    "type": "fr",
+    "populationPercent": 29,
+    "officialStatus": "official"
+   },
+   {
+    "type": "dje",
+    "populationPercent": 17
+   },
+   {
+    "type": "fuq",
+    "populationPercent": 7
+   },
+   {
+    "type": "tmh",
+    "populationPercent": 6
+   },
+   {
+    "type": "ar",
+    "populationPercent": 0.21
+   },
+   {
+    "type": "twq",
+    "populationPercent": 0.03
+   },
+   {
+    "type": "ff",
+    "populationPercent": 0
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "NF",
+  "population": 1748,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 96,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "NG",
+  "population": 236747000,
+  "literacyPercent": 61.3,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 53,
+    "officialStatus": "official"
+   },
+   {
+    "type": "pcm",
+    "populationPercent": 21
+   },
+   {
+    "type": "ha",
+    "populationPercent": 13
+   },
+   {
+    "type": "ig",
+    "populationPercent": 13
+   },
+   {
+    "type": "yo",
+    "populationPercent": 13,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fuv",
+    "populationPercent": 6.7
+   },
+   {
+    "type": "tiv",
+    "populationPercent": 1.6
+   },
+   {
+    "type": "efi",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "ibb",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "ha_Arab",
+    "populationPercent": 1
+   },
+   {
+    "type": "bin",
+    "populationPercent": 0.71
+   },
+   {
+    "type": "kaj",
+    "populationPercent": 0.21
+   },
+   {
+    "type": "kcg",
+    "populationPercent": 0.093
+   },
+   {
+    "type": "ar",
+    "populationPercent": 0.071
+   },
+   {
+    "type": "cch",
+    "populationPercent": 0.021
+   },
+   {
+    "type": "amo",
+    "populationPercent": 0.0087
+   },
+   {
+    "type": "ff",
+    "populationPercent": 0
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   },
+   {
+    "type": "ann",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "NI",
+  "population": 6676950,
+  "literacyPercent": 78,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 78,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "NL",
+  "population": 17772400,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "nl",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 90
+   },
+   {
+    "type": "de",
+    "populationPercent": 71
+   },
+   {
+    "type": "fr",
+    "populationPercent": 29
+   },
+   {
+    "type": "nds",
+    "populationPercent": 11
+   },
+   {
+    "type": "li",
+    "populationPercent": 5.5
+   },
+   {
+    "type": "fy",
+    "populationPercent": 4.3,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "gos",
+    "populationPercent": 3.6
+   },
+   {
+    "type": "id",
+    "populationPercent": 1.8
+   },
+   {
+    "type": "zea",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "rif",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "tr",
+    "populationPercent": 1.2
+   }
+  ]
+ },
+ {
+  "type": "NO",
+  "population": 5509730,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "nb",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "no",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "nn",
+    "populationPercent": 25,
+    "officialStatus": "official"
+   },
+   {
+    "type": "se",
+    "populationPercent": 0.29,
+    "officialStatus": "official_regional"
+   }
+  ]
+ },
+ {
+  "type": "NP",
+  "population": 31122400,
+  "literacyPercent": 57.4,
+  "languages": [
+   {
+    "type": "ne",
+    "populationPercent": 44,
+    "officialStatus": "official"
+   },
+   {
+    "type": "mai",
+    "populationPercent": 11
+   },
+   {
+    "type": "bho",
+    "populationPercent": 6.8
+   },
+   {
+    "type": "new",
+    "populationPercent": 3.3
+   },
+   {
+    "type": "jml",
+    "populationPercent": 3.2
+   },
+   {
+    "type": "en",
+    "populationPercent": 3
+   },
+   {
+    "type": "dty",
+    "populationPercent": 2.5
+   },
+   {
+    "type": "awa",
+    "populationPercent": 2.2
+   },
+   {
+    "type": "thl",
+    "populationPercent": 2
+   },
+   {
+    "type": "bap",
+    "populationPercent": 1.5
+   },
+   {
+    "type": "tdg",
+    "populationPercent": 1.3
+   },
+   {
+    "type": "thr",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "mgp",
+    "populationPercent": 1.1
+   },
+   {
+    "type": "lif",
+    "populationPercent": 1.1
+   },
+   {
+    "type": "thq",
+    "populationPercent": 1
+   },
+   {
+    "type": "mrd",
+    "populationPercent": 0.83
+   },
+   {
+    "type": "bfy",
+    "populationPercent": 0.54
+   },
+   {
+    "type": "xsr",
+    "populationPercent": 0.52
+   },
+   {
+    "type": "rjs",
+    "populationPercent": 0.44
+   },
+   {
+    "type": "taj",
+    "populationPercent": 0.43
+   },
+   {
+    "type": "hi",
+    "populationPercent": 0.42
+   },
+   {
+    "type": "gvr",
+    "populationPercent": 0.29
+   },
+   {
+    "type": "bo",
+    "populationPercent": 0.24
+   },
+   {
+    "type": "tkt",
+    "populationPercent": 0.24
+   },
+   {
+    "type": "tdh",
+    "populationPercent": 0.12
+   },
+   {
+    "type": "bn",
+    "populationPercent": 0.094
+   },
+   {
+    "type": "unr_Deva",
+    "populationPercent": 0.018
+   },
+   {
+    "type": "lep",
+    "populationPercent": 0.0091
+   }
+  ]
+ },
+ {
+  "type": "NR",
+  "population": 9892,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   },
+   {
+    "type": "na",
+    "populationPercent": 70,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "NU",
+  "population": 2000,
+  "literacyPercent": 95,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 56,
+    "officialStatus": "official"
+   },
+   {
+    "type": "niu",
+    "populationPercent": 56,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "NZ",
+  "population": 5161210,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 98,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "mi",
+    "populationPercent": 2.8,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "OM",
+  "population": 3901990,
+  "literacyPercent": 86.9,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 81,
+    "officialStatus": "official"
+   },
+   {
+    "type": "bal",
+    "populationPercent": 4.9
+   },
+   {
+    "type": "fa",
+    "populationPercent": 0.94
+   }
+  ]
+ },
+ {
+  "type": "PA",
+  "population": 4470240,
+  "literacyPercent": 94.1,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 69,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 14
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 0.13
+   }
+  ]
+ },
+ {
+  "type": "PE",
+  "population": 32600200,
+  "literacyPercent": 89.6,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 73,
+    "officialStatus": "official"
+   },
+   {
+    "type": "qu",
+    "populationPercent": 15,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ay",
+    "populationPercent": 1.6
+   }
+  ]
+ },
+ {
+  "type": "PF",
+  "population": 303540,
+  "literacyPercent": 98,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 61,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ty",
+    "populationPercent": 31,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 7.8
+   }
+  ]
+ },
+ {
+  "type": "PG",
+  "population": 10046200,
+  "literacyPercent": 62.4,
+  "languages": [
+   {
+    "type": "tpi",
+    "populationPercent": 71,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 50,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ho",
+    "populationPercent": 2.1,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "PH",
+  "population": 118277000,
+  "literacyPercent": 95.4,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 64,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fil",
+    "populationPercent": 60,
+    "officialStatus": "official"
+   },
+   {
+    "type": "es",
+    "populationPercent": 31
+   },
+   {
+    "type": "ceb",
+    "populationPercent": 24,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ilo",
+    "populationPercent": 9.6,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "hil",
+    "populationPercent": 8.4,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "bik",
+    "populationPercent": 3
+   },
+   {
+    "type": "war",
+    "populationPercent": 2.9,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "fbl",
+    "populationPercent": 2.3
+   },
+   {
+    "type": "pam",
+    "populationPercent": 2.3
+   },
+   {
+    "type": "pag",
+    "populationPercent": 1.4,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "mdh",
+    "populationPercent": 1.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "tsg",
+    "populationPercent": 1.1,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 0.73
+   },
+   {
+    "type": "cps",
+    "populationPercent": 0.66
+   },
+   {
+    "type": "krj",
+    "populationPercent": 0.39
+   },
+   {
+    "type": "bto",
+    "populationPercent": 0.28
+   },
+   {
+    "type": "hnn",
+    "populationPercent": 0.016
+   },
+   {
+    "type": "tbw",
+    "populationPercent": 0.0085
+   },
+   {
+    "type": "bku",
+    "populationPercent": 0.0068
+   }
+  ]
+ },
+ {
+  "type": "PK",
+  "population": 252364000,
+  "literacyPercent": 54.9,
+  "languages": [
+   {
+    "type": "ur",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   },
+   {
+    "type": "pa_Arab",
+    "populationPercent": 70
+   },
+   {
+    "type": "en",
+    "populationPercent": 50,
+    "officialStatus": "official"
+   },
+   {
+    "type": "lah",
+    "populationPercent": 40
+   },
+   {
+    "type": "ps",
+    "populationPercent": 16
+   },
+   {
+    "type": "sd",
+    "populationPercent": 15
+   },
+   {
+    "type": "skr",
+    "populationPercent": 12
+   },
+   {
+    "type": "bal",
+    "populationPercent": 2.6
+   },
+   {
+    "type": "hno",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "brh",
+    "populationPercent": 1.3
+   },
+   {
+    "type": "fa",
+    "populationPercent": 0.66
+   },
+   {
+    "type": "bgn",
+    "populationPercent": 0.57
+   },
+   {
+    "type": "hnd",
+    "populationPercent": 0.41
+   },
+   {
+    "type": "tg_Arab",
+    "populationPercent": 0.33
+   },
+   {
+    "type": "gju",
+    "populationPercent": 0.2
+   },
+   {
+    "type": "bft",
+    "populationPercent": 0.18
+   },
+   {
+    "type": "kvx",
+    "populationPercent": 0.16
+   },
+   {
+    "type": "khw",
+    "populationPercent": 0.15
+   },
+   {
+    "type": "mvy",
+    "populationPercent": 0.14
+   },
+   {
+    "type": "kxp",
+    "populationPercent": 0.11
+   },
+   {
+    "type": "gjk",
+    "populationPercent": 0.11
+   },
+   {
+    "type": "ks",
+    "populationPercent": 0.069
+   },
+   {
+    "type": "trw",
+    "populationPercent": 0.053
+   },
+   {
+    "type": "btv",
+    "populationPercent": 0.019
+   }
+  ]
+ },
+ {
+  "type": "PL",
+  "population": 38746300,
+  "literacyPercent": 99.7,
+  "languages": [
+   {
+    "type": "pl",
+    "populationPercent": 96,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 33
+   },
+   {
+    "type": "de",
+    "populationPercent": 19,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ru",
+    "populationPercent": 18
+   },
+   {
+    "type": "szl",
+    "populationPercent": 1.3
+   },
+   {
+    "type": "be",
+    "populationPercent": 0.58
+   },
+   {
+    "type": "uk",
+    "populationPercent": 0.39
+   },
+   {
+    "type": "csb",
+    "populationPercent": 0.13,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "sli",
+    "populationPercent": 0.031
+   },
+   {
+    "type": "lt",
+    "populationPercent": 0.021,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "prg",
+    "populationPercent": 0.0001
+   }
+  ]
+ },
+ {
+  "type": "PM",
+  "population": 5132,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 3.7
+   }
+  ]
+ },
+ {
+  "type": "PN",
+  "population": 50,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 92,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "PR",
+  "population": 3019450,
+  "literacyPercent": 90.3,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 87,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 49,
+    "officialStatus": "de_facto_official"
+   }
+  ]
+ },
+ {
+  "type": "PS",
+  "population": 5385010,
+  "literacyPercent": 95.3,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "apc",
+    "populationPercent": 87
+   }
+  ]
+ },
+ {
+  "type": "PT",
+  "population": 10207200,
+  "literacyPercent": 95.4,
+  "languages": [
+   {
+    "type": "pt",
+    "populationPercent": 96,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 27
+   },
+   {
+    "type": "fr",
+    "populationPercent": 15
+   },
+   {
+    "type": "es",
+    "populationPercent": 10
+   },
+   {
+    "type": "gl",
+    "populationPercent": 0.14
+   }
+  ]
+ },
+ {
+  "type": "PW",
+  "population": 21864,
+  "literacyPercent": 92,
+  "languages": [
+   {
+    "type": "pau",
+    "populationPercent": 74,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 8.6,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "PY",
+  "population": 7522550,
+  "literacyPercent": 93.9,
+  "languages": [
+   {
+    "type": "gn",
+    "populationPercent": 80,
+    "officialStatus": "official"
+   },
+   {
+    "type": "es",
+    "populationPercent": 3.2,
+    "officialStatus": "official"
+   },
+   {
+    "type": "de",
+    "populationPercent": 2.9
+   }
+  ]
+ },
+ {
+  "type": "QA",
+  "population": 2552090,
+  "literacyPercent": 96.3,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 89,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fa",
+    "populationPercent": 11
+   },
+   {
+    "type": "ml",
+    "populationPercent": 0.25
+   }
+  ]
+ },
+ {
+  "type": "RE",
+  "population": 787584,
+  "literacyPercent": 88,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 89,
+    "officialStatus": "official"
+   },
+   {
+    "type": "rcf",
+    "populationPercent": 71
+   },
+   {
+    "type": "ta",
+    "populationPercent": 15
+   }
+  ]
+ },
+ {
+  "type": "RO",
+  "population": 18148200,
+  "literacyPercent": 97.7,
+  "languages": [
+   {
+    "type": "ro",
+    "populationPercent": 90,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 31
+   },
+   {
+    "type": "fr",
+    "populationPercent": 17
+   },
+   {
+    "type": "es",
+    "populationPercent": 10
+   },
+   {
+    "type": "hu",
+    "populationPercent": 6.6
+   },
+   {
+    "type": "de",
+    "populationPercent": 0.21
+   },
+   {
+    "type": "tr",
+    "populationPercent": 0.13
+   },
+   {
+    "type": "sr_Latn",
+    "populationPercent": 0.12
+   },
+   {
+    "type": "bg",
+    "populationPercent": 0.037
+   },
+   {
+    "type": "el",
+    "populationPercent": 0.023
+   },
+   {
+    "type": "pl",
+    "populationPercent": 0.015
+   }
+  ]
+ },
+ {
+  "type": "RS",
+  "population": 6652210,
+  "literacyPercent": 98,
+  "languages": [
+   {
+    "type": "sr",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   },
+   {
+    "type": "sr_Latn",
+    "populationPercent": 99,
+    "officialStatus": "official"
+   },
+   {
+    "type": "sq",
+    "populationPercent": 19
+   },
+   {
+    "type": "hu",
+    "populationPercent": 4.8,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ro",
+    "populationPercent": 2.1,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "hr",
+    "populationPercent": 0.93,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "sk",
+    "populationPercent": 0.85,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "uk",
+    "populationPercent": 0,
+    "officialStatus": "official_regional"
+   }
+  ]
+ },
+ {
+  "type": "RU",
+  "population": 140821000,
+  "literacyPercent": 99.7,
+  "languages": [
+   {
+    "type": "ru",
+    "populationPercent": 94,
+    "officialStatus": "official"
+   },
+   {
+    "type": "tt",
+    "populationPercent": 1.4,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ba",
+    "populationPercent": 1.3,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "cv",
+    "populationPercent": 1.3
+   },
+   {
+    "type": "hy",
+    "populationPercent": 0.84
+   },
+   {
+    "type": "ce",
+    "populationPercent": 0.66,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "av",
+    "populationPercent": 0.39,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "udm",
+    "populationPercent": 0.38,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "chm",
+    "populationPercent": 0.37
+   },
+   {
+    "type": "sah",
+    "populationPercent": 0.32,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "os",
+    "populationPercent": 0.32
+   },
+   {
+    "type": "kbd",
+    "populationPercent": 0.31,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "myv",
+    "populationPercent": 0.31,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "dar",
+    "populationPercent": 0.26
+   },
+   {
+    "type": "bua",
+    "populationPercent": 0.22
+   },
+   {
+    "type": "mdf",
+    "populationPercent": 0.21,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "kum",
+    "populationPercent": 0.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "kv",
+    "populationPercent": 0.18,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "lez",
+    "populationPercent": 0.18,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "krc",
+    "populationPercent": 0.17,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "inh",
+    "populationPercent": 0.16,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "tyv",
+    "populationPercent": 0.13,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "az_Cyrl",
+    "populationPercent": 0.093,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ady",
+    "populationPercent": 0.088,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "krl",
+    "populationPercent": 0.082
+   },
+   {
+    "type": "lbe",
+    "populationPercent": 0.078,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "koi",
+    "populationPercent": 0.045,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "mrj",
+    "populationPercent": 0.021
+   },
+   {
+    "type": "alt",
+    "populationPercent": 0.014
+   },
+   {
+    "type": "fi",
+    "populationPercent": 0.012
+   },
+   {
+    "type": "sr_Latn",
+    "populationPercent": 0.0036
+   },
+   {
+    "type": "vep",
+    "populationPercent": 0.0026
+   },
+   {
+    "type": "mn",
+    "populationPercent": 0.0015
+   },
+   {
+    "type": "kaa",
+    "populationPercent": 0.0006
+   },
+   {
+    "type": "izh",
+    "populationPercent": 0.0001
+   },
+   {
+    "type": "vot",
+    "populationPercent": 0
+   },
+   {
+    "type": "cu",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "RW",
+  "population": 13623300,
+  "literacyPercent": 71.1,
+  "languages": [
+   {
+    "type": "rw",
+    "populationPercent": 77,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 15,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 0.017,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "SA",
+  "population": 36544400,
+  "literacyPercent": 87.2,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ars",
+    "populationPercent": 3
+   }
+  ]
+ },
+ {
+  "type": "SB",
+  "population": 726799,
+  "literacyPercent": 84.1,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "pis",
+    "populationPercent": 82
+   },
+   {
+    "type": "rug",
+    "populationPercent": 1.4
+   }
+  ]
+ },
+ {
+  "type": "SC",
+  "population": 98187,
+  "literacyPercent": 91.8,
+  "languages": [
+   {
+    "type": "crs",
+    "populationPercent": 98
+   },
+   {
+    "type": "fr",
+    "populationPercent": 60,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 38,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "SD",
+  "population": 50467300,
+  "literacyPercent": 71.9,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 61,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 61,
+    "officialStatus": "official"
+   },
+   {
+    "type": "bej",
+    "populationPercent": 5.4
+   },
+   {
+    "type": "fvr",
+    "populationPercent": 2.7
+   },
+   {
+    "type": "ha_Arab",
+    "populationPercent": 1.8
+   },
+   {
+    "type": "mls",
+    "populationPercent": 0.99
+   },
+   {
+    "type": "fia",
+    "populationPercent": 0.83
+   },
+   {
+    "type": "zag",
+    "populationPercent": 0.51
+   }
+  ]
+ },
+ {
+  "type": "SE",
+  "population": 10589800,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "sv",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 86
+   },
+   {
+    "type": "fi",
+    "populationPercent": 2.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "fit",
+    "populationPercent": 0.55
+   },
+   {
+    "type": "se",
+    "populationPercent": 0.33
+   },
+   {
+    "type": "rmu",
+    "populationPercent": 0.09
+   },
+   {
+    "type": "yi",
+    "populationPercent": 0.028
+   },
+   {
+    "type": "smj",
+    "populationPercent": 0.014
+   },
+   {
+    "type": "sma",
+    "populationPercent": 0.0028
+   },
+   {
+    "type": "ia",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "SG",
+  "population": 6028460,
+  "literacyPercent": 95.9,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 93,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zh",
+    "populationPercent": 77,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ms",
+    "populationPercent": 14,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ta",
+    "populationPercent": 2.1,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ml",
+    "populationPercent": 0.17
+   },
+   {
+    "type": "pa",
+    "populationPercent": 0.16
+   }
+  ]
+ },
+ {
+  "type": "SH",
+  "population": 7943,
+  "literacyPercent": 97,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 68,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "SI",
+  "population": 2097890,
+  "literacyPercent": 99.7,
+  "languages": [
+   {
+    "type": "sl",
+    "populationPercent": 87,
+    "officialStatus": "official"
+   },
+   {
+    "type": "hr",
+    "populationPercent": 61
+   },
+   {
+    "type": "en",
+    "populationPercent": 59
+   },
+   {
+    "type": "de",
+    "populationPercent": 42
+   },
+   {
+    "type": "vec",
+    "populationPercent": 1.4,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "hu",
+    "populationPercent": 0.44
+   },
+   {
+    "type": "it",
+    "populationPercent": 0.19
+   }
+  ]
+ },
+ {
+  "type": "SJ",
+  "population": 2926,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "nb",
+    "populationPercent": 51,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ru",
+    "populationPercent": 41
+   }
+  ]
+ },
+ {
+  "type": "SK",
+  "population": 5563650,
+  "literacyPercent": 99.6,
+  "languages": [
+   {
+    "type": "sk",
+    "populationPercent": 90,
+    "officialStatus": "official"
+   },
+   {
+    "type": "cs",
+    "populationPercent": 47
+   },
+   {
+    "type": "en",
+    "populationPercent": 26
+   },
+   {
+    "type": "de",
+    "populationPercent": 22
+   },
+   {
+    "type": "hu",
+    "populationPercent": 11
+   },
+   {
+    "type": "uk",
+    "populationPercent": 1.9
+   },
+   {
+    "type": "pl",
+    "populationPercent": 0.93
+   }
+  ]
+ },
+ {
+  "type": "SL",
+  "population": 9121050,
+  "literacyPercent": 43.3,
+  "languages": [
+   {
+    "type": "kri",
+    "populationPercent": 95
+   },
+   {
+    "type": "en",
+    "populationPercent": 35,
+    "officialStatus": "official"
+   },
+   {
+    "type": "men",
+    "populationPercent": 27
+   },
+   {
+    "type": "tem",
+    "populationPercent": 26
+   },
+   {
+    "type": "ff",
+    "populationPercent": 0
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "SM",
+  "population": 35095,
+  "literacyPercent": 96,
+  "languages": [
+   {
+    "type": "it",
+    "populationPercent": 89,
+    "officialStatus": "official"
+   },
+   {
+    "type": "eo",
+    "populationPercent": 0.85
+   }
+  ]
+ },
+ {
+  "type": "SN",
+  "population": 18847500,
+  "literacyPercent": 49.7,
+  "languages": [
+   {
+    "type": "wo",
+    "populationPercent": 70,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 39,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ff",
+    "populationPercent": 21,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "srr",
+    "populationPercent": 11,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "dyo",
+    "populationPercent": 2.6,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "sav",
+    "populationPercent": 1.5,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "mfv",
+    "populationPercent": 0.77,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "bjt",
+    "populationPercent": 0.61,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "snf",
+    "populationPercent": 0.24,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "knf",
+    "populationPercent": 0.21,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "bsc",
+    "populationPercent": 0.097,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "mey",
+    "populationPercent": 0.038,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "tnr",
+    "populationPercent": 0.018,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ff_Adlm",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "SO",
+  "population": 13017300,
+  "literacyPercent": 37.8,
+  "languages": [
+   {
+    "type": "so",
+    "populationPercent": 78,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ar",
+    "populationPercent": 34,
+    "officialStatus": "official"
+   },
+   {
+    "type": "sw",
+    "populationPercent": 2
+   },
+   {
+    "type": "om",
+    "populationPercent": 0.42
+   }
+  ]
+ },
+ {
+  "type": "SR",
+  "population": 646758,
+  "literacyPercent": 94.7,
+  "languages": [
+   {
+    "type": "nl",
+    "populationPercent": 90,
+    "officialStatus": "official"
+   },
+   {
+    "type": "srn",
+    "populationPercent": 68
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 1.1
+   },
+   {
+    "type": "hnj",
+    "populationPercent": 0.36
+   }
+  ]
+ },
+ {
+  "type": "SS",
+  "population": 12703700,
+  "literacyPercent": 27,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 27
+   },
+   {
+    "type": "en",
+    "populationPercent": 27,
+    "officialStatus": "official"
+   },
+   {
+    "type": "nus",
+    "populationPercent": 5.6
+   }
+  ]
+ },
+ {
+  "type": "ST",
+  "population": 223561,
+  "literacyPercent": 69.5,
+  "languages": [
+   {
+    "type": "pt",
+    "populationPercent": 85,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "SV",
+  "population": 6628700,
+  "literacyPercent": 84.5,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 89,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "SX",
+  "population": 46215,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 68,
+    "officialStatus": "official"
+   },
+   {
+    "type": "es",
+    "populationPercent": 11
+   },
+   {
+    "type": "vic",
+    "populationPercent": 6.7
+   },
+   {
+    "type": "nl",
+    "populationPercent": 3.4,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "SY",
+  "population": 23865400,
+  "literacyPercent": 84.1,
+  "languages": [
+   {
+    "type": "apc",
+    "populationPercent": 85
+   },
+   {
+    "type": "ar",
+    "populationPercent": 80,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ku",
+    "populationPercent": 8
+   },
+   {
+    "type": "fr",
+    "populationPercent": 5.9,
+    "officialStatus": "official"
+   },
+   {
+    "type": "hy",
+    "populationPercent": 1.8
+   },
+   {
+    "type": "syr",
+    "populationPercent": 0.084
+   }
+  ]
+ },
+ {
+  "type": "SZ",
+  "population": 1138090,
+  "literacyPercent": 87.8,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 80,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ss",
+    "populationPercent": 58,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zu",
+    "populationPercent": 6.8
+   },
+   {
+    "type": "ts",
+    "populationPercent": 1.7
+   }
+  ]
+ },
+ {
+  "type": "TA",
+  "population": 275,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 99
+   }
+  ]
+ },
+ {
+  "type": "TC",
+  "population": 60439,
+  "literacyPercent": 98,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "TD",
+  "population": 19093600,
+  "literacyPercent": 35.4,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 26,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ar",
+    "populationPercent": 17,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "TF",
+  "population": 140,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 100
+   }
+  ]
+ },
+ {
+  "type": "TG",
+  "population": 8917990,
+  "literacyPercent": 60.4,
+  "languages": [
+   {
+    "type": "fr",
+    "populationPercent": 61,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ee",
+    "populationPercent": 17
+   },
+   {
+    "type": "ife",
+    "populationPercent": 1.3
+   },
+   {
+    "type": "blo",
+    "populationPercent": 0.15
+   }
+  ]
+ },
+ {
+  "type": "TH",
+  "population": 69921000,
+  "literacyPercent": 93.5,
+  "languages": [
+   {
+    "type": "th",
+    "populationPercent": 80,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 27
+   },
+   {
+    "type": "tts",
+    "populationPercent": 24
+   },
+   {
+    "type": "nod",
+    "populationPercent": 9.6
+   },
+   {
+    "type": "sou",
+    "populationPercent": 8
+   },
+   {
+    "type": "mfa",
+    "populationPercent": 5
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 1.8
+   },
+   {
+    "type": "kxm",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "kdt",
+    "populationPercent": 0.48
+   },
+   {
+    "type": "mnw",
+    "populationPercent": 0.17
+   },
+   {
+    "type": "hnj",
+    "populationPercent": 0.098
+   },
+   {
+    "type": "shn",
+    "populationPercent": 0.096
+   },
+   {
+    "type": "lcp",
+    "populationPercent": 0.01
+   },
+   {
+    "type": "lwl",
+    "populationPercent": 0.01
+   }
+  ]
+ },
+ {
+  "type": "TJ",
+  "population": 10394100,
+  "literacyPercent": 99.7,
+  "languages": [
+   {
+    "type": "tg",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ru",
+    "populationPercent": 12
+   },
+   {
+    "type": "fa",
+    "populationPercent": 0.78
+   },
+   {
+    "type": "ar",
+    "populationPercent": 0.0096
+   }
+  ]
+ },
+ {
+  "type": "TK",
+  "population": 1647,
+  "literacyPercent": 99.6,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 78,
+    "officialStatus": "official"
+   },
+   {
+    "type": "tkl",
+    "populationPercent": 78,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "TL",
+  "population": 1506910,
+  "literacyPercent": 58.3,
+  "languages": [
+   {
+    "type": "pt",
+    "populationPercent": 59,
+    "officialStatus": "official"
+   },
+   {
+    "type": "tet",
+    "populationPercent": 59,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "TM",
+  "population": 5744150,
+  "literacyPercent": 99.6,
+  "languages": [
+   {
+    "type": "tk",
+    "populationPercent": 70,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ru",
+    "populationPercent": 12
+   },
+   {
+    "type": "uz",
+    "populationPercent": 9
+   },
+   {
+    "type": "ku",
+    "populationPercent": 0.4
+   },
+   {
+    "type": "kaa",
+    "populationPercent": 0.1
+   }
+  ]
+ },
+ {
+  "type": "TN",
+  "population": 12048800,
+  "literacyPercent": 79.1,
+  "languages": [
+   {
+    "type": "aeb",
+    "populationPercent": 90
+   },
+   {
+    "type": "ar",
+    "populationPercent": 90,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 74,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "TO",
+  "population": 104889,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "to",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 28,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "TR",
+  "population": 84119500,
+  "literacyPercent": 94.1,
+  "languages": [
+   {
+    "type": "tr",
+    "populationPercent": 93,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 17
+   },
+   {
+    "type": "ku",
+    "populationPercent": 5.5
+   },
+   {
+    "type": "apc",
+    "populationPercent": 5.2
+   },
+   {
+    "type": "zza",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "kaa",
+    "populationPercent": 0.1
+   },
+   {
+    "type": "kbd",
+    "populationPercent": 0.77
+   },
+   {
+    "type": "az",
+    "populationPercent": 0.74
+   },
+   {
+    "type": "az_Arab",
+    "populationPercent": 0.65
+   },
+   {
+    "type": "ar",
+    "populationPercent": 0.56
+   },
+   {
+    "type": "bgx",
+    "populationPercent": 0.46
+   },
+   {
+    "type": "bg",
+    "populationPercent": 0.42
+   },
+   {
+    "type": "ady",
+    "populationPercent": 0.39
+   },
+   {
+    "type": "kiu",
+    "populationPercent": 0.19
+   },
+   {
+    "type": "hy",
+    "populationPercent": 0.056
+   },
+   {
+    "type": "ka",
+    "populationPercent": 0.056
+   },
+   {
+    "type": "sr_Latn",
+    "populationPercent": 0.028
+   },
+   {
+    "type": "lzz",
+    "populationPercent": 0.028
+   },
+   {
+    "type": "sq",
+    "populationPercent": 0.021
+   },
+   {
+    "type": "ab",
+    "populationPercent": 0.0048
+   },
+   {
+    "type": "el",
+    "populationPercent": 0.0048
+   },
+   {
+    "type": "tru",
+    "populationPercent": 0.0036
+   },
+   {
+    "type": "uz",
+    "populationPercent": 0.0024
+   },
+   {
+    "type": "ky_Latn",
+    "populationPercent": 0.0014
+   },
+   {
+    "type": "kk",
+    "populationPercent": 0.0007
+   }
+  ]
+ },
+ {
+  "type": "TT",
+  "population": 1408970,
+  "literacyPercent": 98.8,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 88,
+    "officialStatus": "official"
+   },
+   {
+    "type": "es",
+    "populationPercent": 0.29
+   }
+  ]
+ },
+ {
+  "type": "TV",
+  "population": 11733,
+  "literacyPercent": 95,
+  "languages": [
+   {
+    "type": "tvl",
+    "populationPercent": 85,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 9.1,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "TW",
+  "population": 23595300,
+  "literacyPercent": 96.1,
+  "languages": [
+   {
+    "type": "zh_Hant",
+    "populationPercent": 95,
+    "officialStatus": "official"
+   },
+   {
+    "type": "trv",
+    "populationPercent": 0.02
+   }
+  ]
+ },
+ {
+  "type": "TZ",
+  "population": 67462100,
+  "literacyPercent": 67.8,
+  "languages": [
+   {
+    "type": "sw",
+    "populationPercent": 90,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 69,
+    "officialStatus": "official"
+   },
+   {
+    "type": "suk",
+    "populationPercent": 8.7
+   },
+   {
+    "type": "nym",
+    "populationPercent": 3.3
+   },
+   {
+    "type": "kde",
+    "populationPercent": 2.5
+   },
+   {
+    "type": "bez",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "ksb",
+    "populationPercent": 1.7
+   },
+   {
+    "type": "mas",
+    "populationPercent": 1.5
+   },
+   {
+    "type": "mgy",
+    "populationPercent": 1.4
+   },
+   {
+    "type": "asa",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "lag",
+    "populationPercent": 0.87
+   },
+   {
+    "type": "jmc",
+    "populationPercent": 0.74
+   },
+   {
+    "type": "rof",
+    "populationPercent": 0.74
+   },
+   {
+    "type": "vun",
+    "populationPercent": 0.74
+   },
+   {
+    "type": "rwk",
+    "populationPercent": 0.22
+   },
+   {
+    "type": "sbp",
+    "populationPercent": 0.2
+   }
+  ]
+ },
+ {
+  "type": "UA",
+  "population": 35661800,
+  "literacyPercent": 99.7,
+  "languages": [
+   {
+    "type": "uk",
+    "populationPercent": 65,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ru",
+    "populationPercent": 46,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "pl",
+    "populationPercent": 2.4
+   },
+   {
+    "type": "yi",
+    "populationPercent": 1.3
+   },
+   {
+    "type": "rue",
+    "populationPercent": 1.2
+   },
+   {
+    "type": "be",
+    "populationPercent": 0.83
+   },
+   {
+    "type": "crh",
+    "populationPercent": 0.56
+   },
+   {
+    "type": "ro",
+    "populationPercent": 0.52
+   },
+   {
+    "type": "bg",
+    "populationPercent": 0.49
+   },
+   {
+    "type": "tr",
+    "populationPercent": 0.42
+   },
+   {
+    "type": "hu",
+    "populationPercent": 0.37
+   },
+   {
+    "type": "el",
+    "populationPercent": 0.02
+   }
+  ]
+ },
+ {
+  "type": "UG",
+  "population": 49283000,
+  "literacyPercent": 73.2,
+  "languages": [
+   {
+    "type": "sw",
+    "populationPercent": 75,
+    "officialStatus": "official"
+   },
+   {
+    "type": "lg",
+    "populationPercent": 13
+   },
+   {
+    "type": "nyn",
+    "populationPercent": 6.3
+   },
+   {
+    "type": "cgg",
+    "populationPercent": 5.4
+   },
+   {
+    "type": "xog",
+    "populationPercent": 5.3
+   },
+   {
+    "type": "en",
+    "populationPercent": 3.9,
+    "officialStatus": "official"
+   },
+   {
+    "type": "teo",
+    "populationPercent": 3.9
+   },
+   {
+    "type": "laj",
+    "populationPercent": 3.8
+   },
+   {
+    "type": "ach",
+    "populationPercent": 3.7
+   },
+   {
+    "type": "myx",
+    "populationPercent": 2.9
+   },
+   {
+    "type": "rw",
+    "populationPercent": 2.1
+   },
+   {
+    "type": "ttj",
+    "populationPercent": 1.9
+   },
+   {
+    "type": "hi",
+    "populationPercent": 0.0045
+   }
+  ]
+ },
+ {
+  "type": "UM",
+  "population": 316,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 100,
+    "officialStatus": "de_facto_official"
+   }
+  ]
+ },
+ {
+  "type": "US",
+  "population": 341963000,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 96,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "es",
+    "populationPercent": 9.6,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 0.69
+   },
+   {
+    "type": "fr",
+    "populationPercent": 0.56
+   },
+   {
+    "type": "de",
+    "populationPercent": 0.47
+   },
+   {
+    "type": "fil",
+    "populationPercent": 0.42
+   },
+   {
+    "type": "it",
+    "populationPercent": 0.34
+   },
+   {
+    "type": "vi",
+    "populationPercent": 0.34
+   },
+   {
+    "type": "ko",
+    "populationPercent": 0.3
+   },
+   {
+    "type": "ru",
+    "populationPercent": 0.24
+   },
+   {
+    "type": "nv",
+    "populationPercent": 0.05
+   },
+   {
+    "type": "yi",
+    "populationPercent": 0.049
+   },
+   {
+    "type": "pdc",
+    "populationPercent": 0.039
+   },
+   {
+    "type": "hnj",
+    "populationPercent": 0.035
+   },
+   {
+    "type": "haw",
+    "populationPercent": 0.0089,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "frc",
+    "populationPercent": 0.0084
+   },
+   {
+    "type": "chr",
+    "populationPercent": 0.0077
+   },
+   {
+    "type": "esu",
+    "populationPercent": 0.0063
+   },
+   {
+    "type": "dak",
+    "populationPercent": 0.0059
+   },
+   {
+    "type": "cho",
+    "populationPercent": 0.0033
+   },
+   {
+    "type": "lkt",
+    "populationPercent": 0.0024
+   },
+   {
+    "type": "ik",
+    "populationPercent": 0.0023
+   },
+   {
+    "type": "mus",
+    "populationPercent": 0.0012
+   },
+   {
+    "type": "io",
+    "populationPercent": 0
+   },
+   {
+    "type": "cic",
+    "populationPercent": 0
+   },
+   {
+    "type": "cad",
+    "populationPercent": 0
+   },
+   {
+    "type": "jbo",
+    "populationPercent": 0
+   },
+   {
+    "type": "osa",
+    "populationPercent": 0
+   }
+  ]
+ },
+ {
+  "type": "UY",
+  "population": 3425330,
+  "literacyPercent": 98.1,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 88,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "UZ",
+  "population": 36520600,
+  "literacyPercent": 99.4,
+  "languages": [
+   {
+    "type": "uz",
+    "populationPercent": 85,
+    "officialStatus": "official"
+   },
+   {
+    "type": "uz_Cyrl",
+    "populationPercent": 15,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ru",
+    "populationPercent": 14
+   },
+   {
+    "type": "kaa",
+    "populationPercent": 2.1
+   },
+   {
+    "type": "tr",
+    "populationPercent": 0.62
+   }
+  ]
+ },
+ {
+  "type": "VA",
+  "population": 1000,
+  "literacyPercent": 100,
+  "languages": [
+   {
+    "type": "it",
+    "populationPercent": 82,
+    "officialStatus": "de_facto_official"
+   },
+   {
+    "type": "la",
+    "populationPercent": 82
+   }
+  ]
+ },
+ {
+  "type": "VC",
+  "population": 100647,
+  "literacyPercent": 96,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 96,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "VE",
+  "population": 31250300,
+  "literacyPercent": 95.5,
+  "languages": [
+   {
+    "type": "es",
+    "populationPercent": 82,
+    "officialStatus": "official"
+   },
+   {
+    "type": "yrl",
+    "populationPercent": 0.0064
+   }
+  ]
+ },
+ {
+  "type": "VG",
+  "population": 40102,
+  "literacyPercent": 97.8,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 98,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "VI",
+  "population": 104377,
+  "literacyPercent": 99,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 75,
+    "officialStatus": "de_facto_official"
+   }
+  ]
+ },
+ {
+  "type": "VN",
+  "population": 105759000,
+  "literacyPercent": 93.4,
+  "languages": [
+   {
+    "type": "vi",
+    "populationPercent": 86,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zh_Hant",
+    "populationPercent": 1.1
+   },
+   {
+    "type": "blt",
+    "populationPercent": 0.69
+   },
+   {
+    "type": "hnj",
+    "populationPercent": 0.17
+   },
+   {
+    "type": "cjm",
+    "populationPercent": 0.089
+   }
+  ]
+ },
+ {
+  "type": "VU",
+  "population": 318007,
+  "literacyPercent": 83.2,
+  "languages": [
+   {
+    "type": "bi",
+    "populationPercent": 90,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 83,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fr",
+    "populationPercent": 50,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "WF",
+  "population": 15964,
+  "literacyPercent": 50,
+  "languages": [
+   {
+    "type": "wls",
+    "populationPercent": 59
+   },
+   {
+    "type": "fr",
+    "populationPercent": 48,
+    "officialStatus": "official"
+   },
+   {
+    "type": "fud",
+    "populationPercent": 30
+   }
+  ]
+ },
+ {
+  "type": "WS",
+  "population": 208853,
+  "literacyPercent": 98.8,
+  "languages": [
+   {
+    "type": "sm",
+    "populationPercent": 100,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 2.1,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "XK",
+  "population": 1977090,
+  "literacyPercent": 91.9,
+  "languages": [
+   {
+    "type": "sq",
+    "populationPercent": 92,
+    "officialStatus": "official"
+   },
+   {
+    "type": "aln",
+    "populationPercent": 74
+   },
+   {
+    "type": "sr",
+    "populationPercent": 5,
+    "officialStatus": "official"
+   },
+   {
+    "type": "sr_Latn",
+    "populationPercent": 5,
+    "officialStatus": "official"
+   }
+  ]
+ },
+ {
+  "type": "YE",
+  "population": 32140400,
+  "literacyPercent": 65.3,
+  "languages": [
+   {
+    "type": "ar",
+    "populationPercent": 74,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 9
+   }
+  ]
+ },
+ {
+  "type": "YT",
+  "population": 194000,
+  "literacyPercent": 80.8,
+  "languages": [
+   {
+    "type": "swb",
+    "populationPercent": 88
+   },
+   {
+    "type": "fr",
+    "populationPercent": 57,
+    "officialStatus": "official"
+   },
+   {
+    "type": "buc",
+    "populationPercent": 23
+   },
+   {
+    "type": "sw",
+    "populationPercent": 1.4
+   }
+  ]
+ },
+ {
+  "type": "ZA",
+  "population": 60442600,
+  "literacyPercent": 93,
+  "languages": [
+   {
+    "type": "en",
+    "populationPercent": 31,
+    "officialStatus": "official"
+   },
+   {
+    "type": "zu",
+    "populationPercent": 24,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "xh",
+    "populationPercent": 18,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "af",
+    "populationPercent": 13,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "nso",
+    "populationPercent": 9.4,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "tn",
+    "populationPercent": 8.2,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "st",
+    "populationPercent": 7.9,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ts",
+    "populationPercent": 4.4,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ss",
+    "populationPercent": 2.7,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "ve",
+    "populationPercent": 2.3,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "hi",
+    "populationPercent": 2
+   },
+   {
+    "type": "nr",
+    "populationPercent": 1.6,
+    "officialStatus": "official_regional"
+   },
+   {
+    "type": "sw",
+    "populationPercent": 0.0017
+   }
+  ]
+ },
+ {
+  "type": "ZM",
+  "population": 20799100,
+  "literacyPercent": 61.4,
+  "languages": [
+   {
+    "type": "bem",
+    "populationPercent": 31
+   },
+   {
+    "type": "en",
+    "populationPercent": 16,
+    "officialStatus": "official"
+   },
+   {
+    "type": "ny",
+    "populationPercent": 15
+   },
+   {
+    "type": "loz",
+    "populationPercent": 6
+   }
+  ]
+ },
+ {
+  "type": "ZW",
+  "population": 17150400,
+  "literacyPercent": 83.6,
+  "languages": [
+   {
+    "type": "sn",
+    "populationPercent": 81,
+    "officialStatus": "official"
+   },
+   {
+    "type": "en",
+    "populationPercent": 42,
+    "officialStatus": "official"
+   },
+   {
+    "type": "nd",
+    "populationPercent": 12,
+    "officialStatus": "official"
+   },
+   {
+    "type": "mxc",
+    "populationPercent": 6.5
+   },
+   {
+    "type": "ndc",
+    "populationPercent": 6.1
+   },
+   {
+    "type": "kck",
+    "populationPercent": 5.3
+   },
+   {
+    "type": "ny",
+    "populationPercent": 1.9
+   },
+   {
+    "type": "ve",
+    "populationPercent": 0.64
+   },
+   {
+    "type": "tn",
+    "populationPercent": 0.22
+   }
+  ]
+ },
+ {
+  "type": "ZZ",
+  "population": 0,
+  "literacyPercent": 0,
+  "languages": []
+ }
+]

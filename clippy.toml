@@ -1,0 +1,8 @@
+disallowed-macros = [
+    { path = "std::print", reason = "write CLI output through brr::cli::format" },
+    { path = "std::println", reason = "write CLI output through brr::cli::format" },
+    { path = "std::eprint", reason = "write CLI output through brr::cli::format" },
+    { path = "std::eprintln", reason = "write CLI output through brr::cli::format" },
+]
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
