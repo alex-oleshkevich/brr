@@ -8,6 +8,7 @@
   import { events } from '$lib/api/events.svelte';
   import { startSession } from '$lib/api/session';
   import { nav } from '$lib/nav';
+  import SettingsDialog from '$lib/settings/SettingsDialog.svelte';
   import { theme } from '$lib/theme.svelte';
   import Button from '$lib/ui/Button.svelte';
   import Icon from '$lib/ui/Icon.svelte';
@@ -104,6 +105,7 @@
   <Sidebar items={nav} {version} />
 </dialog>
 
+{#if status === 'ready'}<SettingsDialog />{/if}
 <Toaster />
 <ConfirmHost />
 

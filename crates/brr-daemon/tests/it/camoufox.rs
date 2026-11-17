@@ -270,6 +270,7 @@ async fn camoufox_profile(
         name: name.to_owned(),
         kind,
         template_id: None,
+        template_name: None,
         settings: ProfileSettings {
             build: BuildChoice::BuildId(build_id),
             display: Display::Headless,

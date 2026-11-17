@@ -3,11 +3,13 @@
   import { capacity } from '$lib/capacity.svelte';
   import Button from './Button.svelte';
   import StatusDot from './StatusDot.svelte';
+  import { settingsHref } from '$lib/settings/sections';
 
   // Mounted once the session is ready, so the shared polls start with the Brr-Client header.
   capacity.init();
 
   const pressure = $derived(capacity.pressure);
+  const breakdown = $derived(capacity.breakdown ?? undefined);
   const tone = $derived(pressure.state === 'ok' ? 'success' : 'warning');
   const known = $derived(capacity.info && capacity.limits && capacity.usage && !capacity.error);
   // The numbers are the last ones received; they say nothing about the daemon while the stream is down.
@@ -15,12 +17,12 @@
 </script>
 
 {#if offline}
-  <Button variant="ghost" size="sm" href="/limits" aria-label="Capacity: unknown, daemon offline">
+  <Button variant="ghost" size="sm" href={settingsHref('capacity')} aria-label="Capacity: unknown, daemon offline">
     <StatusDot tone="neutral" label="Capacity unknown" showLabel={false} />
     <span class="text">Offline</span>
   </Button>
 {:else if known}
-  <Button variant="ghost" size="sm" href="/limits" aria-label="Capacity: {pressure.text}">
+  <Button variant="ghost" size="sm" href={settingsHref('capacity')} aria-label="Capacity: {pressure.text}{breakdown ? ` (${breakdown})` : ''}" title={breakdown}>
     <StatusDot {tone} label={pressure.text} showLabel={false} pulse={pressure.state === 'pressure'} />
     <span class="text">{pressure.text}</span>
   </Button>

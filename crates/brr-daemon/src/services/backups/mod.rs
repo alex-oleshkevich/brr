@@ -3,7 +3,10 @@ use std::{
     fs::{self, DirBuilder},
     os::unix::fs::DirBuilderExt,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, PoisonError},
+    sync::{
+        Arc, Mutex, PoisonError,
+        atomic::{AtomicBool, Ordering},
+    },
     time::Duration,
 };
 
@@ -22,7 +25,7 @@ use tokio::{
     sync::broadcast::{Receiver, error::RecvError},
     time,
 };
-use tracing::warn;
+use tracing::{info, warn};
 
 use crate::{
     app::App,
@@ -59,6 +62,8 @@ const EXCLUDE: &[&str] = &[
     "SingletonCookie",
 ];
 const MISSING_PASSPHRASE: &str = "set a backup passphrase first (settings set backup.passphrase)";
+// Set once the "no passphrase" skip is logged, so each skipped schedule does not repeat it.
+static PASSPHRASE_NOTED: AtomicBool = AtomicBool::new(false);
 const PROFILE_EVENTS: [&str; 3] = ["profile.created", "profile.updated", "profile.deleted"];
 
 #[derive(Serialize, Deserialize)]
@@ -358,6 +363,7 @@ async fn import_archive(
                 name: base.clone(),
                 kind: ProfileKind::Persistent,
                 template_id: None,
+                template_name: None,
                 settings,
                 pinned: manifest.pinned,
                 notes: manifest.notes,
@@ -761,6 +767,22 @@ pub fn start_scheduler(app: &Arc<App>) {
 }
 
 async fn backup_one(app: &Arc<App>, profile_id: ProfileId) {
+    // A missing passphrase is a setup state, not a failure: skip quietly.
+    match stored_passphrase(app).await {
+        Ok(Some(_)) => {}
+        Ok(None) => {
+            if !PASSPHRASE_NOTED.swap(true, Ordering::Relaxed) {
+                info!("scheduled backups are skipped until a backup passphrase is set");
+            }
+
+            return;
+        }
+        Err(error) => {
+            warn!(%profile_id, error = format!("{error:#}"), "scheduled backup: reading the passphrase failed");
+
+            return;
+        }
+    }
     let found = match app.store.run(move |c| profile::get(c, &profile_id)).await {
         Ok(found) => found,
         Err(error) => {

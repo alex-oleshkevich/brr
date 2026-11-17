@@ -4,8 +4,9 @@
   import { ApiError, api, unwrap } from '$lib/api/client';
   import type { components } from '$lib/api/schema';
   import { SOURCE_NAMES } from '$lib/builds/labels';
-  import { resolveBuild } from '$lib/profiles/resolve';
-  import { RECOMMENDED_TEMPLATE, templatePurpose, templateTitle, type Template } from '$lib/profiles/templates';
+  import { resolveBuild } from '$lib/config/resolve';
+  import { RECOMMENDED_TEMPLATE, templatePurpose, templateTitle, type Template } from '$lib/config/templates';
+  import { engineOf } from '$lib/config/form';
   import Skeleton from '$lib/ui/Skeleton.svelte';
   import Button from '$lib/ui/Button.svelte';
   import Dialog from '$lib/ui/Dialog.svelte';
@@ -20,7 +21,11 @@
     ephemeral: 'Starts fresh on every launch and forgets everything afterwards. Any number of browsers at once.',
   } as const;
 
-  let { open = $bindable(false), templateId }: { open?: boolean; templateId?: string } = $props();
+  let {
+    open = $bindable(false),
+    templateId,
+    oncreated,
+  }: { open?: boolean; templateId?: string; oncreated?: (profile: components['schemas']['Profile']) => void } = $props();
 
   let step = $state(1);
   let templates = $state<Template[]>([]);
@@ -81,6 +86,15 @@
     return resolved.kind === 'missing' ? `Needs ${SOURCE_NAMES[resolved.source]}, which isn't installed.` : null;
   }
 
+  // Creating is allowed, but launching needs a browser of the template's engine on this computer.
+  function engineWarning(t: Template): string | null {
+    const engine = engineOf(t.settings, builds);
+    const installed = builds.some((b) => b.engine === engine && (b.state === 'installed' || b.state === 'registered'));
+    return installed ? null : `${engine === 'camoufox' ? 'Camoufox' : 'Chromium'} isn't installed yet; install it before launching.`;
+  }
+
+  const chosenWarning = $derived(chosenTemplate ? engineWarning(chosenTemplate) : null);
+
   async function create(event: SubmitEvent) {
     event.preventDefault();
     if (!name.trim() || !chosen || creating) return;
@@ -90,7 +104,8 @@
       const profile = await unwrap(api.POST('/v1/profiles', { body: { name: name.trim(), template: chosen, kind } }));
       toast.success('Profile created');
       open = false;
-      await goto(`/profiles/${profile.id}`);
+      if (oncreated) oncreated(profile);
+      else await goto(`/profiles/${profile.id}`);
     } catch (e) {
       if (e instanceof ApiError && (e.code === 'Conflict' || (e.code === 'InvalidArgument' && e.details?.field === 'name'))) {
         nameError = e.message;
@@ -124,7 +139,7 @@
               {#if missing}<span class="option-warning">{missing}</span>{/if}
             </span>
           </label>
-          {#if missing}<a class="install" href="/builds">Install</a>{/if}
+          {#if missing}<a class="install" href="/versions">Install</a>{/if}
         </div>
       {/each}
       {#if loadError}
@@ -146,14 +161,17 @@
             label="Kind"
             bind:value={kind}
             options={[
-              { value: 'persistent', label: 'Persistent' },
-              { value: 'ephemeral', label: 'Ephemeral' },
+              { value: 'persistent', label: 'Keeps data' },
+              { value: 'ephemeral', label: 'Fresh each time' },
             ]}
           />
           <p class="field-hint">{KIND_HELP[kind]}</p>
         </div>
       </div>
     </form>
+    {#if chosenWarning}
+      <p class="engine-warning" role="status">{chosenWarning} <a href="/versions">Install a browser version</a></p>
+    {/if}
   {/if}
 
   {#snippet footer()}
@@ -223,6 +241,15 @@
     color: var(--warning-fg);
     font-size: var(--text-sm-size);
     line-height: var(--text-sm-line);
+  }
+
+  .engine-warning {
+    margin-top: var(--space-4);
+    padding: var(--space-3);
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border, var(--border));
+    border-radius: var(--radius-md);
+    color: var(--warning-fg);
   }
 
   .install {

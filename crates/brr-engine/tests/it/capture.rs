@@ -65,6 +65,7 @@ fn spec(chrome: PathBuf, dir: &Path) -> LaunchSpec {
         console_buffer: 1000,
         network_buffer: 1000,
         camoufox: None,
+        sandbox: None,
     }
 }
 

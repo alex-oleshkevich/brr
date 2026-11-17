@@ -76,11 +76,14 @@ fn container_shm_flag() {
     assert!(!args(&spec, false).contains(&os("--disable-dev-shm-usage")));
 }
 
-#[test]
-fn args_omit_headless_when_visible() {
-    let spec = spec(Display::Visible, ProfileSettings::default());
+#[test_case(Display::Headless, "--headless", true)]
+#[test_case(Display::Visible, "--headless", false)]
+#[test_case(Display::Virtual, "--ozone-platform=x11", true)]
+#[test_case(Display::Headless, "--ozone-platform=x11", false)]
+fn args_follow_display(display: Display, flag: &str, present: bool) {
+    let spec = spec(display, ProfileSettings::default());
 
-    assert!(!args(&spec, false).contains(&os("--headless")));
+    assert_eq!(args(&spec, false).contains(&os(flag)), present);
 }
 
 #[test]

@@ -3,9 +3,31 @@ use std::{fs, path::PathBuf};
 use brr_core::{Build, BuildId, BuildSource, BuildState, ConflictReason, Engine, Error};
 use test_case::test_case;
 
-use super::{ensure_no_downgrade, owner::exit_error};
+use super::{ensure_no_downgrade, last_log_line, owner::exit_error};
 
 const LAST_VERSION: &str = "131.0.6778.85\n";
+const WAYLAND_LOG: &str = "[9:9:1116/101010.1:ERROR:bus.cc(407)] Failed to connect to the bus\n\
+    [9:9:1116/101010.2:FATAL:ozone_platform_wayland.cc(282)] Failed to connect to Wayland display\n\
+    #0 0x55d5c8 <unknown>\n\n";
+const WAYLAND_LINE: &str = "Failed to connect to Wayland display";
+const PLAIN_LOG: &str =
+    "starting\nError: no \x1b[31mDISPLAY\x1b[0m environment variable specified\n";
+const PLAIN_LINE: &str = "Error: no [31mDISPLAY[0m environment variable specified";
+const X_LOG: &str = "[7:7:1116/1.1:ERROR:ozone_platform_x11.cc(244)] Missing X server or $DISPLAY\n\
+    [7:7:1116/1.2:ERROR:env.cc(257)] The platform failed to initialize.  Exiting.\n";
+const X_LINE: &str = "Missing X server or $DISPLAY";
+
+#[test_case(WAYLAND_LOG, Some(WAYLAND_LINE); "chromium fatal line without its prefix")]
+#[test_case(X_LOG, Some(X_LINE); "cause before a generic exit line")]
+#[test_case(PLAIN_LOG, Some(PLAIN_LINE); "last line without control characters")]
+#[test_case("\n \n", None; "blank log")]
+fn last_log_line_finds_the_reason(log: &str, expected: Option<&str>) {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("browser.log");
+    fs::write(&path, log).unwrap();
+
+    assert_eq!(last_log_line(&path).as_deref(), expected);
+}
 
 #[test_case(Some(0), None, None; "clean exit")]
 #[test_case(Some(3), None, Some("browser exited with code 3"); "exit code")]

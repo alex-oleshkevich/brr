@@ -5,6 +5,7 @@ pub mod compat;
 mod live;
 pub mod page;
 pub mod procs;
+pub mod sandbox;
 mod xvfb;
 
 use std::path::PathBuf;
@@ -17,6 +18,7 @@ use brr_cdp::{Downstream, Outbound};
 use brr_core::{
     Cookie, Display, DisplayEnv, Engine, Error, InstanceId, ProfileSettings, TargetId, WaitUntil,
 };
+use brr_proto::frames::Stream;
 use tokio::sync::mpsc;
 
 pub use camoufox::Camoufox;
@@ -35,8 +37,13 @@ pub use xvfb::{DEFAULT_VIRTUAL_SCREEN, Xvfb};
 mod tests;
 
 const PROFILE_FIELD: &str = "profile";
-const DISPLAY_VAR: &str = "DISPLAY";
-const INSTALL_HELP: &str = "install it and retry";
+const VISIBLE_DISPLAY: &str = "DISPLAY or WAYLAND_DISPLAY";
+const DISPLAY_FIELD: &str = "display";
+const SANDBOX_VISIBLE_HELP: &str =
+    "visible display is not available in the docker sandbox; use headless or virtual";
+const VISIBLE_DISPLAY_HELP: &str = "display visible needs a desktop; start the daemon from a desktop session, or use display headless or virtual";
+
+pub const BROWSER_CLOSED: &str = "browser closed before its first tab attached";
 
 #[derive(Debug, Clone)]
 pub struct LaunchSpec {
@@ -56,6 +63,8 @@ pub struct LaunchSpec {
     pub network_buffer: usize,
     // Some for Engine::Camoufox.
     pub camoufox: Option<CamoufoxSpec>,
+    // Some for sandbox mode docker: the browser runs in a container of its own.
+    pub sandbox: Option<sandbox::SandboxSpec>,
 }
 
 #[derive(Clone)]
@@ -81,6 +90,14 @@ pub enum DownloadState {
     InProgress,
     Completed,
     Canceled,
+}
+
+// What a navigation ended in. A response the browser saves as a file commits no document: the
+// page stays where it was and the file arrives through the download events.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Navigated {
+    Page,
+    Download,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -139,6 +156,8 @@ pub struct Launched {
     pub browser_version: String,
     pub first_target_id: TargetId,
     pub xvfb_pid: Option<u32>,
+    // A sandboxed browser's proxy connections, each for the run's forwarder; ends with the run.
+    pub tunnels: Option<mpsc::Receiver<Stream>>,
 }
 
 #[derive(Clone)]
@@ -149,21 +168,49 @@ pub enum Driver {
 }
 
 impl Driver {
-    pub async fn launch(spec: LaunchSpec) -> Result<Launched, Error> {
+    pub async fn launch(mut spec: LaunchSpec) -> Result<Launched, Error> {
+        if spec.sandbox.is_some() {
+            if spec.display == Display::Visible {
+                return Err(Error::InvalidArgument {
+                    field: DISPLAY_FIELD.to_owned(),
+                    message: SANDBOX_VISIBLE_HELP.to_owned(),
+                });
+            }
+            // The runner's relay is the browser's only way out of its container.
+            spec.proxy_server = Some(format!(
+                "http://{}:{}",
+                sandbox::RELAY_HOST,
+                sandbox::RELAY_PORT
+            ));
+            spec.executable = sandbox::resolve_executable(&spec.executable)?;
+        }
+
         if spec.display == Display::Visible
             && spec.display_env.display.is_none()
             && spec.display_env.wayland_display.is_none()
         {
             return Err(Error::DependencyMissing {
-                name: DISPLAY_VAR.to_owned(),
-                help: INSTALL_HELP.to_owned(),
+                name: VISIBLE_DISPLAY.to_owned(),
+                help: VISIBLE_DISPLAY_HELP.to_owned(),
             });
         }
 
-        match spec.engine {
+        let docker_url = spec
+            .sandbox
+            .as_ref()
+            .and_then(|sandbox| sandbox.docker.docker_url.clone());
+        let launched = match spec.engine {
             Engine::Chromium => Chromium::launch(spec).await,
             Engine::Camoufox => Camoufox::launch(spec).await,
+        };
+        // The image or a build volume may have gone from the Host since it was checked.
+        if launched.is_err()
+            && let Some(url) = &docker_url
+        {
+            sandbox::forget_host(url);
         }
+
+        launched
     }
 
     pub async fn open_tab(&self, url: &str) -> Result<TargetId, Error> {
@@ -197,7 +244,7 @@ impl Driver {
         url: &str,
         wait_until: WaitUntil,
         timeout: Duration,
-    ) -> Result<(), Error> {
+    ) -> Result<Navigated, Error> {
         match self {
             Driver::Chromium(chromium) => {
                 chromium.navigate(target_id, url, wait_until, timeout).await

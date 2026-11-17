@@ -19,7 +19,7 @@ use std::{
 use axum::{Router, routing::get};
 use brr_core::{
     Build, BuildChoice, BuildId, BuildSource, BuildState, Channel, ConflictReason, Engine, Error,
-    Event, Paths, now_ms,
+    Event, Paths, ProfileSettings, now_ms,
 };
 use brr_daemon::{
     App, ops,
@@ -27,6 +27,7 @@ use brr_daemon::{
 };
 use brr_store::{Store, build};
 use serde_json::{Value, json};
+use test_case::test_case;
 use tokio::{net::TcpListener, time};
 use zip::{ZipWriter, write::SimpleFileOptions};
 
@@ -42,6 +43,7 @@ const EXECUTABLE_MODE: u32 = 0o755;
 const ZIP_DELAY: Duration = Duration::from_millis(200);
 const POLL_STEP: Duration = Duration::from_millis(20);
 const POLL_TIMEOUT: Duration = Duration::from_secs(10);
+const TEMPLATE_NAME: &str = "pinned-template";
 
 struct Cft {
     base: String,
@@ -169,10 +171,11 @@ fn invalid_field(result: Result<Value, Error>) -> String {
 #[tokio::test]
 async fn detect_registers_once() {
     let bin = tempfile::tempdir().unwrap();
-    let script = bin.path().join("google-chrome-stable");
+    // Chrome's vendor install at /opt may exist on the host and hides the google-chrome wrappers.
+    let script = bin.path().join("chromium");
     fs::write(
         &script,
-        format!("#!/bin/sh\necho 'Google Chrome {SYSTEM_VERSION}'\n"),
+        format!("#!/bin/sh\necho 'Chromium {SYSTEM_VERSION}'\n"),
     )
     .unwrap();
     fs::set_permissions(&script, fs::Permissions::from_mode(EXECUTABLE_MODE)).unwrap();
@@ -616,6 +619,68 @@ async fn remove_rules() {
     assert_eq!(events_of(&app, "build.removed").await.len(), 1);
     let gone = call(&app, "build.get", json!({"build_id": installed.id})).await;
     assert!(matches!(gone, Err(Error::NotFound { .. })));
+}
+
+#[test_case(true; "pinned by id")]
+#[test_case(false; "following its channel")]
+#[tokio::test]
+async fn remove_refuses_a_build_a_template_uses(pinned: bool) {
+    let (_dir, app, _cft) = app_with_cft().await;
+    app.set_settings(BTreeMap::from([(
+        "oneshot.profile".to_string(),
+        json!("elsewhere"),
+    )]))
+    .await
+    .unwrap();
+    call(&app, "profile.delete", json!({"profile": "oneshot"}))
+        .await
+        .unwrap();
+    let installed: Build = serde_json::from_value(
+        call(&app, "build.install", json!({"source": "cft"}))
+            .await
+            .unwrap(),
+    )
+    .unwrap();
+    wait_installed(&app).await;
+    let build = if pinned {
+        BuildChoice::BuildId(installed.id)
+    } else {
+        BuildChoice::Channel(Channel {
+            source: BuildSource::Cft,
+            name: "stable".to_string(),
+        })
+    };
+    let settings = serde_json::to_value(ProfileSettings {
+        build,
+        ..ProfileSettings::default()
+    })
+    .unwrap();
+    let template = call(
+        &app,
+        "template.create",
+        json!({"name": TEMPLATE_NAME, "settings": settings}),
+    )
+    .await
+    .unwrap();
+
+    let refused = call(&app, "build.remove", json!({"build_id": installed.id})).await;
+    let view = call(&app, "build.get", json!({"build_id": installed.id}))
+        .await
+        .unwrap();
+    call(&app, "template.delete", json!({"template": TEMPLATE_NAME}))
+        .await
+        .unwrap();
+    let removed = call(&app, "build.remove", json!({"build_id": installed.id})).await;
+
+    assert_eq!(
+        conflict_referenced(refused),
+        format!("template {TEMPLATE_NAME}")
+    );
+    assert_eq!(
+        view["referenced_by"],
+        json!([{"kind": "template", "id": template["id"], "label": TEMPLATE_NAME}])
+    );
+    removed.unwrap();
 }
 
 #[tokio::test]

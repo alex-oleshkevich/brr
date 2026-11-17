@@ -10,10 +10,10 @@ use brr_builds::{
     install as install_release, read_compat, resolve,
 };
 use brr_core::{
-    Build, BuildId, BuildRefKind, BuildReference, BuildSource, BuildState, Channel, ConflictReason,
-    Engine, Error, EventData, compare_versions, now_ms,
+    Build, BuildChoice, BuildId, BuildRefKind, BuildReference, BuildSource, BuildState, Channel,
+    ConflictReason, Engine, Error, EventData, TemplateId, compare_versions, now_ms,
 };
-use brr_store::{Connection, build, instance, profile};
+use brr_store::{Connection, build, instance, profile, template};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tokio::{sync::mpsc, task};
@@ -65,7 +65,7 @@ pub fn source_urls(app: &App) -> SourceUrls {
     }
 }
 
-fn engine_of(source: BuildSource) -> Engine {
+pub fn engine_of(source: BuildSource) -> Engine {
     match source {
         BuildSource::Camoufox => Engine::Camoufox,
         _ => Engine::Chromium,
@@ -105,6 +105,15 @@ pub async fn detect(app: &Arc<App>) -> Result<Vec<Build>, Error> {
 fn register(c: &Connection, found: Detected) -> Result<(), Error> {
     let existing = build::find_by_path(c, &found.path)?;
     let same_version = build::find(c, BuildSource::System, &found.version)?;
+    // The same browser found at a better path (Chrome's vendor binary instead of a distro
+    // wrapper) moves the Build, so the Profiles that use it follow.
+    if existing.is_none()
+        && let Some(mut b) = same_version.clone().filter(|b| b.name == found.name)
+    {
+        b.path = found.path;
+
+        return build::update(c, &b);
+    }
     let clashes = same_version
         .as_ref()
         .is_some_and(|b| existing.as_ref().is_none_or(|e| e.id != b.id));
@@ -397,27 +406,41 @@ pub fn current_for_channel(builds: &[Build], channel: &Channel) -> Option<Build>
         .cloned()
 }
 
+struct Users {
+    all: Vec<Build>,
+    followed: Vec<Channel>,
+    templates: Vec<(TemplateId, String, BuildChoice)>,
+}
+
+impl Users {
+    fn load(c: &Connection) -> Result<Users, Error> {
+        Ok(Users {
+            all: build::all(c)?,
+            followed: profile::followed_channels(c)?,
+            templates: template::user_build_choices(c)?,
+        })
+    }
+
+    fn is_current(&self, channel: &Channel, build: &Build) -> bool {
+        current_for_channel(&self.all, channel).is_some_and(|current| current.id == build.id)
+    }
+}
+
 pub fn view(c: &Connection, build: Build) -> Result<BuildView, Error> {
-    view_with(c, build, &profile::followed_channels(c)?, &build::all(c)?)
+    view_with(c, build, &Users::load(c)?)
 }
 
 pub fn views(c: &Connection, builds: Vec<Build>) -> Result<Vec<BuildView>, Error> {
-    let all = build::all(c)?;
-    let followed = profile::followed_channels(c)?;
+    let users = Users::load(c)?;
 
     builds
         .into_iter()
-        .map(|build| view_with(c, build, &followed, &all))
+        .map(|build| view_with(c, build, &users))
         .collect()
 }
 
-fn view_with(
-    c: &Connection,
-    build: Build,
-    followed: &[Channel],
-    all: &[Build],
-) -> Result<BuildView, Error> {
-    let referenced_by = references(c, &build, followed, all)?;
+fn view_with(c: &Connection, build: Build, users: &Users) -> Result<BuildView, Error> {
+    let referenced_by = references(c, &build, users)?;
 
     Ok(BuildView {
         build,
@@ -425,12 +448,7 @@ fn view_with(
     })
 }
 
-fn references(
-    c: &Connection,
-    build: &Build,
-    followed: &[Channel],
-    all: &[Build],
-) -> Result<Vec<BuildReference>, Error> {
+fn references(c: &Connection, build: &Build, users: &Users) -> Result<Vec<BuildReference>, Error> {
     let mut found: Vec<BuildReference> = profile::pinning_build(c, &build.id)?
         .into_iter()
         .map(|(id, name)| BuildReference {
@@ -440,11 +458,24 @@ fn references(
         })
         .collect();
     found.extend(
-        followed
+        users
+            .templates
             .iter()
-            .filter(|channel| {
-                current_for_channel(all, channel).is_some_and(|current| current.id == build.id)
+            .filter(|(_, _, choice)| match choice {
+                BuildChoice::BuildId(id) => *id == build.id,
+                BuildChoice::Channel(channel) => users.is_current(channel, build),
             })
+            .map(|(id, name, _)| BuildReference {
+                kind: BuildRefKind::Template,
+                id: id.to_string(),
+                label: name.clone(),
+            }),
+    );
+    found.extend(
+        users
+            .followed
+            .iter()
+            .filter(|channel| users.is_current(channel, build))
             .map(|channel| BuildReference {
                 kind: BuildRefKind::Channel,
                 id: channel.to_string(),
@@ -497,12 +528,7 @@ pub async fn remove(app: &Arc<App>, build_id: &BuildId) -> Result<Build, Error> 
                 });
             }
 
-            let references = references(
-                c,
-                &found,
-                &profile::followed_channels(c)?,
-                &build::all(c)?,
-            )?;
+            let references = references(c, &found, &Users::load(c)?)?;
             if !references.is_empty() {
                 let listed: Vec<String> = references
                     .iter()

@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    net::IpAddr,
+    sync::{Arc, atomic::Ordering},
+};
 
 use brr_core::ProxyScheme;
 use test_case::test_case;
@@ -7,8 +10,10 @@ use tokio::{
     net::TcpStream,
 };
 
-use super::{Forwarder, parse, rewrite_head};
+use super::{Forwarder, Listen, Meter, Route, is_public, parse, rewrite_head};
 use crate::{HEAD_MAX_BYTES, Upstream, head::read_head};
+
+const DUPLEX_BYTES: usize = 4096;
 
 fn dummy_upstream() -> Arc<Upstream> {
     Arc::new(Upstream {
@@ -21,7 +26,7 @@ fn dummy_upstream() -> Arc<Upstream> {
 }
 
 async fn exchange(forwarder: &Forwarder, request: &[u8]) -> String {
-    let mut stream = TcpStream::connect(forwarder.url().replace("http://", ""))
+    let mut stream = TcpStream::connect(forwarder.url().unwrap().replace("http://", ""))
         .await
         .unwrap();
     let mut response = String::new();
@@ -34,7 +39,13 @@ async fn exchange(forwarder: &Forwarder, request: &[u8]) -> String {
 
 #[tokio::test]
 async fn head_cap() {
-    let forwarder = Forwarder::start(dummy_upstream()).await.unwrap();
+    let forwarder = Forwarder::start(
+        Route::Upstream(dummy_upstream()),
+        Listen::Loopback,
+        Arc::default(),
+    )
+    .await
+    .unwrap();
     let oversized = vec![b'a'; HEAD_MAX_BYTES + 6 * 1024];
 
     assert!(
@@ -46,6 +57,45 @@ async fn head_cap() {
         exchange(&forwarder, b"nonsense\r\n\r\n")
             .await
             .starts_with("HTTP/1.1 400")
+    );
+}
+
+#[test_case("127.0.0.1", false ; "loopback")]
+#[test_case("10.0.0.1", false ; "private 10")]
+#[test_case("172.16.5.4", false ; "private 172")]
+#[test_case("192.168.1.1", false ; "private 192")]
+#[test_case("169.254.169.254", false ; "link local")]
+#[test_case("100.64.0.1", false ; "cgnat")]
+#[test_case("::1", false ; "loopback v6")]
+#[test_case("fc00::1", false ; "unique local")]
+#[test_case("fe80::1", false ; "link local v6")]
+#[test_case("::ffff:127.0.0.1", false ; "mapped loopback")]
+#[test_case("1.1.1.1", true ; "public v4")]
+#[test_case("2606:4700::1111", true ; "public v6")]
+fn address_policy(ip: &str, allowed: bool) {
+    assert_eq!(is_public(ip.parse::<IpAddr>().unwrap()), allowed);
+}
+
+#[tokio::test]
+async fn direct_refuses_loopback_and_meters_a_handed_stream() {
+    let meter = Arc::new(Meter::default());
+    let forwarder = Forwarder::start(Route::Direct, Listen::None, Arc::clone(&meter))
+        .await
+        .unwrap();
+    let (mut stream, handed) = tokio::io::duplex(DUPLEX_BYTES);
+    forwarder.serve(handed);
+
+    let request = b"CONNECT 127.0.0.1:9 HTTP/1.1\r\n\r\n";
+    let mut response = String::new();
+    stream.write_all(request).await.unwrap();
+    stream.read_to_string(&mut response).await.unwrap();
+
+    assert_eq!(forwarder.url(), None);
+    assert!(response.starts_with("HTTP/1.1 403"));
+    assert_eq!(meter.sent.load(Ordering::Relaxed), request.len() as u64);
+    assert_eq!(
+        meter.received.load(Ordering::Relaxed),
+        response.len() as u64
     );
 }
 

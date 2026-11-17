@@ -14,9 +14,9 @@ use std::{
 use axum::{Router, routing::get};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use brr_core::{
-    AdmissionMode, Build, BuildChoice, BuildId, BuildSource, BuildState, Capability,
+    AdmissionMode, Build, BuildChoice, BuildId, BuildSource, BuildState, Capability, Channel,
     ConflictReason, Engine, Error, Extension, ExtensionId, ExtensionSource, ExtensionVersion,
-    IdleOverrides, ProfileExtension, now_ms,
+    IdleOverrides, InstanceExtension, ProfileExtension, ProfileSettings, now_ms,
 };
 use brr_daemon::{
     App,
@@ -28,6 +28,7 @@ use brr_store::{build, extension, profile_extension};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use tar::{EntryType, Header};
+use test_case::test_case;
 use tokio::{net::TcpListener, time};
 use zip::{ZipWriter, write::SimpleFileOptions};
 
@@ -36,6 +37,12 @@ use common::{KillOnDrop, add_profile, boot, chrome, ctx, listen, scratch_app, wa
 const CWS_ID: &str = "abcdefghijklmnopabcdefghijklmnop";
 const PUBLIC_KEY: &[u8] = b"fixture-public-key-der";
 const MANIFEST: &str = r#"{"manifest_version":3,"name":"Fixture","version":"1.0.0"}"#;
+const FIXTURE_NAME: &str = "Fixture";
+const MOZILLA_SIGNATURE: &str = "META-INF/mozilla.rsa";
+const AMO_SLUG: &str = "no-such-addon";
+const FOX_NAME: &str = "Fox";
+const FOX_MANIFEST: &str = r#"{"manifest_version":2,"name":"Fox","version":"1.0","browser_specific_settings":{"gecko":{"id":"fox@example"}}}"#;
+const TEMPLATE: &str = "with-extensions";
 const DAY_MS: i64 = 86_400_000;
 const NEVER_ANSWERS: Duration = Duration::from_secs(3600);
 const BUDGET_MARGIN: Duration = Duration::from_secs(2);
@@ -177,6 +184,10 @@ fn invalid_field(result: Result<Value, Error>) -> String {
     }
 }
 
+fn enable_list(extension_id: &Value) -> Value {
+    json!([{"extension_id": extension_id, "pinned_version": null, "auto_update": false}])
+}
+
 async fn set_extensions(
     app: &Arc<App>,
     profile: &str,
@@ -185,11 +196,31 @@ async fn set_extensions(
     call(
         app,
         "profile.extensions_set",
-        json!({"profile": profile, "extensions": [
-            {"extension_id": extension_id, "pinned_version": null, "auto_update": false}
-        ]}),
+        json!({"profile": profile, "extensions": enable_list(extension_id)}),
     )
     .await
+}
+
+fn settings_on(build_id: BuildId) -> Value {
+    serde_json::to_value(ProfileSettings {
+        build: BuildChoice::BuildId(build_id),
+        ..ProfileSettings::default()
+    })
+    .unwrap()
+}
+
+async fn chromium_with_extensions(app: &Arc<App>) -> BuildId {
+    let row = chromium_build(BuildSource::System, vec![Capability::UnpackedExtensions]);
+    let build_id = row.id;
+    insert_build(app, row).await;
+
+    build_id
+}
+
+async fn add_file(app: &Arc<App>, bytes: &[u8]) -> Value {
+    call(app, "extension.add", json!({"file": upload(bytes)}))
+        .await
+        .unwrap()
 }
 
 #[tokio::test]
@@ -261,6 +292,69 @@ async fn add_local_dedupes_and_accepts_a_dot_entry() {
     assert_eq!(invalid_field(both), "ref");
 }
 
+#[test_case(zip_of(&[("manifest.json", MANIFEST.as_bytes())]), None, "chromium"; "plain zip is chromium")]
+#[test_case(tar_of(&[("manifest.json", MANIFEST.as_bytes())]), None, "chromium"; "plain folder is chromium")]
+#[test_case(zip_of(&[("manifest.json", FOX_MANIFEST.as_bytes())]), None, "camoufox"; "gecko zip is camoufox")]
+#[test_case(tar_of(&[("manifest.json", FOX_MANIFEST.as_bytes())]), None, "camoufox"; "gecko folder is camoufox")]
+#[test_case(zip_of(&[("manifest.json", MANIFEST.as_bytes()), (MOZILLA_SIGNATURE, b"sig")]), None, "camoufox"; "signed xpi is camoufox")]
+#[test_case(zip_of(&[("manifest.json", MANIFEST.as_bytes())]), Some("camoufox"), "camoufox"; "explicit engine wins")]
+#[tokio::test]
+async fn add_reads_the_engine_from_the_package(
+    bytes: Vec<u8>,
+    engine: Option<&str>,
+    expected: &str,
+) {
+    let (_dir, app) = scratch_app().await;
+
+    let added = call(
+        &app,
+        "extension.add",
+        json!({"file": upload(&bytes), "engine": engine}),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(added["engine"], expected);
+}
+
+#[test_case("BRR_EXTENSIONS__CWS_UPDATE_URL", CWS_ID; "web store")]
+#[test_case("BRR_EXTENSIONS__AMO_API", AMO_SLUG; "firefox add-ons")]
+#[tokio::test]
+async fn unknown_upstream_extension_is_not_found(setting: &str, reference: &str) {
+    let addr = serve(Router::new()).await;
+    let url = format!("http://{addr}/missing");
+    let (_dir, app) = app_with(&[(setting, &url)]).await;
+    let source = if reference == CWS_ID { "cws" } else { "amo" };
+
+    let added = call(
+        &app,
+        "extension.add",
+        json!({"ref": reference, "source": source}),
+    )
+    .await;
+
+    let Err(Error::NotFound { what }) = added else {
+        panic!("expected NotFound, got {added:?}");
+    };
+    assert!(what.contains(reference), "{what}");
+    assert!(!what.contains(&url), "{what}");
+}
+
+#[tokio::test]
+async fn unreachable_upstream_is_dependency_missing() {
+    let closed = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}/crx", closed.local_addr().unwrap());
+    drop(closed);
+    let (_dir, app) = app_with(&[("BRR_EXTENSIONS__CWS_UPDATE_URL", &url)]).await;
+
+    let added = call(&app, "extension.add", json!({"ref": CWS_ID})).await;
+
+    assert!(
+        matches!(added, Err(Error::DependencyMissing { .. })),
+        "{added:?}"
+    );
+}
+
 fn referenced_detail(result: Result<Value, Error>) -> String {
     match result {
         Err(Error::Conflict {
@@ -311,10 +405,7 @@ async fn remove_is_refused_while_a_profile_enables_the_extension() {
 #[tokio::test]
 async fn engine_mismatch() {
     let (_dir, app) = scratch_app().await;
-    let xpi = zip_of(&[(
-        "manifest.json",
-        br#"{"manifest_version":2,"name":"Fox","version":"1.0","browser_specific_settings":{"gecko":{"id":"fox@example"}}}"#,
-    )]);
+    let xpi = zip_of(&[("manifest.json", FOX_MANIFEST.as_bytes())]);
     let added = call(&app, "extension.add", json!({"file": upload(&xpi)}))
         .await
         .unwrap();
@@ -327,6 +418,175 @@ async fn engine_mismatch() {
 
     assert_eq!(added["engine"], "camoufox");
     assert_eq!(invalid_field(enabled), "extensions");
+}
+
+#[test_case(true; "on create")]
+#[test_case(false; "on update")]
+#[tokio::test]
+async fn template_refuses_an_extension_for_another_engine(on_create: bool) {
+    let (_dir, app) = scratch_app().await;
+    let added = add_file(&app, &zip_of(&[("manifest.json", FOX_MANIFEST.as_bytes())])).await;
+    let settings = settings_on(chromium_with_extensions(&app).await);
+
+    let saved = if on_create {
+        call(
+            &app,
+            "template.create",
+            json!({"name": TEMPLATE, "settings": settings, "extensions": enable_list(&added["id"])}),
+        )
+        .await
+    } else {
+        call(
+            &app,
+            "template.create",
+            json!({"name": TEMPLATE, "settings": settings}),
+        )
+        .await
+        .unwrap();
+        call(
+            &app,
+            "template.update",
+            json!({"template": TEMPLATE, "extensions": enable_list(&added["id"])}),
+        )
+        .await
+    };
+
+    let Err(Error::InvalidArgument { field, message }) = saved else {
+        panic!("expected InvalidArgument, got {saved:?}");
+    };
+    assert_eq!(field, "extensions");
+    assert!(message.contains(FOX_NAME), "{message}");
+}
+
+fn channel_settings(source: BuildSource) -> Value {
+    serde_json::to_value(ProfileSettings {
+        build: BuildChoice::Channel(Channel {
+            source,
+            name: "stable".to_owned(),
+        }),
+        ..ProfileSettings::default()
+    })
+    .unwrap()
+}
+
+// No Build of either engine is installed: the channel alone names the engine.
+#[test_case(BuildSource::Camoufox, MANIFEST, FIXTURE_NAME, "Chromium", true; "chromium extension on a camoufox template create")]
+#[test_case(BuildSource::Camoufox, MANIFEST, FIXTURE_NAME, "Chromium", false; "chromium extension on a camoufox template update")]
+#[test_case(BuildSource::Cft, FOX_MANIFEST, FOX_NAME, "Camoufox", true; "camoufox extension on a chromium template create")]
+#[test_case(BuildSource::Cft, FOX_MANIFEST, FOX_NAME, "Camoufox", false; "camoufox extension on a chromium template update")]
+#[tokio::test]
+async fn template_channel_decides_the_engine_without_a_build(
+    source: BuildSource,
+    manifest: &str,
+    name: &str,
+    engine: &str,
+    on_create: bool,
+) {
+    let (_dir, app) = scratch_app().await;
+    let added = add_file(&app, &zip_of(&[("manifest.json", manifest.as_bytes())])).await;
+    let settings = channel_settings(source);
+
+    let saved = if on_create {
+        call(
+            &app,
+            "template.create",
+            json!({"name": TEMPLATE, "settings": settings, "extensions": enable_list(&added["id"])}),
+        )
+        .await
+    } else {
+        call(
+            &app,
+            "template.create",
+            json!({"name": TEMPLATE, "settings": settings}),
+        )
+        .await
+        .unwrap();
+        call(
+            &app,
+            "template.update",
+            json!({"template": TEMPLATE, "extensions": enable_list(&added["id"])}),
+        )
+        .await
+    };
+
+    let Err(Error::InvalidArgument { field, message }) = saved else {
+        panic!("expected InvalidArgument, got {saved:?}");
+    };
+    assert_eq!(field, "extensions");
+    assert!(message.contains(name), "{message}");
+    assert!(
+        message.contains(&format!("choose a {engine} browser version")),
+        "{message}"
+    );
+}
+
+#[tokio::test]
+async fn template_extensions_are_copied_on_profile_create() {
+    let (_dir, app) = scratch_app().await;
+    let added = add_file(&app, &tar_of(&[("manifest.json", MANIFEST.as_bytes())])).await;
+    let settings = settings_on(chromium_with_extensions(&app).await);
+    let created = call(
+        &app,
+        "template.create",
+        json!({"name": TEMPLATE, "settings": settings, "extensions": enable_list(&added["id"])}),
+    )
+    .await
+    .unwrap();
+
+    let fetched = call(&app, "template.get", json!({"template": TEMPLATE}))
+        .await
+        .unwrap();
+    let profile = call(
+        &app,
+        "profile.create",
+        json!({"name": "from-template", "template": TEMPLATE}),
+    )
+    .await
+    .unwrap();
+    let enabled = call(
+        &app,
+        "profile.extensions_get",
+        json!({"profile": "from-template"}),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(created["extensions"], enable_list(&added["id"]));
+    assert_eq!(fetched["extensions"], created["extensions"]);
+    assert_eq!(profile["template_name"], TEMPLATE);
+    assert_eq!(enabled["extensions"], created["extensions"]);
+}
+
+#[tokio::test]
+async fn removing_an_extension_clears_its_template_link() {
+    let (_dir, app) = scratch_app().await;
+    let added = add_file(&app, &tar_of(&[("manifest.json", MANIFEST.as_bytes())])).await;
+    let settings = settings_on(chromium_with_extensions(&app).await);
+    let template = call(
+        &app,
+        "template.create",
+        json!({"name": TEMPLATE, "settings": settings, "extensions": enable_list(&added["id"])}),
+    )
+    .await
+    .unwrap();
+
+    let listed = call(&app, "extension.list", json!({})).await.unwrap();
+    call(
+        &app,
+        "extension.remove",
+        json!({"extension_id": added["id"]}),
+    )
+    .await
+    .unwrap();
+    let after = call(&app, "template.get", json!({"template": TEMPLATE}))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        listed["extensions"][0]["template_ids"],
+        json!([template["id"]])
+    );
+    assert_eq!(after["extensions"], json!([]));
 }
 
 #[tokio::test]
@@ -458,11 +718,19 @@ async fn update_budget() {
 
     time::pause();
     let started = time::Instant::now();
-    let paths = extensions::launch_paths(&app, &profile, &build_row)
+    let (paths, loaded) = extensions::launch_paths(&app, &profile, &build_row)
         .await
         .unwrap();
 
     assert_eq!(paths, vec![version_dir]);
+    assert_eq!(
+        loaded,
+        vec![InstanceExtension {
+            id: extension_id,
+            name: "Installed".to_owned(),
+            version: "1.0.0".to_owned(),
+        }]
+    );
     assert!(started.elapsed() < extensions::UPDATE_BUDGET + BUDGET_MARGIN);
 }
 
@@ -696,5 +964,78 @@ async fn gc_candidates_and_delete() {
             .join(extension_id.to_string())
             .join("2")
             .exists()
+    );
+}
+
+#[tokio::test]
+async fn reapply_template_brings_the_template_extensions() {
+    let (_dir, app) = scratch_app().await;
+    let added = add_file(&app, &tar_of(&[("manifest.json", MANIFEST.as_bytes())])).await;
+    let settings = settings_on(chromium_with_extensions(&app).await);
+    call(
+        &app,
+        "template.create",
+        json!({"name": TEMPLATE, "settings": settings}),
+    )
+    .await
+    .unwrap();
+    call(
+        &app,
+        "profile.create",
+        json!({"name": "p", "template": TEMPLATE}),
+    )
+    .await
+    .unwrap();
+    call(
+        &app,
+        "template.update",
+        json!({"template": TEMPLATE, "extensions": enable_list(&added["id"])}),
+    )
+    .await
+    .unwrap();
+    let enabled = async || {
+        call(&app, "profile.extensions_get", json!({"profile": "p"}))
+            .await
+            .unwrap()["extensions"]
+            .clone()
+    };
+
+    let preview = call(
+        &app,
+        "profile.reapply_template",
+        json!({"profile": "p", "dry_run": true}),
+    )
+    .await
+    .unwrap();
+    let before = enabled().await;
+    call(&app, "profile.reapply_template", json!({"profile": "p"}))
+        .await
+        .unwrap();
+    let after = enabled().await;
+    call(
+        &app,
+        "template.update",
+        json!({"template": TEMPLATE, "extensions": []}),
+    )
+    .await
+    .unwrap();
+    let dropped = call(
+        &app,
+        "profile.reapply_template",
+        json!({"profile": "p", "dry_run": true}),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(preview["changes"], json!([]));
+    assert_eq!(
+        preview["extensions"],
+        json!({"added": [added["id"]], "removed": []})
+    );
+    assert_eq!(before, json!([]));
+    assert_eq!(after, enable_list(&added["id"]));
+    assert_eq!(
+        dropped["extensions"],
+        json!({"added": [], "removed": [added["id"]]})
     );
 }

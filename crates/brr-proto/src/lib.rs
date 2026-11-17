@@ -1,11 +1,12 @@
 mod calls;
+pub mod frames;
 mod mux;
 mod pipe;
 mod waiters;
 
 pub use calls::RemoteError;
 pub use mux::Mux;
-pub use pipe::{Spawned, spawn};
+pub use pipe::{Spawned, spawn, spawn_stdio};
 pub use waiters::{Matcher, SessionId, Waiters};
 
 pub const MAX_MESSAGE_BYTES: usize = 256 * 1024 * 1024;

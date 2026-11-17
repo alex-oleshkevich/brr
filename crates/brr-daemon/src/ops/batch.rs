@@ -21,7 +21,7 @@ static RUN: OperationSpec = OperationSpec {
     name: BATCH_OP,
     group: "batch",
     toolset: Toolset::Browser,
-    summary: "Run several Browser tools in order in one call. Use it only for steps you can plan without seeing the page in between: refs from `snapshot` go stale after any navigation or page change, so address elements by `selector`, and pass `tab_id` on every step (without a `client_id`, `tab_open` does not make its Tab current for later steps). Only tool names are checked before the first step; a wrong argument fails when its step runs, after earlier steps have been applied. It stops at the first error, or after about two minutes between steps; later steps are not run and not listed, so compare `completed` with `total`. A rejected request is a tool error, a failed step is a result with `ok: false`. Never batch a step whose input depends on an earlier step's output.",
+    summary: "Run several Browser tools in order in one call. Use it only for steps you can plan without seeing the page in between: refs from `snapshot` go stale after any navigation or page change, so address elements by `selector`, and pass `tab_id` on every step (without a `client_id`, `tab_open` does not make its Tab current for later steps). Only tool names are checked before the first step; a wrong argument fails when its step runs, after earlier steps have been applied. It stops at the first error, or after about two minutes between steps; later steps are not run and not listed, so compare `completed` (steps that ran) with `total`, and check `failed`. A rejected request is a tool error, a failed step is a result with `ok: false`. Never batch a step whose input depends on an earlier step's output.",
     http: Http {
         method: Method::Post,
         path: "/v1/batch",
@@ -69,7 +69,10 @@ struct Step {
 #[derive(Serialize, JsonSchema)]
 struct BatchOutput {
     total: usize,
+    #[schemars(description = "Steps that ran, failed ones included.")]
     completed: usize,
+    #[schemars(description = "Steps that ran and failed.")]
+    failed: usize,
     results: Vec<StepResult>,
     stopped: Option<Stopped>,
 }
@@ -146,7 +149,7 @@ fn run(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
         let total = steps.len();
         let started = Instant::now();
         let mut results = Vec::with_capacity(total);
-        let mut completed = 0;
+        let mut failed = 0;
         let mut stopped = None;
         let mut spent = 0;
 
@@ -158,7 +161,6 @@ fn run(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
 
             match dispatch(ctx.clone(), op, Value::Object(step.args)).await {
                 Ok(value) => {
-                    completed += 1;
                     results.push(StepResult {
                         step: step_index,
                         tool: step.tool,
@@ -168,6 +170,7 @@ fn run(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
                     });
                 }
                 Err(error) => {
+                    failed += 1;
                     results.push(StepResult {
                         step: step_index,
                         tool: step.tool,
@@ -183,9 +186,11 @@ fn run(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
             }
         }
 
+        let completed = results.len();
         tracing::info!(
             steps = total,
             completed,
+            failed,
             elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
             "batch"
         );
@@ -193,6 +198,7 @@ fn run(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
         output(&BatchOutput {
             total,
             completed,
+            failed,
             results,
             stopped,
         })

@@ -7,6 +7,9 @@
   import Input from '$lib/ui/Input.svelte';
   import Select from '$lib/ui/Select.svelte';
   import Switch from '$lib/ui/Switch.svelte';
+  import { capacity } from '$lib/capacity.svelte';
+  import { ACTIVE_STATES } from '$lib/state';
+  import NewProfileDialog from '$lib/profiles/NewProfileDialog.svelte';
   import { lastLaunchedProfile, launchProfile } from './launch';
 
   type Profile = components['schemas']['Profile'];
@@ -15,11 +18,10 @@
 
   const DEFAULT_PRIORITY = 5;
   const MAX_PRIORITY = 9;
-  const displayOptions = [
-    { value: '', label: 'Profile default' },
-    { value: 'headless', label: 'Headless (no window)' },
-    { value: 'visible', label: 'Visible (a window on this computer)' },
-    { value: 'virtual', label: 'Virtual (off-screen display)' },
+  const DISPLAY_CHOICES = [
+    { value: 'headless', name: 'Headless', label: 'Headless (no window)' },
+    { value: 'visible', name: 'Visible', label: 'Visible (a window on this computer)' },
+    { value: 'virtual', name: 'Virtual', label: 'Virtual (off-screen display)' },
   ];
   const admissionOptions = [
     { value: 'queue', label: 'Wait in line' },
@@ -36,12 +38,24 @@
   let exclusive = $state(false);
   let failure = $state<string | null>(null);
   let profilesLoaded = $state(false);
+  let creating = $state(false);
+  let running = $state(new Set<string>());
   let priorityError = $state<string | null>(null);
 
   const selected = $derived(profileId ?? profile);
   const selectedProfile = $derived(profiles.find((p) => p.id === selected));
   // Built-in profiles (the one-off pool) are not something a person launches by hand.
   const pickable = $derived(profiles.filter((p) => !p.builtin));
+  const alreadyRunning = $derived(selectedProfile?.kind === 'persistent' && running.has(selectedProfile.id));
+  const displayOptions = $derived([
+    { value: '', label: 'Profile default' },
+    ...DISPLAY_CHOICES.map(({ value, name, label }) => {
+      const reason = capacity.displayUnavailable.get(value);
+      return reason ? { value, label: `${name} — ${reason}`, disabled: true } : { value, label };
+    }),
+  ]);
+  const defaultDisplay = $derived(DISPLAY_CHOICES.find((c) => c.value === selectedProfile?.settings.display));
+  const defaultReason = $derived(defaultDisplay && capacity.displayUnavailable.get(defaultDisplay.value));
 
   $effect(() => {
     if (!open) return;
@@ -60,7 +74,25 @@
     );
     profilesLoaded = false;
     loadProfiles();
+    loadRunning();
   });
+
+  // A profile that keeps its data runs one browser at a time.
+  function loadRunning() {
+    void unwrap(api.GET('/v1/instances', { params: { query: { state: ACTIVE_STATES.join(','), limit: 500 } } })).then(
+      ({ instances }) => (running = new Set(instances.flatMap((i) => (i.profile_id && !i.ephemeral ? [i.profile_id] : [])))),
+      () => (running = new Set()),
+    );
+  }
+
+  function created(made: Profile) {
+    creating = false;
+    profiles = [...profiles, made].toSorted((a, b) => a.name.localeCompare(b.name));
+    profile = made.id;
+    profilesLoaded = true;
+  }
+
+  const isBusy = (p: Profile) => p.kind === 'persistent' && running.has(p.id);
 
   function loadProfiles() {
     failure = null;
@@ -69,7 +101,7 @@
         profiles = list.toSorted((a, b) => a.name.localeCompare(b.name));
         const last = lastLaunchedProfile();
         const choices = profiles.filter((p) => !p.builtin);
-        if (!profileId) profile = (choices.find((p) => p.id === last) ?? choices[0])?.id ?? '';
+        if (!profileId) profile = (choices.find((p) => p.id === last && !isBusy(p)) ?? choices.find((p) => !isBusy(p)) ?? choices[0])?.id ?? '';
         profilesLoaded = true;
       },
       (e: ApiError) => (failure = `Couldn't load your profiles. ${e.message}`),
@@ -107,12 +139,18 @@
         <Select
           label="Profile"
           bind:value={profile}
-          options={pickable.map((p) => ({ value: p.id, label: p.name }))}
-          hint={profilesLoaded && pickable.length === 0 ? 'Create a profile first.' : undefined}
+          options={pickable.map((p) => ({ value: p.id, label: isBusy(p) ? `${p.name} (already running)` : p.name, disabled: isBusy(p) }))}
+          hint={profilesLoaded && pickable.length === 0 ? 'You have no profiles yet.' : undefined}
         />
+        <Button size="sm" icon="plus" variant={profilesLoaded && pickable.length === 0 ? 'primary' : 'secondary'} onclick={() => (creating = true)}>New profile…</Button>
       {/if}
       <Input label="Start page (optional)" type="text" bind:value={url} placeholder="https://example.com" autocomplete="off" />
-      <Select label="Display" bind:value={display} options={displayOptions} />
+      <Select
+        label="Display"
+        bind:value={display}
+        options={displayOptions}
+        hint={!display && defaultDisplay && defaultReason ? `This profile uses ${defaultDisplay.name}, which can't start here: ${defaultReason}. Pick another display.` : undefined}
+      />
       <details class="advanced">
         <summary><span class="chevron"><Icon name="chevron-right" /></span>Advanced</summary>
         <div class="fields">
@@ -131,6 +169,9 @@
         </div>
       </details>
     </div>
+    {#if alreadyRunning}
+      <p class="note">This profile keeps its data, so it runs one browser at a time and is already running.</p>
+    {/if}
     {#if failure}
       <p class="failure" role="alert">
         {failure}
@@ -141,9 +182,11 @@
   </form>
   {#snippet footer()}
     <Button onclick={() => (open = false)}>Cancel</Button>
-    <Button variant="primary" type="submit" form="launch-form" disabled={!selectedProfile}>Launch</Button>
+    <Button variant="primary" type="submit" form="launch-form" disabled={!selectedProfile || alreadyRunning}>Launch</Button>
   {/snippet}
 </Dialog>
+
+<NewProfileDialog bind:open={creating} oncreated={created} />
 
 <style>
   .fields {

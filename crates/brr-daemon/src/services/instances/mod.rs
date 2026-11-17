@@ -5,8 +5,9 @@ pub(crate) mod promote;
 use std::{
     cmp::Ordering,
     collections::HashMap,
-    fs,
-    io::ErrorKind,
+    fs::{self, DirBuilder, File},
+    io::{ErrorKind, Read, Seek, SeekFrom},
+    os::unix::fs::DirBuilderExt,
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex, PoisonError,
@@ -15,17 +16,19 @@ use std::{
     time::Duration,
 };
 
-use brr_cdp::{Downstream, Outbound};
+use brr_cdp::{CONNECTION_CLOSED, Downstream, Outbound};
 use brr_core::{
     AdmissionMode, Build, BuildId, BuildSource, ConflictReason, Cookie, Display, EndReason, Engine,
-    Error, EventData, HumanReason, IdleOverrides, Instance, InstanceId, InstanceKind,
-    InstanceState, InstanceTrigger, Profile, ProfileId, ProfileKind, ProfileSettings, Tab,
-    TabCloseReason, TabId, TabState, WaitUntil, compare_versions, now_ms,
+    Error, EventData, Host, HumanReason, IdleOverrides, Instance, InstanceExtension, InstanceId,
+    InstanceKind, InstanceState, InstanceTrigger, Profile, ProfileId, ProfileKind, ProfileSettings,
+    ProxyId, SandboxMode, Tab, TabCloseReason, TabId, TabState, WaitUntil, compare_versions,
+    now_ms,
 };
 use brr_engine::{
-    AttachSpec, CamoufoxSpec, Connection, ContextId, Driver, LaunchSpec, devtools_active_port,
-    page::Page,
+    AttachSpec, BROWSER_CLOSED, CamoufoxSpec, Connection, ContextId, Driver, LaunchSpec, Navigated,
+    devtools_active_port, page::Page, sandbox::SandboxSpec,
 };
+use brr_proto::frames::Stream;
 use brr_store::{build, instance};
 use futures::future::join_all;
 use tokio::io::DuplexStream;
@@ -45,7 +48,7 @@ use crate::{
         events::{self, Published},
         extensions, leases,
         profiles::resolve_build,
-        proxies, quota, relay,
+        proxies, quota, relay, sandbox,
     },
 };
 use owner::{Activity, Command, Inbox, Reply, fail_admission, fail_launch, stop_unowned};
@@ -64,6 +67,28 @@ const SHUTDOWN_MARGIN: Duration = Duration::from_secs(5);
 const CANCEL_WAIT: Duration = Duration::from_secs(10);
 // Existing pages of a Live browser reach Ready from the driver's own events.
 const ATTACH_TABS_WAIT: Duration = Duration::from_secs(10);
+const LOG_TAIL_BYTES: u64 = 16 * 1024;
+const LOG_LINE_MAX_CHARS: usize = 200;
+// Chromium prefixes each log line with `[pid:tid:time:LEVEL:file(line)] `.
+const CHROMIUM_PREFIX_END: &str = "] ";
+const CHROMIUM_FATAL: &str = ":FATAL:";
+const CHROMIUM_ERROR: &str = ":ERROR:";
+// Lines Chromium prints after the real cause; they say nothing about what went wrong.
+const GENERIC_EXITS: [&str; 2] = ["failed to initialize", "Exiting"];
+const VISIBLE_EXIT_HINT: &str =
+    "use display headless or virtual, or check that the desktop display is reachable";
+// Chromium's own sandbox needs unprivileged user namespaces, which hardened hosts block.
+const NO_USABLE_SANDBOX: &str = "No usable sandbox";
+const CHROMIUM_SANDBOX: &str = "Chromium sandbox";
+const NO_USABLE_SANDBOX_HELP: &str = "this host blocks the user namespaces Chromium's own sandbox needs; set Settings → Sandbox to Docker, which isolates each browser in its own container";
+// Browser.getVersion's product of a headless Chrome, e.g. `HeadlessChrome/131.0.6778.85`.
+const HEADLESS_PRODUCT: &str = "HeadlessChrome";
+// Holds the forwarder's socket, which the container sees too.
+const RUN_DIR_MODE: u32 = 0o700;
+const VISIBLE_IN_SANDBOX: &str =
+    "visible display is not available in the docker sandbox; use headless or virtual";
+// How the engine's failed `docker` calls begin: on a Host, SSH or the Host's Docker failed.
+const DOCKER_FAILED_PREFIX: &str = "`docker ";
 
 pub struct LaunchRequest {
     pub profile: Profile,
@@ -122,9 +147,12 @@ impl Drop for Launching<'_> {
 // What the launch needs before it asks for a slot.
 struct Prepared {
     proxy_server: Option<String>,
+    proxy_id: Option<ProxyId>,
     extensions: Vec<PathBuf>,
+    loaded: Vec<InstanceExtension>,
     settings: ProfileSettings,
     camoufox: Option<CamoufoxSpec>,
+    sandbox: Option<SandboxSpec>,
 }
 
 impl Instances {
@@ -156,6 +184,13 @@ impl Instances {
         let profile = req.profile;
         quota::check_launch(app, &profile).await?;
         let display = req.display.unwrap_or(profile.settings.display);
+        let sandbox_mode = app.settings().sandbox.mode;
+        if sandbox_mode == SandboxMode::Docker && display == Display::Visible {
+            return Err(Error::InvalidArgument {
+                field: "display".to_owned(),
+                message: VISIBLE_IN_SANDBOX.to_owned(),
+            });
+        }
         let choice = profile.settings.build.clone();
         let build = app.store.run(move |c| resolve_build(c, &choice)).await?;
         let persistent = profile.kind == ProfileKind::Persistent;
@@ -197,6 +232,14 @@ impl Instances {
             ended_at: None,
             end_reason: None,
             error: None,
+            settings: Some(profile.settings.clone()),
+            template_id: profile.template_id,
+            template_name: profile.template_name.clone(),
+            extensions: None,
+            proxy_id: None,
+            sandbox: Some(sandbox_mode),
+            traffic: None,
+            host_id: None,
             profile_name: Some(profile.name.clone()),
             build: None,
             tab_count: 0,
@@ -243,14 +286,17 @@ impl Instances {
             .await?;
 
         let prepared = tokio::select! {
-            prepared = prepare(app, &instance_id, &profile, &build) => prepared,
+            prepared = prepare(app, &instance_id, &profile, &build, sandbox_mode) => prepared,
             _ = cancelled(&mut cancel) => return end_unadmitted(app, &mut instance, req.admission).await,
         };
         let Prepared {
             proxy_server,
+            proxy_id,
             extensions,
+            loaded,
             settings,
             camoufox: camoufox_spec,
+            sandbox: mut sandbox_spec,
         } = match prepared {
             Ok(prepared) => prepared,
             Err(error) => {
@@ -259,12 +305,16 @@ impl Instances {
                 return Err(error);
             }
         };
+        // Written with the next state change, which every path from here makes.
+        instance.extensions = Some(loaded);
+        instance.proxy_id = proxy_id;
 
         let admitted = app
             .admission
             .admit(
                 app,
                 AdmitRequest {
+                    sandbox: sandbox_mode,
                     instance_id,
                     profile_name: profile.name.clone(),
                     engine: build.engine,
@@ -277,11 +327,20 @@ impl Instances {
                 &mut cancel,
             )
             .await;
-        if let Err(error) = admitted {
-            proxies::release(app, &instance_id);
-            fail_admission(app, &mut instance, req.admission, &error).await;
+        let placed = match admitted {
+            Ok(placed) => placed,
+            Err(error) => {
+                proxies::release(app, &instance_id);
+                sandbox::remove_run_dir(&app.paths, &instance_id);
+                fail_admission(app, &mut instance, req.admission, &error).await;
 
-            return Err(error);
+                return Err(error);
+            }
+        };
+        // Only a docker launch is placed on a Host, so a placed run has a docker target.
+        if let (Some(host), Some(sandbox)) = (&placed, sandbox_spec.as_mut()) {
+            instance.host_id = Some(host.id);
+            sandbox.docker.docker_url = Some(host.docker_url.clone());
         }
         if let Err(error) = transition(app, &mut instance, InstanceTrigger::Admitted, None).await {
             fail_launch(app, &mut instance, &error).await;
@@ -314,6 +373,7 @@ impl Instances {
             console_buffer: app.settings().tab.console_buffer,
             network_buffer: app.settings().tab.network_buffer,
             camoufox: camoufox_spec,
+            sandbox: sandbox_spec,
         };
 
         // Computed before the process exists: the list wait must not sit between spawning the
@@ -322,16 +382,47 @@ impl Instances {
             .content
             .options(app, spec.settings.block_ads, spec.settings.dismiss_cookies)
             .await;
+        // A Host gets the image, browser and run volume first; this may take minutes the first
+        // time, so it runs before the start timeout and yields to a stop.
+        let host_ready = tokio::select! {
+            ready = brr_engine::sandbox::prepare(&spec) => ready,
+            reason = crate::services::admission::cancelled(&mut cancel) => {
+                stop_unowned(app, &mut instance, reason).await;
+                app.admission.finished(app, &instance_id).await;
+
+                return Err(cancelled_launch());
+            }
+        };
+        if let Err(error) = host_ready {
+            let error = match &placed {
+                Some(host) => host_launch_failed(app, host, &error),
+                None => error,
+            };
+            fail_launch(app, &mut instance, &error).await;
+            app.admission.finished(app, &instance_id).await;
+
+            return Err(error);
+        }
         let started = time::Instant::now();
         let launched = match start_browser(&spec, persistent).await {
             Ok(launched) => launched,
             Err(error) => {
+                let error = if closed_while_starting(&error) {
+                    exited_while_starting(&spec).unwrap_or(error)
+                } else {
+                    error
+                };
+                let error = match &placed {
+                    Some(host) => host_launch_failed(app, host, &error),
+                    None => error,
+                };
                 fail_launch(app, &mut instance, &error).await;
                 app.admission.finished(app, &instance_id).await;
 
                 return Err(error);
             }
         };
+        serve_tunnels(app, instance_id, launched.tunnels);
 
         // Before the first navigation any Client can make.
         if let Err(error) = launched.driver.set_content_defaults(options).await {
@@ -488,6 +579,14 @@ impl Instances {
             ended_at: None,
             end_reason: None,
             error: None,
+            settings: None,
+            template_id: None,
+            template_name: None,
+            extensions: None,
+            proxy_id: None,
+            sandbox: None,
+            traffic: None,
+            host_id: None,
             profile_name: None,
             build: None,
             tab_count: 0,
@@ -519,6 +618,9 @@ impl Instances {
         };
 
         instance.build_id = matching_build(app, &attached.browser_version).await;
+        if attached.browser_version.contains(HEADLESS_PRODUCT) {
+            instance.display = Display::Headless;
+        }
         instance.started_at = Some(now_ms());
         transition(app, &mut instance, InstanceTrigger::Connected, None).await?;
 
@@ -868,15 +970,23 @@ impl Instances {
         url: String,
         wait_until: WaitUntil,
         timeout: Duration,
-    ) -> Result<Tab, Error> {
-        self.call(instance_id, |reply| Command::Navigate {
-            tab_id: *tab_id,
-            url,
-            wait_until,
-            timeout,
-            reply,
-        })
-        .await
+    ) -> Result<(Tab, Navigated), Error> {
+        let (navigated, outcome) = oneshot::channel();
+        let tab = self
+            .call(instance_id, |reply| Command::Navigate {
+                tab_id: *tab_id,
+                url,
+                wait_until,
+                timeout,
+                navigated,
+                reply,
+            })
+            .await?;
+        let outcome = outcome
+            .await
+            .map_err(|_| internal("the navigation answered without its outcome"))?;
+
+        Ok((tab, outcome))
     }
 
     // The owner may have ended meanwhile: then there is no Tab left to update.
@@ -995,7 +1105,15 @@ impl Instances {
     // repeat until nothing is left.
     pub async fn shutdown_all(&self, app: &Arc<App>) {
         self.closed.store(true, AtomicOrdering::SeqCst);
-        let wait = Duration::from_secs(app.settings().instance.stop_timeout_s) + SHUTDOWN_MARGIN;
+        // The longest stop any run may take: a Host's persistent run also sends its Profile back.
+        let grace = self
+            .views()
+            .iter()
+            .map(|view| owner::copy_back_grace(&view.instance))
+            .max()
+            .unwrap_or_default();
+        let wait =
+            Duration::from_secs(app.settings().instance.stop_timeout_s) + grace + SHUTDOWN_MARGIN;
 
         let rounds = async {
             loop {
@@ -1202,6 +1320,7 @@ fn live_spec(app: &Arc<App>, instance_id: InstanceId) -> LaunchSpec {
         console_buffer: app.settings().tab.console_buffer,
         network_buffer: app.settings().tab.network_buffer,
         camoufox: None,
+        sandbox: None,
     }
 }
 
@@ -1261,9 +1380,29 @@ async fn prepare(
     instance_id: &InstanceId,
     profile: &Profile,
     build: &Build,
+    sandbox_mode: SandboxMode,
 ) -> Result<Prepared, Error> {
-    let proxy_server = proxies::for_launch(app, instance_id, profile).await?;
-    let extensions = extensions::launch_paths(app, profile, build).await?;
+    let sandbox = match sandbox_mode {
+        SandboxMode::Docker => {
+            let docker = app.sandbox.target(app).await?;
+            let run_dir = app.paths.runs_dir().join(instance_id.to_string());
+            DirBuilder::new()
+                .recursive(true)
+                .mode(RUN_DIR_MODE)
+                .create(&run_dir)
+                .map_err(internal)?;
+
+            Some(SandboxSpec {
+                run_dir,
+                docker,
+                copy_back: profile.kind == ProfileKind::Persistent,
+            })
+        }
+        SandboxMode::None => None,
+    };
+    let proxy_server = proxies::for_launch(app, instance_id, profile, sandbox.is_some()).await?;
+    let proxy_id = proxies::instance_proxy_id(app, instance_id);
+    let (extensions, loaded) = extensions::launch_paths(app, profile, build).await?;
     let extensions = match companion_path(app, profile, build)? {
         Some(path) => [extensions, vec![path]].concat(),
         None => extensions,
@@ -1283,9 +1422,12 @@ async fn prepare(
 
     Ok(Prepared {
         proxy_server,
+        proxy_id,
         extensions,
+        loaded,
         settings,
         camoufox,
+        sandbox,
     })
 }
 
@@ -1297,6 +1439,7 @@ async fn end_unadmitted(
 ) -> Result<(Instance, Tab), Error> {
     let error = cancelled_launch();
     proxies::release(app, &instance.id);
+    sandbox::remove_run_dir(&app.paths, &instance.id);
     fail_admission(app, instance, mode, &error).await;
 
     Err(error)
@@ -1343,6 +1486,101 @@ async fn start_browser(spec: &LaunchSpec, persistent: bool) -> Result<brr_engine
     }
 
     Driver::launch(spec.clone()).await
+}
+
+// Hands a sandboxed run's proxy tunnels to its forwarder until the container's stdio closes.
+fn serve_tunnels(app: &Arc<App>, instance_id: InstanceId, tunnels: Option<mpsc::Receiver<Stream>>) {
+    let Some(mut tunnels) = tunnels else {
+        return;
+    };
+    let app = Arc::clone(app);
+    tokio::spawn(async move {
+        while let Some(tunnel) = tunnels.recv().await {
+            proxies::serve_tunnel(&app, &instance_id, tunnel);
+        }
+    });
+}
+
+// No retry elsewhere: the error names the Host. Only a failed `docker -H` call says the Host is
+// unusable, and placement then skips it until its next probe; a browser or Profile failure
+// leaves its status as it was.
+fn host_launch_failed(app: &App, host: &Host, error: &Error) -> Error {
+    let message = format!("launch on host {} failed: {error}", host.name);
+    warn!(host_id = %host.id, %message, "host launch failed");
+    if matches!(error, Error::Internal { message: text } if text.starts_with(DOCKER_FAILED_PREFIX))
+    {
+        app.hosts.launch_failed(host.id, message.clone());
+    }
+
+    internal(message)
+}
+
+fn closed_while_starting(error: &Error) -> bool {
+    matches!(error, Error::Internal { message } if message == CONNECTION_CLOSED || message == BROWSER_CLOSED)
+}
+
+// A browser that dies while starting leaves its reason in its log, not on the closed pipe.
+fn exited_while_starting(spec: &LaunchSpec) -> Option<Error> {
+    let line = last_log_line(&spec.log_file)?;
+    if line.contains(NO_USABLE_SANDBOX) {
+        return Some(Error::DependencyMissing {
+            name: CHROMIUM_SANDBOX.to_owned(),
+            help: NO_USABLE_SANDBOX_HELP.to_owned(),
+        });
+    }
+    let hint = if spec.display == Display::Visible {
+        VISIBLE_EXIT_HINT.to_owned()
+    } else {
+        format!("see {} for the whole log", spec.log_file.display())
+    };
+
+    Some(internal(format!(
+        "the browser exited while starting: {line}; {hint}"
+    )))
+}
+
+// The browser's own text: control characters go and the length is capped.
+fn last_log_line(path: &Path) -> Option<String> {
+    let mut file = File::open(path).ok()?;
+    let len = file.metadata().ok()?.len();
+    file.seek(SeekFrom::Start(len.saturating_sub(LOG_TAIL_BYTES)))
+        .ok()?;
+    let mut tail = Vec::new();
+    file.read_to_end(&mut tail).ok()?;
+    let text = String::from_utf8_lossy(&tail);
+
+    let lines: Vec<&str> = text
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .collect();
+    let cause = |level: &str| {
+        lines.iter().rev().find(|line| {
+            line.contains(level) && !GENERIC_EXITS.iter().any(|generic| line.contains(generic))
+        })
+    };
+    let line = *cause(CHROMIUM_FATAL)
+        .or_else(|| cause(CHROMIUM_ERROR))
+        .or(lines.last())?;
+    let message = match line.split_once(CHROMIUM_PREFIX_END) {
+        Some((prefix, message)) if prefix.starts_with('[') => message,
+        _ => line,
+    };
+    let message: String = message
+        .chars()
+        .filter(|c| !c.is_control())
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    Some(
+        message
+            .trim_end_matches('.')
+            .chars()
+            .take(LOG_LINE_MAX_CHARS)
+            .collect(),
+    )
 }
 
 // E3: the companion loads into the managed browser like any unpacked extension.

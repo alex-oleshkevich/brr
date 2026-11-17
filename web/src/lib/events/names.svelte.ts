@@ -4,9 +4,13 @@ import { events } from '$lib/api/events.svelte';
 type Kind = 'instance' | 'profile' | 'tab' | 'client';
 
 const MAX_NAMES = 500;
+export const ATTACHED = 'Attached browser';
 
 const fetchers: Record<Kind, (id: string) => Promise<string | null | undefined>> = {
-  instance: async (id) => (await unwrap(api.GET('/v1/instances/{instance_id}', { params: { path: { instance_id: id } } }))).profile_name,
+  instance: async (id) => {
+    const run = await unwrap(api.GET('/v1/instances/{instance_id}', { params: { path: { instance_id: id } } }));
+    return run.kind === 'live' ? ATTACHED : run.profile_name;
+  },
   profile: async (id) => (await unwrap(api.GET('/v1/profiles/{profile}', { params: { path: { profile: id } } }))).name,
   tab: async (id) => {
     const tab = await unwrap(api.GET('/v1/tabs/{tab_id}', { params: { path: { tab_id: id } } }));

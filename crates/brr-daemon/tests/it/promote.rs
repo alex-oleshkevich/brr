@@ -186,6 +186,7 @@ fn source_profile(name: &str) -> Profile {
         name: name.to_owned(),
         kind: ProfileKind::Ephemeral,
         template_id: None,
+        template_name: None,
         settings: brr_core::ProfileSettings::default(),
         pinned: false,
         notes: String::new(),

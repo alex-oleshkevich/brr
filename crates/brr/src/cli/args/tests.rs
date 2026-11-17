@@ -64,6 +64,25 @@ fn unset_flags_are_left_out() {
     assert_eq!(parse(&["brr", "profile", "list"]), json!({}));
 }
 
+#[test]
+fn tags_take_commas_or_repeated_flags() {
+    let input = try_parse(&[
+        "brr",
+        "profile",
+        "create",
+        "work",
+        "--template",
+        "chromium-headless",
+        "--tags",
+        "a,b",
+        "--tags",
+        "c",
+    ])
+    .expect("parses");
+
+    assert_eq!(input["tags"], json!(["a", "b", "c"]));
+}
+
 fn import_input(_: &mut SchemaGenerator) -> Schema {
     json_schema!({
         "type": "object",

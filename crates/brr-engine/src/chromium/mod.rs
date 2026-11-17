@@ -37,7 +37,7 @@ use crate::page::{
     parse_cookies,
 };
 use crate::xvfb::{DEFAULT_VIRTUAL_SCREEN, Xvfb};
-use crate::{Driver, DriverEvent, LaunchSpec, Launched};
+use crate::{BROWSER_CLOSED, Driver, DriverEvent, LaunchSpec, Launched, Navigated, sandbox};
 
 pub(crate) use crate::common::millis;
 
@@ -60,6 +60,11 @@ const TRAILING_FLAGS: [&str; 5] = [
 const USER_DATA_DIR_FLAG: &str = "--user-data-dir=";
 const HEADLESS_FLAG: &str = "--headless";
 const DISABLE_DEV_SHM_FLAG: &str = "--disable-dev-shm-usage";
+// Branded Chrome picks Wayland from XDG_SESSION_TYPE and exits when Xvfb is the only display.
+const X11_FLAG: &str = "--ozone-platform=x11";
+// The docker sandbox's container is the boundary; Chromium's own sandbox needs privileges the
+// container drops.
+const NO_SANDBOX_FLAG: &str = "--no-sandbox";
 
 #[derive(Clone)]
 pub struct Chromium {
@@ -126,8 +131,10 @@ pub(crate) fn args(spec: &LaunchSpec, in_container: bool) -> Vec<OsString> {
     args.push(user_data_dir);
     args.extend(TRAILING_FLAGS.iter().map(OsString::from));
 
-    if spec.display == brr_core::Display::Headless {
-        args.push(HEADLESS_FLAG.into());
+    match spec.display {
+        brr_core::Display::Headless => args.push(HEADLESS_FLAG.into()),
+        brr_core::Display::Virtual => args.push(X11_FLAG.into()),
+        brr_core::Display::Visible => {}
     }
     if let Some(screen) = &spec.settings.screen {
         args.push(format!("--window-size={},{}", screen.width, screen.height).into());
@@ -158,6 +165,9 @@ pub(crate) fn args(spec: &LaunchSpec, in_container: bool) -> Vec<OsString> {
     if in_container {
         // A container's /dev/shm is 64 MB by default, too small for Chromium's renderers.
         args.push(DISABLE_DEV_SHM_FLAG.into());
+    }
+    if spec.sandbox.is_some() {
+        args.push(NO_SANDBOX_FLAG.into());
     }
     args.extend(spec.settings.args.iter().map(OsString::from));
     args.push(BLANK_PAGE.into());
@@ -207,24 +217,35 @@ fn command(spec: &LaunchSpec, xvfb: Option<&Xvfb>) -> Result<Command, Error> {
 
 impl Chromium {
     pub(crate) async fn launch(mut spec: LaunchSpec) -> Result<Launched, Error> {
+        if let Some(sandbox) = &spec.sandbox {
+            spec.extensions = sandbox::copy_extensions(&sandbox.run_dir, &spec.extensions)?;
+        }
         // The window fills the virtual screen, so the page sees the size the Profile asked for.
-        let xvfb = if spec.display == Display::Virtual {
-            let screen = spec
-                .settings
+        let screen = (spec.display == Display::Virtual).then(|| {
+            spec.settings
                 .screen
                 .clone()
-                .unwrap_or(DEFAULT_VIRTUAL_SCREEN);
-            let xvfb = Xvfb::start(screen.clone(), &spec.instance_id, &spec.log_file).await?;
-            spec.settings.screen.get_or_insert(screen);
-
-            Some(xvfb)
-        } else {
-            None
+                .unwrap_or(DEFAULT_VIRTUAL_SCREEN)
+        });
+        // In the docker sandbox the runner starts Xvfb inside the container.
+        let xvfb = match (&screen, &spec.sandbox) {
+            (Some(screen), None) => {
+                Some(Xvfb::start(screen.clone(), &spec.instance_id, &spec.log_file).await?)
+            }
+            _ => None,
         };
+        if let Some(screen) = &screen {
+            spec.settings.screen.get_or_insert(screen.clone());
+        }
         let xvfb_pid = xvfb.as_ref().map(Xvfb::pid);
-        let spawned = match command(&spec, xvfb.as_ref())
-            .and_then(|command| brr_proto::spawn(command).map_err(internal))
-        {
+        let spawned = match (command(&spec, xvfb.as_ref()), &spec.sandbox) {
+            (Ok(command), Some(sandbox)) => sandbox::start(&spec, sandbox, &command, screen).await,
+            (Ok(command), None) => brr_proto::spawn(command)
+                .map(|spawned| (spawned, None))
+                .map_err(internal),
+            (Err(error), _) => Err(error),
+        };
+        let (spawned, remote) = match spawned {
             Ok(spawned) => spawned,
             Err(error) => {
                 // Stopping removes its auth file; dropping it would only kill the process.
@@ -298,17 +319,21 @@ impl Chromium {
                     after_ms: millis(spec.start_timeout),
                 });
             }
-            Ok(Err(_)) => return Err(internal("browser closed before its first tab attached")),
+            Ok(Err(_)) => return Err(internal(BROWSER_CLOSED)),
             Ok(Ok(target_id)) => target_id,
         };
 
         Ok(Launched {
             driver: Driver::Chromium(Chromium { inner }),
-            events,
+            events: match remote {
+                Some(remote) => remote.relay(events),
+                None => events,
+            },
             pid,
             browser_version,
             first_target_id,
             xvfb_pid,
+            tunnels: spawned.opened,
         })
     }
 
@@ -378,7 +403,7 @@ impl Chromium {
         url: &str,
         wait_until: WaitUntil,
         timeout: Duration,
-    ) -> Result<(), Error> {
+    ) -> Result<Navigated, Error> {
         let (session_id, _) = self.tab(target_id)?;
         let wanted = wanted_lifecycle(wait_until);
 
@@ -389,25 +414,29 @@ impl Chromium {
             let waiter = lifecycle_waiter(&self.inner.cdp, &session_id, wanted, &pending);
 
             let result = self.inner.cdp.navigate(&session_id, url).await?;
+            // A download answers with ERR_ABORTED as well, but nothing failed.
+            if result.is_download {
+                return Ok(Navigated::Download);
+            }
             if let Some(net_error) = result.error_text {
                 return Err(Error::NavigationFailed { net_error });
             }
             // Same-document navigation fires no new lifecycle event.
             let Some(loader_id) = result.loader_id else {
-                return Ok(());
+                return Ok(Navigated::Page);
             };
 
             {
                 let mut pending = pending.lock().unwrap_or_else(PoisonError::into_inner);
                 if pending.seen.contains(&loader_id) {
-                    return Ok(());
+                    return Ok(Navigated::Page);
                 }
                 pending.expected = Some(loader_id);
             }
 
             waiter
                 .await
-                .map(|_| ())
+                .map(|_| Navigated::Page)
                 .map_err(|_| internal(CONNECTION_CLOSED))
         };
 

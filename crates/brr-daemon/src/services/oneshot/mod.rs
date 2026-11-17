@@ -13,7 +13,7 @@ use brr_core::{
     now_ms,
 };
 use brr_engine::{
-    ContextId, RequestRules,
+    ContextId, Navigated, RequestRules,
     page::{Cleanup, Clip, EmulateOptions, Page, ScreenshotOptions, Target, WaitCondition},
 };
 use brr_store::{Store, profile, template};
@@ -49,6 +49,8 @@ const POOL_BACKOFF_BASE: Duration = Duration::from_secs(15);
 const POOL_BACKOFF_MAX: Duration = Duration::from_secs(10 * 60);
 const POOL_STABLE: Duration = Duration::from_secs(5 * 60);
 const MAX_BACKOFF_DOUBLINGS: u32 = 6;
+const URL_FIELD: &str = "url";
+const DOWNLOAD_HELP: &str = "this URL downloads a file instead of showing a page; open it in a Tab with navigate to save the download";
 
 #[derive(Default)]
 pub struct Oneshot {
@@ -162,6 +164,7 @@ pub async fn ensure_profile(store: &Store, settings: &Settings) -> Result<(), Er
                     name,
                     kind: ProfileKind::Ephemeral,
                     template_id: Some(template.id),
+                    template_name: Some(template.name),
                     settings: template.settings,
                     pinned: false,
                     notes: String::new(),
@@ -413,7 +416,8 @@ async fn execute(
     let limit = params.timeout();
 
     prepare(app, &page, &profile, params).await?;
-    app.instances
+    let (_, navigated) = app
+        .instances
         .navigate(
             &instance_id,
             &tab.id,
@@ -422,6 +426,9 @@ async fn execute(
             limit,
         )
         .await?;
+    if navigated == Navigated::Download {
+        return Err(invalid(URL_FIELD, DOWNLOAD_HELP));
+    }
     if let Some(selector) = &params.wait_for {
         page.wait_for(&WaitCondition::Selector(selector.clone()), limit)
             .await?;

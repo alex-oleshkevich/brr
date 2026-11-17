@@ -79,18 +79,27 @@ impl McpServer {
             return Ok(self.toolsets.clone());
         }
 
-        let Some(parts) = context.extensions.get::<Parts>() else {
-            return Ok(None);
-        };
-        let Query(query) = Query::<ToolsetsQuery>::try_from_uri(&parts.uri)
-            .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
+        let asked = match context.extensions.get::<Parts>() {
+            Some(parts) => {
+                let Query(query) = Query::<ToolsetsQuery>::try_from_uri(&parts.uri)
+                    .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
 
-        query
-            .toolsets
-            .as_deref()
-            .map(Toolset::parse_list)
-            .transpose()
-            .map_err(|e| ErrorData::invalid_params(e.to_string(), None))
+                query
+                    .toolsets
+                    .as_deref()
+                    .map(Toolset::parse_list)
+                    .transpose()
+                    .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?
+            }
+            None => None,
+        };
+
+        Ok(match (&self.backend, asked) {
+            (_, Some(asked)) => Some(asked),
+            (Backend::Local(app), None) => Some(app.settings().mcp.default_toolsets.clone()),
+            // `brr mcp` resolves the setting itself and passes its list in.
+            (Backend::Forward(_), None) => None,
+        })
     }
 
     fn tool(&self, op: &OpRegistration) -> Option<Tool> {

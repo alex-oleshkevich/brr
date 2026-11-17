@@ -1,4 +1,4 @@
-use brr_core::{CaptchaSolve, Error, Page};
+use brr_core::{CaptchaSolve, Error, InstanceId, Page};
 use rusqlite::{Connection, Row, params};
 
 use crate::{Text, col, internal, next_cursor, opt_col, parse_cursor, parse_cursor_pair, query};
@@ -45,7 +45,12 @@ pub fn insert(c: &Connection, solve: &CaptchaSolve) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn list(c: &Connection, page: &Page) -> Result<(Vec<CaptchaSolve>, Option<String>), Error> {
+// A solve is placed in its Instance through its Tab; Tab rows outlive the run until retention.
+pub fn list(
+    c: &Connection,
+    instance_id: Option<&InstanceId>,
+    page: &Page,
+) -> Result<(Vec<CaptchaSolve>, Option<String>), Error> {
     let after = match page.cursor.as_deref().map(parse_cursor_pair).transpose()? {
         Some((ts, id)) => Some((parse_cursor::<i64>(&ts)?, id)),
         None => None,
@@ -54,11 +59,15 @@ pub fn list(c: &Connection, page: &Page) -> Result<(Vec<CaptchaSolve>, Option<St
         c,
         TABLE,
         &format!(
-            "SELECT {COLUMNS} FROM captcha_solve WHERE ?1 IS NULL OR (ts, id) < (?1, ?2) ORDER BY ts DESC, id DESC LIMIT ?3"
+            "SELECT {COLUMNS} FROM captcha_solve
+             WHERE (?1 IS NULL OR (ts, id) < (?1, ?2))
+               AND (?3 IS NULL OR tab_id IN (SELECT id FROM tab WHERE instance_id = ?3))
+             ORDER BY ts DESC, id DESC LIMIT ?4"
         ),
         params![
             after.as_ref().map(|(ts, _)| ts),
             after.as_ref().map(|(_, id)| id),
+            instance_id.map(Text),
             page.limit
         ],
         decode,
@@ -75,4 +84,31 @@ pub fn spent_since(c: &Connection, since_ms: i64) -> Result<(u64, u32), Error> {
         |row| Ok((row.get(0)?, row.get(1)?)),
     )
     .map_err(internal)
+}
+
+pub struct DayTotals {
+    pub day: String,
+    pub spend_usd_micros: u64,
+    pub solves: u32,
+    pub failures: u32,
+}
+
+// SQLite's 'localtime' reads the same TZ as the daemon's clock, so the day keys line up.
+pub fn daily_since(c: &Connection, since_ms: i64) -> Result<Vec<DayTotals>, Error> {
+    query(
+        c,
+        TABLE,
+        "SELECT date(ts / 1000, 'unixepoch', 'localtime') AS day, COALESCE(SUM(cost_usd_micros), 0) AS spend,
+                SUM(result = 'solved') AS solves, SUM(result = 'failed') AS failures
+         FROM captcha_solve WHERE ts >= ?1 GROUP BY day ORDER BY day",
+        params![since_ms],
+        |row| {
+            Ok(DayTotals {
+                day: row.get("day")?,
+                spend_usd_micros: row.get("spend")?,
+                solves: row.get("solves")?,
+                failures: row.get("failures")?,
+            })
+        },
+    )
 }

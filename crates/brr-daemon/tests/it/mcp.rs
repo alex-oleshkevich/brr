@@ -16,7 +16,7 @@ use brr_daemon::{
 use serde_json::{Value, json};
 use tokio::{net::UnixStream, sync::oneshot, time};
 
-use common::{boot, listen, post, rpc, scratch_app, settled, tool_names};
+use common::{boot, ctx, listen, post, rpc, scratch_app, settled, tool_names};
 
 const SYSTEM_TOOLSET: &str = "?toolsets=system";
 const SETTLE_TIMEOUT: Duration = Duration::from_secs(5);
@@ -70,6 +70,53 @@ async fn tools_list_and_toolsets() {
             .unwrap()
             .contains("toolset"),
         "{body}"
+    );
+}
+
+fn tools_of(toolset: Toolset) -> Vec<String> {
+    let mut tools: Vec<String> = ops::all()
+        .iter()
+        .filter(|op| op.spec.toolset == toolset)
+        .filter_map(|op| op.spec.mcp_tool.map(str::to_string))
+        .collect();
+    tools.sort();
+
+    tools
+}
+
+#[tokio::test]
+async fn default_toolsets_setting_applies_without_a_query() {
+    let (_dir, app) = scratch_app().await;
+    let addr = listen(&app).await;
+
+    ops::dispatch(
+        ctx(&app),
+        ops::find("settings.set").unwrap(),
+        json!({"mcp.default_toolsets": ["system"]}),
+    )
+    .await
+    .unwrap();
+    let mut defaulted = tool_names(addr, "").await;
+    defaulted.sort();
+    let mut asked = tool_names(addr, "?toolsets=browser").await;
+    asked.sort();
+    let hidden = post(
+        addr,
+        "",
+        "tools/call",
+        json!({"name": "client_create", "arguments": {}}),
+    )
+    .await;
+    let hidden: Value = hidden.json().await.unwrap();
+
+    assert_eq!(defaulted, tools_of(Toolset::System));
+    assert_eq!(asked, tools_of(Toolset::Browser));
+    assert!(
+        hidden["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("unknown tool"),
+        "{hidden}"
     );
 }
 

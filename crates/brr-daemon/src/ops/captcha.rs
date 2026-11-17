@@ -1,8 +1,10 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::PoisonError};
 
 use brr_core::{
-    CaptchaPolicy, CaptchaSolve, CaptchaType, Empty, Error, Http, Method, OperationSpec, Page,
-    Secret, SecretStatus, TabId, Toolset, UsdMicros, schema,
+    CaptchaPolicy, CaptchaSolve, CaptchaType, Empty, Error, Http, InstanceId, Method,
+    OperationSpec, Page, Secret, SecretStatus, TabId, Toolset, UsdMicros, UtcDateTime,
+    clock::{local_day_start, local_offset_ms},
+    now_ms, schema,
 };
 use brr_store::captcha_solve;
 use futures::{FutureExt, future::BoxFuture};
@@ -18,11 +20,15 @@ use crate::{
     app::{App, Ctx},
     internal,
     services::captcha::{
-        API_KEY_SECRET, PROVIDER_NAME, SolvedBy, provider, solve_now, spent_today,
+        API_KEY_SECRET, CachedBalance, PROVIDER_NAME, SolvedBy, provider, solve_now, spent_today,
     },
 };
 
 const SETTINGS_PATH: &str = "/v1/captcha/settings";
+const DEFAULT_STATS_DAYS: u32 = 7;
+const MAX_STATS_DAYS: u32 = 30;
+// The Overview polls the balance; the provider is asked at most this often unless `refresh` is set.
+const BALANCE_TTL_MS: i64 = 10 * 60 * 1000;
 
 static SETTINGS_GET: OperationSpec = OperationSpec {
     name: "captcha.settings_get",
@@ -78,11 +84,29 @@ static SOLVES: OperationSpec = OperationSpec {
     output_schema: schema::<SolvesOutput>,
 };
 
+static STATS: OperationSpec = OperationSpec {
+    name: "captcha.stats",
+    group: "captcha",
+    toolset: Toolset::Captcha,
+    summary: "Captcha spend, solves and failures per local day, oldest first; days without any show zeros",
+    http: Http {
+        method: Method::Get,
+        path: "/v1/captcha/stats",
+    },
+    cli: &["captcha", "stats"],
+    cli_positional: &[],
+    mcp_tool: Some("captcha_stats"),
+    read_only: true,
+    capability: None,
+    input_schema: schema::<StatsInput>,
+    output_schema: schema::<StatsOutput>,
+};
+
 static BALANCE: OperationSpec = OperationSpec {
     name: "captcha.balance",
     group: "captcha",
     toolset: Toolset::Captcha,
-    summary: "Ask the provider for the account balance",
+    summary: "Show the provider's account balance; the answer is reused for 10 minutes unless `refresh` is set",
     http: Http {
         method: Method::Get,
         path: "/v1/captcha/balance",
@@ -92,7 +116,7 @@ static BALANCE: OperationSpec = OperationSpec {
     mcp_tool: Some("captcha_balance"),
     read_only: true,
     capability: None,
-    input_schema: schema::<Empty>,
+    input_schema: schema::<BalanceInput>,
     output_schema: schema::<BalanceOutput>,
 };
 
@@ -124,6 +148,10 @@ inventory::submit!(OpRegistration {
     spec: &BALANCE,
     handler: balance
 });
+inventory::submit!(OpRegistration {
+    spec: &STATS,
+    handler: stats
+});
 
 #[derive(Serialize, JsonSchema)]
 struct SettingsView {
@@ -151,6 +179,7 @@ struct SetInput {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct SolvesInput {
+    instance_id: Option<InstanceId>,
     limit: Option<u32>,
     cursor: Option<String>,
 }
@@ -161,9 +190,36 @@ struct SolvesOutput {
     next_cursor: Option<String>,
 }
 
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct StatsInput {
+    days: Option<u32>,
+}
+
+#[derive(Serialize, JsonSchema)]
+struct StatsOutput {
+    days: Vec<DayStats>,
+}
+
+#[derive(Serialize, JsonSchema)]
+struct DayStats {
+    day: String,
+    start_ms: i64,
+    spend_usd_micros: u64,
+    solves: u32,
+    failures: u32,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct BalanceInput {
+    refresh: Option<bool>,
+}
+
 #[derive(Serialize, JsonSchema)]
 struct BalanceOutput {
     balance_usd_micros: u64,
+    fetched_at: i64,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -251,6 +307,12 @@ fn settings_set(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Erro
             Some(None) => app.secrets.delete(&app.store, API_KEY_SECRET).await?,
             None => {}
         }
+        if input.api_key.is_some() {
+            *app.captcha
+                .balance
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner) = None;
+        }
 
         view(app).await
     }
@@ -264,7 +326,7 @@ fn solves(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
         let (solves, next_cursor) = ctx
             .app
             .store
-            .run(move |c| captcha_solve::list(c, &page))
+            .run(move |c| captcha_solve::list(c, input.instance_id.as_ref(), &page))
             .await?;
 
         output(&SolvesOutput {
@@ -275,30 +337,100 @@ fn solves(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
     .boxed()
 }
 
+fn stats(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
+    async move {
+        let input: StatsInput = parse(input)?;
+        let count = input.days.unwrap_or(DEFAULT_STATS_DAYS);
+        if !(1..=MAX_STATS_DAYS).contains(&count) {
+            return Err(invalid("days", &format!("must be 1 to {MAX_STATS_DAYS}")));
+        }
+
+        // Stepping back from each midnight, not by 24 h, keeps DST days right.
+        let mut starts = vec![local_day_start(now_ms())];
+        while starts.len() < count as usize {
+            let earliest = starts[starts.len() - 1];
+            starts.push(local_day_start(earliest - 1));
+        }
+        starts.reverse();
+
+        let since = starts[0];
+        let totals = ctx
+            .app
+            .store
+            .run(move |c| captcha_solve::daily_since(c, since))
+            .await?;
+
+        let days = starts
+            .into_iter()
+            .map(|start_ms| {
+                let local = UtcDateTime::from_unix_ms(start_ms + local_offset_ms(start_ms));
+                let day = format!("{:04}-{:02}-{:02}", local.year, local.month, local.day);
+                let found = totals.iter().find(|totals| totals.day == day);
+
+                DayStats {
+                    start_ms,
+                    spend_usd_micros: found.map_or(0, |found| found.spend_usd_micros),
+                    solves: found.map_or(0, |found| found.solves),
+                    failures: found.map_or(0, |found| found.failures),
+                    day,
+                }
+            })
+            .collect();
+
+        output(&StatsOutput { days })
+    }
+    .boxed()
+}
+
 fn balance(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
     async move {
-        parse::<Empty>(input)?;
+        let input: BalanceInput = parse(input)?;
 
         let app = &ctx.app;
+        let cached = *app
+            .captcha
+            .balance
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if !input.refresh.unwrap_or(false)
+            && let Some(cached) = cached
+            && now_ms() - cached.fetched_at < BALANCE_TTL_MS
+        {
+            return output(&BalanceOutput {
+                balance_usd_micros: cached.usd_micros,
+                fetched_at: cached.fetched_at,
+            });
+        }
+
         let key = app
             .secrets
             .get(&app.store, API_KEY_SECRET)
             .await?
             .ok_or_else(|| invalid("api_key", "set a 2captcha API key first"))?;
         // The provider's own error says "could not be solved", which is wrong for a balance check.
-        let balance_usd_micros =
-            provider(app, &key)
-                .balance()
-                .await
-                .map_err(|error| match error {
-                    Error::CaptchaFailed => Error::DependencyMissing {
-                        name: "the 2captcha balance".to_string(),
-                        help: "check the API key and that the provider is reachable".to_string(),
-                    },
-                    other => other,
-                })?;
+        let usd_micros = provider(app, &key)
+            .balance()
+            .await
+            .map_err(|error| match error {
+                Error::CaptchaFailed => Error::DependencyMissing {
+                    name: "the 2captcha balance".to_string(),
+                    help: "check the API key and that the provider is reachable".to_string(),
+                },
+                other => other,
+            })?;
+        let fetched = CachedBalance {
+            usd_micros,
+            fetched_at: now_ms(),
+        };
+        *app.captcha
+            .balance
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = Some(fetched);
 
-        output(&BalanceOutput { balance_usd_micros })
+        output(&BalanceOutput {
+            balance_usd_micros: fetched.usd_micros,
+            fetched_at: fetched.fetched_at,
+        })
     }
     .boxed()
 }

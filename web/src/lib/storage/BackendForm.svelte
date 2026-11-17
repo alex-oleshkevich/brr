@@ -14,7 +14,7 @@
   type Backend = components['schemas']['BackendOutput'];
   type Body = paths['/v1/storage/backend']['put']['requestBody']['content']['application/json'];
 
-  let { backend, onsaved }: { backend: Backend; onsaved: () => void } = $props();
+  let { backend, onsaved, dirty = $bindable(false) }: { backend: Backend; onsaved: () => void; dirty?: boolean } = $props();
 
   const kinds = [
     { value: 'local', label: 'Local disk' },
@@ -57,7 +57,10 @@
   let errors = $state<Record<string, string>>({});
 
   const secretSet = $derived(backend.secret_access_key?.set === true);
-  const dirty = $derived(JSON.stringify(form) !== baseline || secret !== '');
+  const isDirty = $derived(JSON.stringify(form) !== baseline || secret !== '');
+  $effect(() => {
+    dirty = isDirty;
+  });
   const r2Endpoint = $derived(form.account_id.trim() ? `https://${form.account_id.trim()}.r2.cloudflarestorage.com` : null);
 
   $effect(() => {
@@ -177,7 +180,7 @@
 {/snippet}
 
 <div class="form">
-  <SegmentedControl label="Backend" bind:value={form.kind} options={kinds} />
+  <SegmentedControl name="storage.backend" label="Backend" bind:value={form.kind} options={kinds} />
 
   {#if form.kind === 'local'}
     <div class="local">
@@ -186,18 +189,20 @@
     </div>
   {:else if form.kind === 's3'}
     <div class="grid">
-      <div class="span"><Input label="Endpoint URL" type="url" placeholder="https://s3.example.com" bind:value={form.endpoint} error={errors.endpoint} autocomplete="off" /></div>
-      <Input label="Region" bind:value={form.region} error={errors.region} autocomplete="off" />
-      <Input label="Bucket" bind:value={form.bucket} error={errors.bucket} autocomplete="off" />
-      <Input label="Access key ID" bind:value={form.access_key_id} error={errors.access_key_id} autocomplete="off" />
+      <div class="span"><Input name="storage.endpoint" label="Endpoint URL" type="url" placeholder="https://s3.example.com" bind:value={form.endpoint} error={errors.endpoint} autocomplete="off" /></div>
+      <Input name="storage.region" label="Region" bind:value={form.region} error={errors.region} autocomplete="off" />
+      <Input name="storage.bucket" label="Bucket" bind:value={form.bucket} error={errors.bucket} autocomplete="off" />
+      <Input name="storage.access_key_id" label="Access key ID" bind:value={form.access_key_id} error={errors.access_key_id} autocomplete="off" />
       {@render secretField()}
       <div class="span"><Switch
+          name="storage.path_style"
           label="Path-style requests"
           bind:checked={form.path_style}
           hint={ipEndpoint ? "An IP-address endpoint can only be reached path-style, so this is on." : "Address the bucket in the URL path, not as a subdomain. Needed by most self-hosted S3 servers."}
         /></div>
       <div class="span">
         <Input
+          name="storage.public_endpoint"
           label="Public endpoint (optional)"
           type="url"
           bind:value={form.public_endpoint}
@@ -209,9 +214,9 @@
     </div>
   {:else}
     <div class="grid">
-      <Input label="Account ID" bind:value={form.account_id} error={errors.r2_account_id} autocomplete="off" />
-      <Input label="Bucket" bind:value={form.bucket} error={errors.bucket} autocomplete="off" />
-      <Input label="Access key ID" bind:value={form.access_key_id} error={errors.access_key_id} autocomplete="off" />
+      <Input name="storage.r2_account_id" label="Account ID" bind:value={form.account_id} error={errors.r2_account_id} autocomplete="off" />
+      <Input name="storage.bucket" label="Bucket" bind:value={form.bucket} error={errors.bucket} autocomplete="off" />
+      <Input name="storage.access_key_id" label="Access key ID" bind:value={form.access_key_id} error={errors.access_key_id} autocomplete="off" />
       {@render secretField()}
       <div class="span"><KeyValue items={[{ label: 'Endpoint', value: r2Endpoint, mono: true }]} /></div>
     </div>
@@ -230,7 +235,7 @@
 
   <div class="footer">
     {#if form.kind !== 'local'}<Button loading={testing} disabled={saving} onclick={test}>Test connection</Button>{/if}
-    <Button variant="primary" loading={saving} disabled={!dirty || testing} onclick={save}>Save backend</Button>
+    <Button variant="primary" loading={saving} disabled={!isDirty || testing} onclick={save}>Save backend</Button>
   </div>
 </div>
 

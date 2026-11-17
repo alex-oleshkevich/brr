@@ -234,6 +234,14 @@ async fn system_info() {
     );
     assert!(info["logical_cpus"].as_u64().unwrap() >= 1);
     assert!(info["mem_available_mb"].as_u64() <= info["mem_total_mb"].as_u64());
+    // The scratch app has no DISPLAY, no WAYLAND_DISPLAY and an empty PATH.
+    assert_eq!(
+        info["display_unavailable"],
+        json!([
+            {"display": "visible", "reason": "This computer has no desktop"},
+            {"display": "virtual", "reason": "Xvfb is not installed"},
+        ])
+    );
 }
 
 #[tokio::test]

@@ -15,7 +15,10 @@ mod tests;
 
 const NEXT_CURSOR: &str = "next_cursor";
 const NAME_FIELDS: [&str; 3] = ["name", "id", "seq"];
-const CELL_FIELDS: [&str; 5] = ["state", "kind", "source", "version", "url"];
+// The id is a column only beside a name; without one it already names the row.
+const ID_FIELD: &str = "id";
+const CELL_FIELDS: [&str; 7] = ["id", "engine", "state", "kind", "source", "version", "url"];
+const EMPTY_PREFIX: &str = "No";
 
 pub enum Plan<'a> {
     List {
@@ -118,6 +121,12 @@ fn print(value: &Value, json: bool) -> std::io::Result<()> {
 
     match plan(value) {
         Plan::List { group, next_cursor } => {
+            if group.is_empty() && next_cursor.is_none() {
+                let what = group.header().replace('_', " ");
+
+                return format::data(&format!("{EMPTY_PREFIX} {what}"));
+            }
+
             format::list(&[group])?;
 
             match next_cursor {
@@ -164,13 +173,22 @@ fn list_field(object: &Map<String, Value>) -> Option<(&str, &[Value])> {
 }
 
 fn group(field: &str, items: &[Value]) -> Group {
+    let cell = |item: &Value, name: &str| {
+        let named = item
+            .get(NAME_FIELDS[0])
+            .is_some_and(|value| !value.is_null());
+
+        item.get(name)
+            .filter(|value| !value.is_null() && (name != ID_FIELD || named))
+            .map(text)
+    };
     let columns: BTreeSet<usize> = items
         .iter()
         .flat_map(|item| {
             CELL_FIELDS
                 .iter()
                 .enumerate()
-                .filter(|(_, name)| item.get(**name).is_some_and(|cell| !cell.is_null()))
+                .filter(|(_, name)| cell(item, name).is_some())
                 .map(|(column, _)| column)
         })
         .collect();
@@ -182,7 +200,7 @@ fn group(field: &str, items: &[Value]) -> Group {
             .map_or_else(|| text(item), text);
         let cells: Vec<String> = columns
             .iter()
-            .map(|column| item.get(CELL_FIELDS[*column]).map(text).unwrap_or_default())
+            .map(|column| cell(item, CELL_FIELDS[*column]).unwrap_or_default())
             .collect();
 
         group.entry(&name, &cells)

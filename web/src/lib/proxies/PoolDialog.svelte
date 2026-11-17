@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import { ApiError, api, unwrap } from '$lib/api/client';
   import type { components } from '$lib/api/schema';
+  import { profileNameError } from '$lib/profiles/restore';
   import Button from '$lib/ui/Button.svelte';
   import Checkbox from '$lib/ui/Checkbox.svelte';
   import Dialog from '$lib/ui/Dialog.svelte';
@@ -28,23 +29,29 @@
   let name = $state('');
   let mode = $state('sticky');
   let selected = $state<Record<string, boolean>>({});
-  let nameError = $state<string | null>(null);
+  let serverNameError = $state<string | null>(null);
   let saving = $state(false);
 
+  const nameRuleError = $derived(profileNameError(name.trim()));
+  const nameError = $derived(name.trim() ? (nameRuleError ?? serverNameError) : null);
+
+  $effect(() => {
+    void name;
+    untrack(() => (serverNameError = null));
+  });
   $effect(() => {
     if (!open) return;
     untrack(() => {
       name = pool?.name ?? '';
       mode = pool?.mode ?? 'sticky';
       selected = Object.fromEntries((pool?.proxy_ids ?? []).map((id) => [id, true]));
-      nameError = null;
+      serverNameError = null;
     });
   });
 
   async function save(event: SubmitEvent) {
     event.preventDefault();
-    nameError = name.trim() ? null : 'Enter a name.';
-    if (nameError) return;
+    if (nameRuleError) return;
 
     saving = true;
     const body = {
@@ -59,7 +66,7 @@
       onsaved();
       open = false;
     } catch (e) {
-      if (e instanceof ApiError && ['Conflict', 'InvalidArgument'].includes(e.code)) nameError = e.message;
+      if (e instanceof ApiError && ['Conflict', 'InvalidArgument'].includes(e.code)) serverNameError = e.message;
       else toast.apiError(e, "Couldn't save the pool");
     } finally {
       saving = false;
@@ -70,7 +77,7 @@
 <Dialog bind:open title={pool ? 'Edit pool' : 'New pool'} dismissible={!saving}>
   <form id="pool-form" onsubmit={save} novalidate>
     <div class="fields">
-      <Input label="Name" bind:value={name} required error={nameError} autocomplete="off" />
+      <Input label="Name" bind:value={name} required error={nameError} hint={nameError ? undefined : 'Use 1 to 64 characters from A-Z, a-z, 0-9, ".", "_" and "-".'} autocomplete="off" />
       <div class="field">
         <span class="field-label">Mode</span>
         <SegmentedControl label="Mode" bind:value={mode} options={modes} />
@@ -92,7 +99,7 @@
   </form>
   {#snippet footer()}
     <Button onclick={() => (open = false)} disabled={saving}>Cancel</Button>
-    <Button variant="primary" type="submit" form="pool-form" loading={saving}>Save</Button>
+    <Button variant="primary" type="submit" form="pool-form" loading={saving} disabled={!!nameRuleError}>Save</Button>
   {/snippet}
 </Dialog>
 

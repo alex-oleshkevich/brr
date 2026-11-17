@@ -1,8 +1,8 @@
-use std::fs;
+use std::{collections::BTreeSet, fs};
 
 use brr_core::{
-    BackupSchedule, ConflictReason, Error, EventData, Http, Method, OperationSpec, Page, Profile,
-    ProfileId, ProfileKind, ProfileSettings, Toolset, now_ms, schema,
+    BackupSchedule, ConflictReason, Error, EventData, ExtensionId, Http, Method, OperationSpec,
+    Page, Profile, ProfileId, ProfileKind, ProfileSettings, Toolset, now_ms, schema,
 };
 use brr_store::{build, instance, login_check, profile, profile_extension, template};
 use futures::{FutureExt, future::BoxFuture};
@@ -116,6 +116,24 @@ static DELETE: OperationSpec = OperationSpec {
     output_schema: schema::<Profile>,
 };
 
+static REAPPLY_TEMPLATE: OperationSpec = OperationSpec {
+    name: "profile.reapply_template",
+    group: "profile",
+    toolset: Toolset::Profiles,
+    summary: "Show how a Profile's settings and extensions differ from its template now, and copy the template's over them unless `dry_run` is set; refused while the Profile runs",
+    http: Http {
+        method: Method::Post,
+        path: "/v1/profiles/{profile}/reapply-template",
+    },
+    cli: &["profile", "reapply-template"],
+    cli_positional: &["profile"],
+    mcp_tool: Some("profile_reapply_template"),
+    read_only: false,
+    capability: None,
+    input_schema: schema::<ReapplyInput>,
+    output_schema: schema::<ReapplyOutput>,
+};
+
 inventory::submit!(OpRegistration {
     spec: &LIST,
     handler: list
@@ -135,6 +153,10 @@ inventory::submit!(OpRegistration {
 inventory::submit!(OpRegistration {
     spec: &DELETE,
     handler: delete
+});
+inventory::submit!(OpRegistration {
+    spec: &REAPPLY_TEMPLATE,
+    handler: reapply_template
 });
 
 #[derive(Deserialize, JsonSchema)]
@@ -181,6 +203,32 @@ struct UpdateInput {
     #[serde(default, deserialize_with = "some")]
     backup_schedule: Option<Option<String>>,
     backup_keep: Option<u32>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct ReapplyInput {
+    profile: String,
+    dry_run: Option<bool>,
+}
+
+#[derive(Serialize, JsonSchema)]
+struct ReapplyOutput {
+    changes: Vec<FieldChange>,
+    extensions: ExtensionChanges,
+}
+
+#[derive(Serialize, JsonSchema)]
+struct FieldChange {
+    field: String,
+    from: Value,
+    to: Value,
+}
+
+#[derive(Serialize, JsonSchema)]
+struct ExtensionChanges {
+    added: Vec<ExtensionId>,
+    removed: Vec<ExtensionId>,
 }
 
 fn validate_tags(tags: &[String]) -> Result<(), Error> {
@@ -258,6 +306,7 @@ fn create(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
                 template.settings.validate()?;
                 companion::check_settings(c, &template.settings)?;
                 proxies::ensure_exists(c, template.settings.proxy.as_ref())?;
+                extensions::check_list(c, &template.extensions, &template.settings)?;
 
                 let id = ProfileId::new();
                 let now = now_ms();
@@ -268,6 +317,7 @@ fn create(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
                     name: input.name,
                     kind,
                     template_id: Some(template.id),
+                    template_name: Some(template.name),
                     settings: template.settings,
                     pinned: false,
                     notes: input.notes.unwrap_or_default(),
@@ -282,6 +332,7 @@ fn create(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
                     builtin: false,
                 };
                 profile::insert(c, &created)?;
+                profile_extension::set(c, &created.id, &template.extensions)?;
 
                 if let Some(dir) = &created.data_dir
                     && let Err(err) = fs::create_dir_all(dir)
@@ -458,4 +509,119 @@ fn delete(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
         .map_err(internal)?
     }
     .boxed()
+}
+
+fn reapply_template(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
+    async move {
+        let input: ReapplyInput = parse(input)?;
+        let dry_run = input.dry_run.unwrap_or(false);
+
+        let (found, diff) = ctx
+            .app
+            .store
+            .run(move |c| {
+                let mut found = profile::find(c, &input.profile)?;
+                if instance::active_for_profile(c, &found.id)?.is_some() {
+                    return Err(Error::Conflict {
+                        reason: ConflictReason::ProfileRunning,
+                        detail: None,
+                    });
+                }
+
+                let gone = Error::Conflict {
+                    reason: ConflictReason::TemplateGone,
+                    detail: None,
+                };
+                let template = match &found.template_id {
+                    Some(template_id) => match template::get(c, template_id) {
+                        Err(Error::NotFound { .. }) => return Err(gone),
+                        other => other?,
+                    },
+                    None => return Err(gone),
+                };
+
+                let mut changes = Vec::new();
+                diff_fields(
+                    String::new(),
+                    &serde_json::to_value(&found.settings).map_err(internal)?,
+                    &serde_json::to_value(&template.settings).map_err(internal)?,
+                    &mut changes,
+                );
+                let had: BTreeSet<ExtensionId> = profile_extension::get(c, &found.id)?
+                    .iter()
+                    .map(|entry| entry.extension_id)
+                    .collect();
+                let wants: BTreeSet<ExtensionId> = template
+                    .extensions
+                    .iter()
+                    .map(|entry| entry.extension_id)
+                    .collect();
+                let diff = ReapplyOutput {
+                    changes,
+                    extensions: ExtensionChanges {
+                        added: wants.difference(&had).copied().collect(),
+                        removed: had.difference(&wants).copied().collect(),
+                    },
+                };
+
+                if !dry_run {
+                    template.settings.validate()?;
+                    companion::check_settings(c, &template.settings)?;
+                    proxies::ensure_exists(c, template.settings.proxy.as_ref())?;
+                    extensions::check_list(c, &template.extensions, &template.settings)?;
+
+                    found.settings = template.settings;
+                    found.template_name = Some(template.name);
+                    found.updated_at = now_ms();
+                    profile::update(c, &found)?;
+                    profile_extension::set(c, &found.id, &template.extensions)?;
+                }
+
+                Ok((found, diff))
+            })
+            .await?;
+
+        if !dry_run {
+            ctx.app
+                .events
+                .publish(EventData::ProfileUpdated {
+                    profile_id: found.id,
+                    name: found.name,
+                })
+                .await?;
+        }
+
+        output(&diff)
+    }
+    .boxed()
+}
+
+// Objects are walked key by key so a change reads as `idle.tab_min`, not the whole `idle` object.
+fn diff_fields(field: String, from: &Value, to: &Value, changes: &mut Vec<FieldChange>) {
+    if let (Value::Object(from), Value::Object(to)) = (from, to) {
+        let keys: BTreeSet<&String> = from.keys().chain(to.keys()).collect();
+        for key in keys {
+            let path = if field.is_empty() {
+                key.clone()
+            } else {
+                format!("{field}.{key}")
+            };
+            diff_fields(
+                path,
+                from.get(key).unwrap_or(&Value::Null),
+                to.get(key).unwrap_or(&Value::Null),
+                changes,
+            );
+        }
+
+        return;
+    }
+
+    if from != to {
+        changes.push(FieldChange {
+            field,
+            from: from.clone(),
+            to: to.clone(),
+        });
+    }
 }

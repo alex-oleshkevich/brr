@@ -7,10 +7,12 @@ use std::{
 
 use brr_core::{
     AdmissionMode, Cookie, EndReason, Error, EventData, HumanReason, IdleOverrides, Instance,
-    InstanceKind, InstanceState, InstanceTrigger, ReleaseReason, Tab, TabCloseReason, TabId,
-    TabState, TabTrigger, TargetId, WaitUntil, now_ms,
+    InstanceId, InstanceKind, InstanceState, InstanceTrigger, ReleaseReason, SandboxMode, Tab,
+    TabCloseReason, TabId, TabState, TabTrigger, TargetId, WaitUntil, now_ms,
 };
-use brr_engine::{ContextId, Driver, DriverEvent, LaunchSpec, Launched};
+use brr_engine::{
+    ContextId, Driver, DriverEvent, LaunchSpec, Launched, Navigated, sandbox::remove_container,
+};
 use brr_store::{instance, tab};
 use tokio::{
     sync::{mpsc, oneshot, watch},
@@ -19,7 +21,7 @@ use tokio::{
 use tracing::{debug, error, info, warn};
 
 use super::{
-    BLANK_PAGE, InstanceView,
+    BLANK_PAGE, InstanceView, exited_while_starting,
     idle::{self, Due, Grace, TabReap, Timeouts},
     promote,
 };
@@ -29,7 +31,7 @@ use crate::{
     services::admission::RETRY_AFTER_S,
     services::{
         downloads::{self, DownloadCtx, Tracker},
-        proxies,
+        hosts, proxies, sandbox,
         supervisor::remove_ephemeral,
         until,
     },
@@ -41,6 +43,20 @@ const RESTART_BACKOFF_BASE_S: u64 = 2;
 const BLANK_TIMEOUT: Duration = Duration::from_secs(10);
 // A new Tab must be announced by the browser within this time.
 const OPEN_TIMEOUT: Duration = Duration::from_secs(30);
+// `docker rm` has no deadline of its own; the owner never waits on it longer than this.
+const CONTAINER_REMOVE_TIMEOUT: Duration = Duration::from_secs(15);
+// After a persistent Profile's browser exits on a Host, the runner sends the Profile folder back
+// over SSH; killing the container mid-transfer would lose the run's changes.
+const REMOTE_COPY_BACK_GRACE: Duration = Duration::from_secs(120);
+
+// What a run's stop may take beyond instance.stop_timeout_s before its container is killed.
+pub(super) fn copy_back_grace(instance: &Instance) -> Duration {
+    if instance.host_id.is_some() && !instance.ephemeral {
+        REMOTE_COPY_BACK_GRACE
+    } else {
+        Duration::ZERO
+    }
+}
 
 pub(super) type Reply<T> = oneshot::Sender<Result<T, Error>>;
 
@@ -100,6 +116,8 @@ pub(super) enum Command {
         url: String,
         wait_until: WaitUntil,
         timeout: Duration,
+        // Sent before `reply` answers: whether the URL loaded or became a download.
+        navigated: oneshot::Sender<Navigated>,
         reply: Reply<Tab>,
     },
     // Chromium sends no Target.targetInfoChanged for a title the page changed by itself, so a
@@ -351,6 +369,8 @@ pub(super) async fn fail_admission(
 
 // Promotion moves the data first, and the deletion never runs after a promote, failed or not.
 async fn sweep_ended(app: &Arc<App>, instance: &Instance) {
+    // A killed `docker run` client leaves its container running, and the data must not move under it.
+    remove_sandbox(app, instance).await;
     let delete_data = match promote::finish_promote(app, instance).await {
         Ok(promoted) => promoted.is_none(),
         Err(error) => {
@@ -363,8 +383,37 @@ async fn sweep_ended(app: &Arc<App>, instance: &Instance) {
     };
 
     // A crash that restarts is not final: the relaunch reuses the forwarder's URL.
-    proxies::release(app, &instance.id);
+    proxies::finish(app, &instance.id).await;
     sweep(app, instance, delete_data).await;
+    sandbox::remove_run_dir(&app.paths, &instance.id);
+}
+
+async fn remove_sandbox(app: &App, instance: &Instance) {
+    if instance.sandbox != Some(SandboxMode::Docker) {
+        return;
+    }
+    let docker_url = match instance.host_id {
+        Some(host_id) => match hosts::docker_url(app, host_id).await {
+            Ok(docker_url) => Some(docker_url),
+            Err(error) => {
+                warn!(instance_id = %instance.id, %host_id, %error, "sandbox container not removed: host not found");
+
+                return;
+            }
+        },
+        None => None,
+    };
+    remove_container_in_time(instance.id, docker_url.as_deref()).await;
+}
+
+async fn remove_container_in_time(instance_id: InstanceId, docker_url: Option<&str>) {
+    let removed = remove_container(docker_url, &instance_id);
+    if time::timeout(CONTAINER_REMOVE_TIMEOUT, removed)
+        .await
+        .is_err()
+    {
+        warn!(%instance_id, "sandbox container not removed in time");
+    }
 }
 
 // The tree is killed by its group and by marker; ephemeral data goes once the Instance is final.
@@ -376,7 +425,6 @@ async fn sweep(app: &Arc<App>, instance: &Instance, delete_data: bool) {
     if let Some(pid) = instance.pid {
         app.supervisor.untrack(pid);
     }
-
     if delete_data
         && instance.ephemeral
         && let Some(dir) = &instance.data_dir
@@ -803,13 +851,15 @@ impl Owner {
                 url,
                 wait_until,
                 timeout,
+                navigated,
                 reply,
             } => match self.target_call(&tab_id) {
                 Ok((driver, target_id)) => {
                     self.spawn_call(reply, Until::Now, async move {
-                        driver
+                        let outcome = driver
                             .navigate(&target_id, &url, wait_until, timeout)
                             .await?;
+                        let _ = navigated.send(outcome);
 
                         Ok(target_id)
                     });
@@ -1531,7 +1581,7 @@ impl Owner {
             });
         }
         let stop_timeout = Duration::from_secs(self.app.settings().instance.stop_timeout_s);
-        self.kill_at = Some(Instant::now() + stop_timeout);
+        self.kill_at = Some(Instant::now() + stop_timeout + copy_back_grace(&self.instance));
 
         Ok(())
     }
@@ -1590,8 +1640,12 @@ impl Owner {
                 .await;
             }
             InstanceState::Starting if self.awaiting_start => {
-                let died = error.unwrap_or_else(|| "the browser exited while starting".to_owned());
-                self.fail_start(&internal(died)).await;
+                let failure = exited_while_starting(&self.spec).unwrap_or_else(|| {
+                    internal(
+                        error.unwrap_or_else(|| "the browser exited while starting".to_owned()),
+                    )
+                });
+                self.fail_start(&failure).await;
             }
             state => debug!(instance_id = %self.instance.id, ?state, "browser exit ignored"),
         }
@@ -1678,7 +1732,18 @@ impl Owner {
 
         let spec = self.spec.clone();
         let messages = self.inbox.clone();
+        let instance_id = self.instance.id;
+        // Some for a docker run: the Docker host its container ran on.
+        let docker = self
+            .spec
+            .sandbox
+            .as_ref()
+            .map(|sandbox| sandbox.docker.docker_url.clone());
         tokio::spawn(async move {
+            // The relaunch reuses the crashed container's name.
+            if let Some(docker_url) = docker {
+                remove_container_in_time(instance_id, docker_url.as_deref()).await;
+            }
             let _ = messages.send(Internal::Relaunched(Driver::launch(spec).await));
         });
     }
@@ -1932,6 +1997,7 @@ impl Owner {
                 return None;
             }
         };
+        super::serve_tunnels(&self.app, self.instance.id, launched.tunnels);
 
         self.app.supervisor.track(launched.pid);
         if let Some(xvfb_pid) = launched.xvfb_pid {

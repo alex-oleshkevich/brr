@@ -1,7 +1,7 @@
 use brr_core::{
     Backup, BackupId, CaptchaResult, CaptchaSolve, CaptchaSolveId, CaptchaType, CredentialId,
-    CredentialSelectors, Error, Event, LastLogin, LoginCheck, LoginCheckId, LoginStatus, Page,
-    Profile, ProfileId, ProfileKind, ProfileSettings, Subject, SubjectType,
+    CredentialSelectors, CredentialSource, Error, Event, LastLogin, LoginCheck, LoginCheckId,
+    LoginStatus, Page, Profile, ProfileId, ProfileKind, ProfileSettings, Subject, SubjectType,
 };
 use brr_store::{
     Connection, Store, backup, captcha_solve, credential, credential::CredentialRow, event,
@@ -38,6 +38,7 @@ fn profile_named(name: &str) -> Profile {
         name: name.to_string(),
         kind: ProfileKind::Persistent,
         template_id: None,
+        template_name: None,
         settings: ProfileSettings::default(),
         pinned: false,
         notes: String::new(),
@@ -59,13 +60,15 @@ fn credential_at(site: &str) -> CredentialRow {
         id: CredentialId::new(),
         site: site.to_string(),
         login_url: None,
-        username_enc: b"user-secret".to_vec(),
-        password_enc: b"hunter2-sealed".to_vec(),
+        username_enc: Some(b"user-secret".to_vec()),
+        password_enc: Some(b"hunter2-sealed".to_vec()),
         totp_enc: None,
         notes_enc: None,
         selectors: CredentialSelectors::default(),
         created_at: NOW,
         updated_at: NOW,
+        source: CredentialSource::Local,
+        bitwarden_item_id: None,
     }
 }
 
@@ -305,10 +308,10 @@ fn captcha_spend_and_paging() {
 
         assert_eq!(captcha_solve::spent_since(c, 15)?, (5000, 2));
 
-        let (first, cursor) = captcha_solve::list(c, &Page::new(Some(2), None))?;
+        let (first, cursor) = captcha_solve::list(c, None, &Page::new(Some(2), None))?;
         assert_eq!(first.iter().map(|s| s.ts).collect::<Vec<_>>(), [30, 20]);
 
-        let (rest, cursor) = captcha_solve::list(c, &Page::new(Some(2), cursor))?;
+        let (rest, cursor) = captcha_solve::list(c, None, &Page::new(Some(2), cursor))?;
         assert_eq!(rest.iter().map(|s| s.ts).collect::<Vec<_>>(), [10]);
         assert_eq!(cursor, None);
 

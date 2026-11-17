@@ -118,6 +118,7 @@ fn spec(
         console_buffer: 1000,
         network_buffer: 1000,
         camoufox,
+        sandbox: None,
     }
 }
 

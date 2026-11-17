@@ -1,7 +1,9 @@
 use serde_json::json;
 use test_case::test_case;
 
-use crate::{Capability, ClientId, ConflictReason, Error, ErrorBody, LoginFailure, QuotaScope};
+use crate::{
+    Capability, ClientId, ConflictReason, Error, ErrorBody, LoginFailure, QuotaScope, range_message,
+};
 
 type Expected = (&'static str, u16, u8);
 
@@ -28,6 +30,7 @@ const CAPTCHA_BUDGET_EXCEEDED: Expected = ("CaptchaBudgetExceeded", 402, 19);
 const CAPTCHA_FAILED: Expected = ("CaptchaFailed", 422, 20);
 const STORAGE_UNAVAILABLE: Expected = ("StorageUnavailable", 503, 21);
 const TIMEOUT: Expected = ("Timeout", 504, 22);
+const BITWARDEN_LOCKED: Expected = ("BitwardenLocked", 409, 23);
 const INTERNAL: Expected = ("Internal", 500, 1);
 
 const CONFLICT_PROFILE_LOCKED_MESSAGE: &str =
@@ -57,6 +60,7 @@ const UNKNOWN_CODE: &str = "FromTheFuture";
 #[test_case(Error::CaptchaFailed, CAPTCHA_FAILED)]
 #[test_case(Error::StorageUnavailable { message: "m".into() }, STORAGE_UNAVAILABLE)]
 #[test_case(Error::Timeout { after_ms: 5 }, TIMEOUT)]
+#[test_case(Error::BitwardenLocked, BITWARDEN_LOCKED)]
 #[test_case(Error::Internal { message: "m".into() }, INTERNAL)]
 fn error_maps_to_code_status_and_exit(error: Error, expected: Expected) {
     assert_eq!(
@@ -237,4 +241,23 @@ fn login_failed_carries_its_reason() {
         "login failed at step 2: the site asks for a one-time code but the credential has no TOTP secret"
     );
     assert_eq!(Error::from_body(body), error);
+}
+
+#[test_case(QuotaScope::Profile, 4_200_000, 1_000_000, "profile data is 4.2 MB, over its 1 MB quota; delete data, or raise the quota under Profile → Settings → Storage"; "profile")]
+#[test_case(QuotaScope::DiskFloor, 999, 5_000_000_000, "free disk is 999 B, below the 5 GB floor; free space or lower retention.free_disk_floor_gb"; "disk floor")]
+fn quota_message_uses_human_sizes(scope: QuotaScope, used: u64, limit: u64, expected: &str) {
+    let error = Error::QuotaExceeded {
+        scope,
+        used_bytes: used,
+        limit_bytes: limit,
+    };
+
+    assert_eq!(error.to_string(), expected);
+}
+
+#[test_case("invalid value: integer `5000000000`, expected u32", Some("must be at most 4294967295"); "too large")]
+#[test_case("invalid value: integer `-5`, expected u64", Some("must be at least 0"); "negative")]
+#[test_case("invalid type: string \"a\", expected u32", None; "not a number")]
+fn range_message_names_the_range(message: &str, expected: Option<&str>) {
+    assert_eq!(range_message(message).as_deref(), expected);
 }

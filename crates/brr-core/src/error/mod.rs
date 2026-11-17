@@ -11,6 +11,12 @@ pub const EXIT_DAEMON_UNREACHABLE: u8 = 69;
 const BYTES_PER_MIB: u64 = 1 << 20;
 const CODE_KEY: &str = "code";
 const DETAILS_KEY: &str = "details";
+// Decimal, like the GB a person types as a Profile's quota.
+const SIZE_STEP: f64 = 1000.0;
+const BITWARDEN_LOCKED_HELP: &str = "Bitwarden is not connected or its vault could not be opened; connect it in Settings → Logins, or check bitwarden.status for the last error";
+const SIZE_UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
+const SERDE_INTEGER: &str = "invalid value: integer `";
+const SERDE_EXPECTED: &str = "`, expected ";
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "code", content = "details")]
@@ -51,7 +57,7 @@ pub enum Error {
     RequestTooLarge { limit_bytes: u64 },
     #[error("build missing: {reason}")]
     BuildMissing { reason: String },
-    #[error("this engine does not support {}; use a build that does", capability.as_str())]
+    #[error("this browser version can't do {}; choose another browser version", capability.as_str().replace('_', " "))]
     EngineUnsupported { capability: Capability },
     #[error("{name} is not available; {help}")]
     DependencyMissing { name: String, help: String },
@@ -77,6 +83,8 @@ pub enum Error {
     Timeout { after_ms: u64 },
     #[error("internal error: {message}")]
     Internal { message: String },
+    #[error("{BITWARDEN_LOCKED_HELP}")]
+    BitwardenLocked,
 }
 
 // Fixed strings: a site's own error text may echo the username or password.
@@ -125,6 +133,7 @@ pub enum ConflictReason {
     SecretOnPage,
     CaptchaInProgress,
     CredentialExists,
+    TemplateGone,
 }
 
 impl fmt::Display for ConflictReason {
@@ -166,6 +175,9 @@ impl fmt::Display for ConflictReason {
             ConflictReason::AttachUnanswered => {
                 r#"the browser did not answer within 30 s; click Allow in its "Allow remote debugging?" dialog and attach again"#
             }
+            ConflictReason::TemplateGone => {
+                "the template this profile came from was deleted; there is nothing to re-apply"
+            }
         })
     }
 }
@@ -178,14 +190,54 @@ pub enum QuotaScope {
 }
 
 fn quota_message(scope: QuotaScope, used_bytes: u64, limit_bytes: u64) -> String {
+    let (used, limit) = (human_size(used_bytes), human_size(limit_bytes));
+
     match scope {
         QuotaScope::Profile => format!(
-            "profile data is {used_bytes} bytes, over its {limit_bytes} byte disk quota; delete data or raise the quota"
+            "profile data is {used}, over its {limit} quota; delete data, or raise the quota under Profile → Settings → Storage"
         ),
         QuotaScope::DiskFloor => format!(
-            "free disk is {used_bytes} bytes, below the {limit_bytes} byte floor; free space or lower retention.free_disk_floor_gb"
+            "free disk is {used}, below the {limit} floor; free space or lower retention.free_disk_floor_gb"
         ),
     }
+}
+
+fn human_size(bytes: u64) -> String {
+    let mut value = bytes as f64;
+    let mut unit = 0;
+    while value >= SIZE_STEP && unit < SIZE_UNITS.len() - 1 {
+        value /= SIZE_STEP;
+        unit += 1;
+    }
+    let text = format!("{value:.1}");
+
+    format!(
+        "{} {}",
+        text.strip_suffix(".0").unwrap_or(&text),
+        SIZE_UNITS[unit]
+    )
+}
+
+// serde words an out-of-range integer as "invalid value: integer `-5`, expected u32"; a person
+// needs the range instead.
+pub fn range_message(message: &str) -> Option<String> {
+    let (value, expected) = message
+        .trim()
+        .strip_prefix(SERDE_INTEGER)?
+        .split_once(SERDE_EXPECTED)?;
+    let max = match expected {
+        "u8" => u64::from(u8::MAX),
+        "u16" => u64::from(u16::MAX),
+        "u32" => u64::from(u32::MAX),
+        "u64" | "usize" => u64::MAX,
+        _ => return None,
+    };
+
+    Some(if value.starts_with('-') {
+        "must be at least 0".to_owned()
+    } else {
+        format!("must be at most {max}")
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -221,6 +273,7 @@ impl Error {
             Error::CaptchaFailed => "CaptchaFailed",
             Error::StorageUnavailable { .. } => "StorageUnavailable",
             Error::Timeout { .. } => "Timeout",
+            Error::BitwardenLocked => "BitwardenLocked",
             Error::Internal { .. } => "Internal",
         }
     }
@@ -229,7 +282,9 @@ impl Error {
         match self {
             Error::InvalidArgument { .. } => 400,
             Error::NotFound { .. } => 404,
-            Error::Conflict { .. } | Error::InvalidTransition { .. } => 409,
+            Error::Conflict { .. } | Error::InvalidTransition { .. } | Error::BitwardenLocked => {
+                409
+            }
             Error::LeaseHeld { .. } => 423,
             Error::LeaseLost => 410,
             Error::CapExceeded { .. } => 429,
@@ -274,6 +329,7 @@ impl Error {
             Error::CaptchaFailed => 20,
             Error::StorageUnavailable { .. } => 21,
             Error::Timeout { .. } => 22,
+            Error::BitwardenLocked => 23,
         }
     }
 

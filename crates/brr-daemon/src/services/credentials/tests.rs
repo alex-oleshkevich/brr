@@ -33,8 +33,9 @@ async fn aad_binds_row() {
     let first = new_row(&secrets, CredentialId::new(), &new_credential("u1")).unwrap();
     let second = new_row(&secrets, CredentialId::new(), &new_credential("u2")).unwrap();
 
-    let own = open_field(&secrets, &first.id, PASSWORD, &first.password_enc).unwrap();
-    let copied = open_field(&secrets, &second.id, PASSWORD, &first.password_enc);
+    let sealed = first.password_enc.as_ref().unwrap();
+    let own = open_field(&secrets, &first.id, PASSWORD, sealed).unwrap();
+    let copied = open_field(&secrets, &second.id, PASSWORD, sealed);
 
     assert_eq!(own.expose(), PASSWORD_VALUE);
     assert!(copied.is_err());

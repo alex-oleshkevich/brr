@@ -58,6 +58,10 @@ _Avoid_: session, browser process, context
 A browser the user started themselves that the manager attaches to. The manager never stops it: when the user closes it, its Instance becomes lost; detaching releases it.
 _Avoid_: external browser, user browser
 
+**Sandbox**:
+How a managed Instance is isolated from brr and the host: `none` (the browser runs as brr's user) or `docker` (its own container with no network but brr's forwarder, removed when the Instance ends). Live browsers are never sandboxed.
+_Avoid_: jail, container mode
+
 **Tab**:
 One page inside an Instance.
 _Avoid_: page, target
@@ -166,13 +170,13 @@ The web UI never shows the internal names. API, CLI, MCP, specs and event kinds 
 
 | Internal | UI word |
 |---|---|
-| Instance | **browser** ("running browser" where needed); nav item "Browsers" |
+| Instance | **browser** ("running browser" where needed); nav item "Browsers". Of any state, a **run**; finished runs live in History |
 | Lease, held by | **"In use by <agent label>"**, or "You're in control" when the UI holds it. Never "Lease" |
 | Client | **agent** (its label). The UI's own client is "you" |
 | Build | **browser version**; nav item "Browser versions" |
-| Artifact | **file**; nav item "Files" |
-| Events | **Activity** |
-| Limits, Admission | **Capacity**; "Waiting to start" replaces "admission queue" |
+| Artifact | **file**; History → Files tab |
+| Events | **Activity**; History → Activity tab |
+| Limits, Admission | **Capacity** (a Settings section); "Waiting to start" replaces "admission queue" |
 | Static / Adaptive limit mode | **"Fixed limits" / "Based on free memory"** |
 | One-shot pool, linger | "Pre-started browsers for one-off jobs"; "Keep a one-off browser open after its job (s)" |
 | Reaping grace | "Warning period before closing an idle browser (s)" |
@@ -182,7 +186,11 @@ The web UI never shows the internal names. API, CLI, MCP, specs and event kinds 
 | Template | "Profile template" with a plain title and a one-line purpose |
 | RSS | Memory |
 | Credentials | **Logins** |
+| Promote | **"Keep this run's data"** |
+| Persistent / Ephemeral Profile | **"Keeps data" / "Fresh each time"** |
 
-Nav groups: **Run** (Dashboard, Browsers, Activity, Files, Connect an agent), **Set up** (Profiles, Proxies, Logins, Extensions), **System** (Browser versions, Captcha, Capacity, Storage, Settings).
+Nav groups: **Work** (Overview, Browsers, History), **Library** (Profiles, Templates, Extensions, Logins, Browser versions), plus a Settings button that opens the Settings dialog (Proxies, Captcha, Capacity and Storage are sections there).
+
+UI wording: the full table of UI words and their meaning is §3 of `docs/specs/2026-11-16-web-ui-redesign.md`.
 
 Words like "tab" and "browser" are not capitalised as proper nouns in copy.

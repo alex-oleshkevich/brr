@@ -24,6 +24,8 @@
   }: { open?: boolean; credential?: Credential | null; profiles: Profile[]; onsaved?: () => void } = $props();
 
   const editing = $derived(credential !== null);
+  // Bitwarden logins keep their secrets in Bitwarden; only the site, selectors and links are edited here.
+  const external = $derived(credential?.source === 'bitwarden');
 
   let site = $state('');
   let loginUrl = $state('');
@@ -136,26 +138,28 @@
       <Input label="Site" bind:value={site} required placeholder="github.com" hint={siteHint} error={errors.site} />
       <Input label="Login page (optional)" bind:value={loginUrl} placeholder={site || 'Same as the site'} error={errors.login_url} />
       <Input label="Username" bind:value={username} required autocomplete="off" error={errors.username} />
-      <Input
-        label="Password"
-        type="password"
-        bind:value={password}
-        required={!editing}
-        autocomplete="new-password"
-        placeholder={editing ? 'Leave empty to keep the current password' : undefined}
-        error={errors.password}
-      />
-      <Input
-        label="One-time code secret (optional)"
-        type="password"
-        bind:value={totp}
-        autocomplete="off"
-        hint="The setup key shown when you enable two-factor sign-in, or its otpauth:// link."
-        error={errors.totp}
-        placeholder={editing && credential?.totp_set ? 'Leave empty to keep' : undefined}
-      />
-      {#if editing && credential?.totp_set}
-        <Checkbox label="Remove the TOTP secret" bind:checked={removeTotp} />
+      {#if !external}
+        <Input
+          label="Password"
+          type="password"
+          bind:value={password}
+          required={!editing}
+          autocomplete="new-password"
+          placeholder={editing ? 'Leave empty to keep the current password' : undefined}
+          error={errors.password}
+        />
+        <Input
+          label="One-time code secret (optional)"
+          type="password"
+          bind:value={totp}
+          autocomplete="off"
+          hint="The setup key shown when you enable two-factor sign-in, or its otpauth:// link."
+          error={errors.totp}
+          placeholder={editing && credential?.totp_set ? 'Leave empty to keep' : undefined}
+        />
+        {#if editing && credential?.totp_set}
+          <Checkbox label="Remove the one-time code secret" bind:checked={removeTotp} />
+        {/if}
       {/if}
 
       <details>
@@ -168,7 +172,9 @@
         </div>
       </details>
 
-      <Textarea label="Notes (optional)" bind:value={notes} rows={3} placeholder={editing ? 'Leave empty to keep the current notes' : undefined} />
+      {#if !external}
+        <Textarea label="Notes (optional)" bind:value={notes} rows={3} placeholder={editing ? 'Leave empty to keep the current notes' : undefined} />
+      {/if}
 
       <div class="field">
         <span class="field-label">Use in profiles (optional)</span>

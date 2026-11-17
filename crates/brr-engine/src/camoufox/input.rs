@@ -6,6 +6,7 @@ use serde_json::{Value, json};
 use tokio::sync::oneshot;
 
 use super::{PageSession, gone, internal};
+use crate::Navigated;
 use crate::chromium::millis;
 use crate::common::CONNECTION_CLOSED;
 
@@ -15,6 +16,7 @@ const CDP_SHIFT: u64 = 8;
 const FIREFOX_SHIFT: u64 = 4;
 const FIREFOX_META: u64 = 8;
 const CARRIAGE_RETURN: &str = "\r";
+const DOWNLOAD_CREATED: &str = "Browser.downloadCreated";
 
 pub(super) fn modifiers(cdp: &Value) -> u64 {
     let mask = cdp.as_u64().unwrap_or_default();
@@ -65,6 +67,7 @@ struct Waiters {
     loaded: oneshot::Receiver<Value>,
     same_document: oneshot::Receiver<Value>,
     aborted: oneshot::Receiver<Value>,
+    download: oneshot::Receiver<Value>,
     // Held so the matcher that records commits keeps running; it never resolves.
     _committed: oneshot::Receiver<Value>,
     aborts: Arc<Mutex<Aborts>>,
@@ -177,12 +180,14 @@ impl PageSession {
     // registered before the call that causes it.
     fn navigation_waiters(&self, main_frame: &str, wait_until: WaitUntil, any: bool) -> Waiters {
         let wanted = event_name(wait_until);
-        let (loaded_frame, same_frame, aborted_frame, committed_frame) = (
+        let (loaded_frame, same_frame, aborted_frame, committed_frame, download_frame) = (
+            main_frame.to_owned(),
             main_frame.to_owned(),
             main_frame.to_owned(),
             main_frame.to_owned(),
             main_frame.to_owned(),
         );
+        let download_target = self.target_id.0.clone();
         let commits = Arc::new(Mutex::new(Commits {
             any,
             ..Commits::default()
@@ -255,24 +260,35 @@ impl PageSession {
                     }
                 }),
             ),
+            // A response saved as a file commits nothing and Juggler reports no abort for it.
+            download: self.juggler.wait_for(
+                None,
+                DOWNLOAD_CREATED,
+                Box::new(move |params| {
+                    params["frameId"] == download_frame.as_str()
+                        && params["pageTargetId"] == download_target.as_str()
+                }),
+            ),
             aborts,
             commits,
         }
     }
 
-    async fn await_navigation(waiters: Waiters, timeout: Duration) -> Result<(), Error> {
+    async fn await_navigation(waiters: Waiters, timeout: Duration) -> Result<Navigated, Error> {
         let Waiters {
             loaded,
             same_document,
             aborted,
+            download,
             ..
         } = waiters;
         let closed = |_| internal(CONNECTION_CLOSED);
 
         tokio::time::timeout(timeout, async {
             tokio::select! {
-                result = loaded => result.map(|_| ()).map_err(closed),
-                result = same_document => result.map(|_| ()).map_err(closed),
+                result = loaded => result.map(|_| Navigated::Page).map_err(closed),
+                result = same_document => result.map(|_| Navigated::Page).map_err(closed),
+                result = download => result.map(|_| Navigated::Download).map_err(closed),
                 result = aborted => {
                     let aborted = result.map_err(closed)?;
                     Err(Error::NavigationFailed {
@@ -293,7 +309,7 @@ impl PageSession {
         url: &str,
         wait_until: WaitUntil,
         timeout: Duration,
-    ) -> Result<(), Error> {
+    ) -> Result<Navigated, Error> {
         let waiters = self.navigation_waiters(main_frame, wait_until, false);
 
         let result = tokio::time::timeout(
@@ -307,7 +323,7 @@ impl PageSession {
         })??;
         // Same-document navigation starts no load.
         let Some(navigation_id) = result.navigation_id else {
-            return Ok(());
+            return Ok(Navigated::Page);
         };
         {
             let mut aborts = waiters
@@ -327,7 +343,7 @@ impl PageSession {
                 .lock()
                 .unwrap_or_else(PoisonError::into_inner);
             if commits.loaded.contains(&navigation_id) {
-                return Ok(());
+                return Ok(Navigated::Page);
             }
             commits.expected = Some(navigation_id);
         }
@@ -367,7 +383,8 @@ impl PageSession {
     ) -> Result<(), Error> {
         let waiters = self.navigation_waiters(main_frame, wait_until, true);
         self.call("Page.reload", json!({})).await?;
+        Self::await_navigation(waiters, timeout).await?;
 
-        Self::await_navigation(waiters, timeout).await
+        Ok(())
     }
 }

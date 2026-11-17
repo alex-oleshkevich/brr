@@ -176,8 +176,10 @@ pub(super) fn from_serialized(value: &Value) -> Option<Value> {
     Some(Value::Null)
 }
 
-// The RemoteObject; EvaluationFailed when the code threw.
-fn remote_result(mut response: Value) -> Result<Value, Error> {
+// The RemoteObject; EvaluationFailed when the code threw. Juggler writes undefined as
+// `{ value: undefined }`, which reaches the wire as `{}`; it gets the type CDP gives it, or
+// callers that tell undefined from a value see an object.
+pub(super) fn remote_result(mut response: Value) -> Result<Value, Error> {
     if let Some(details) = response.get("exceptionDetails") {
         let message = details["text"]
             .as_str()
@@ -190,8 +192,10 @@ fn remote_result(mut response: Value) -> Result<Value, Error> {
     }
 
     Ok(match response.get_mut("result") {
-        Some(result) => result.take(),
-        None => json!({ "type": "undefined" }),
+        Some(result) if result.as_object().is_some_and(|object| !object.is_empty()) => {
+            result.take()
+        }
+        _ => json!({ "type": "undefined" }),
     })
 }
 

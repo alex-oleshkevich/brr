@@ -124,6 +124,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run several Browser tools in order in one call. Use it only for steps you can plan without seeing the page in between: refs from `snapshot` go stale after any navigation or page change, so address elements by `selector`, and pass `tab_id` on every step (without a `client_id`, `tab_open` does not make its Tab current for later steps). Only tool names are checked before the first step; a wrong argument fails when its step runs, after earlier steps have been applied. It stops at the first error, or after about two minutes between steps; later steps are not run and not listed, so compare `completed` (steps that ran) with `total`, and check `failed`. A rejected request is a tool error, a failed step is a result with `ok: false`. Never batch a step whose input depends on an earlier step's output. */
+        post: operations["batch.run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bitwarden/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Connect a Bitwarden account with its API key and master password; they are kept only if the vault opens */
+        post: operations["bitwarden.connect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bitwarden/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Forget the Bitwarden API key and master password; linked credentials stay and fail as locked until you connect again */
+        post: operations["bitwarden.disconnect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bitwarden/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the Bitwarden login items, optionally only those whose name, URI or username contains `query`; no secrets */
+        get: operations["bitwarden.items"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bitwarden/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make a Bitwarden login item a credential for the given Profiles; an item already linked gains the Profiles */
+        post: operations["bitwarden.link"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bitwarden/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show whether Bitwarden is connected and unlocked, its item count, last sync and last error */
+        get: operations["bitwarden.status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bitwarden/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open the Bitwarden vault again now to pick up changed items */
+        post: operations["bitwarden.sync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/builds": {
         parameters: {
             query?: never;
@@ -201,7 +320,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Ask the provider for the account balance */
+        /** Show the provider's account balance; the answer is reused for 10 minutes unless `refresh` is set */
         get: operations["captcha.balance"];
         put?: never;
         post?: never;
@@ -246,6 +365,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/captcha/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Captcha spend, solves and failures per local day, oldest first; days without any show zeros */
+        get: operations["captcha.stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/clients": {
         parameters: {
             query?: never;
@@ -253,7 +389,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List the Clients that have not ended, with how many Leases each holds */
+        get: operations["client.list"];
         put?: never;
         /** Start a Client that owns Leases; it ends when its connection drops or it idles */
         post: operations["client.create"];
@@ -374,7 +511,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the extension library with the Profiles that enable each */
+        /** List the extension library with the Profiles that enable each and the Templates that carry it */
         get: operations["extension.list"];
         put?: never;
         /** Add an extension from the Chrome Web Store, addons.mozilla.org or an uploaded file or folder */
@@ -436,6 +573,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/hosts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the machines that run browsers in Docker over SSH, with their last check */
+        get: operations["host.list"];
+        put?: never;
+        /** Add a machine that runs browsers through its Docker over SSH (ssh://user@host[:port]); it is checked at once */
+        post: operations["host.create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/hosts/{host}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Show one Host by id or name, with its last check */
+        get: operations["host.get"];
+        put?: never;
+        post?: never;
+        /** Delete a Host that runs no browsers */
+        delete: operations["host.delete"];
+        options?: never;
+        head?: never;
+        /** Change a Host; it is checked again */
+        patch: operations["host.update"];
+        trace?: never;
+    };
+    "/v1/hosts/{host}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a Host now: Docker reachable, memory, sandbox image present */
+        post: operations["host.check"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/instances": {
         parameters: {
             query?: never;
@@ -443,7 +634,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Instances, newest first, optionally only some states (comma-separated) or one Profile */
+        /** List Instances, newest first, optionally only some states (comma-separated), one Profile or Template, one end reason or a time window */
         get: operations["instance.list"];
         put?: never;
         post?: never;
@@ -563,7 +754,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List active Leases, oldest first */
+        /** List active Leases, oldest first; include_released adds the released ones, for example to see who used a finished Instance */
         get: operations["lease.list"];
         put?: never;
         /** Lease a Tab, or the whole Instance with `exclusive`, so other Clients cannot change it */
@@ -924,6 +1115,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/profiles/{profile}/reapply-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Show how a Profile's settings and extensions differ from its template now, and copy the template's over them unless `dry_run` is set; refused while the Profile runs */
+        post: operations["profile.reapply_template"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/profiles/{profile}/save-as-template": {
         parameters: {
             query?: never;
@@ -933,7 +1141,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Save a Profile's settings as a new user template */
+        /** Save a Profile's settings and extensions as a new user template */
         post: operations["template.save_from_profile"];
         delete?: never;
         options?: never;
@@ -2047,7 +2255,7 @@ export interface paths {
         /** List built-in and user templates by name */
         get: operations["template.list"];
         put?: never;
-        /** Create a user template from settings */
+        /** Create a user template from settings and the extensions it hands to new Profiles */
         post: operations["template.create"];
         delete?: never;
         options?: never;
@@ -2072,6 +2280,40 @@ export interface paths {
         head?: never;
         /** Change a user template; existing Profiles keep their copy of the settings */
         patch: operations["template.update"];
+        trace?: never;
+    };
+    "/v1/usage/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Peak number of browsers running at once in each hour of the last day, or each 6 hours of the last week, by engine */
+        get: operations["usage.history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/usage/traffic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bytes sent and received through proxies over the last days, per Profile or per Proxy; runs without a forwarder are not measured */
+        get: operations["usage.traffic"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -2253,6 +2495,75 @@ export interface components {
              */
             keep: number;
         };
+        BatchRunInput: {
+            /**
+             * @description Keep going after a failed step. Default: stop at the first error.
+             * @default false
+             */
+            continue_on_error: boolean;
+            /** @description 1 to 50 steps, run in order. Each is a Browser tool name and its arguments. */
+            steps: components["schemas"]["Step"][];
+        };
+        BatchRunOutput: {
+            /**
+             * Format: uint
+             * @description Steps that ran, failed ones included.
+             */
+            completed: number;
+            /**
+             * Format: uint
+             * @description Steps that ran and failed.
+             */
+            failed: number;
+            results: components["schemas"]["StepResult"][];
+            stopped?: components["schemas"]["Stopped"] | null;
+            /** Format: uint */
+            total: number;
+        };
+        BitwardenConnectInput: {
+            client_id: string;
+            client_secret: string;
+            master_password: string;
+            server_url?: string | null;
+        };
+        BitwardenItem: {
+            has_totp: boolean;
+            id: string;
+            linked?: components["schemas"]["CredentialId"] | null;
+            name: string;
+            uris: string[];
+            username: string;
+        };
+        BitwardenItemsInput: {
+            query?: string | null;
+        };
+        BitwardenItemsOutput: {
+            items: components["schemas"]["BitwardenItem"][];
+        };
+        BitwardenLinkInput: {
+            item_id: string;
+            profile_ids?: string[] | null;
+            selectors?: components["schemas"]["CredentialSelectors"] | null;
+        };
+        BitwardenSettings: {
+            /** @default https://vault.bitwarden.com */
+            server_url: string;
+            /**
+             * Format: uint32
+             * @default 15
+             */
+            sync_interval_min: number;
+        };
+        BitwardenStatus: {
+            connected: boolean;
+            email?: string | null;
+            error?: string | null;
+            /** Format: uint32 */
+            items: number;
+            /** Format: int64 */
+            synced_at?: number | null;
+            unlocked: boolean;
+        };
         Build: {
             capabilities: components["schemas"]["Capability"][];
             channel?: string | null;
@@ -2307,7 +2618,7 @@ export interface components {
             version: string;
         };
         /** @enum {string} */
-        BuildRefKind: "profile" | "channel" | "instance";
+        BuildRefKind: "profile" | "template" | "channel" | "instance";
         BuildReference: {
             id: string;
             kind: components["schemas"]["BuildRefKind"];
@@ -2354,9 +2665,14 @@ export interface components {
         Button: "left" | "right" | "middle";
         /** @enum {string} */
         Capability: "pdf" | "mhtml" | "screencast" | "unpacked_extensions" | "har" | "request_interception" | "fingerprint_config";
+        CaptchaBalanceInput: {
+            refresh?: boolean | null;
+        };
         CaptchaBalanceOutput: {
             /** Format: uint64 */
             balance_usd_micros: number;
+            /** Format: int64 */
+            fetched_at: number;
         };
         /** @enum {string} */
         CaptchaPolicy: "off" | "on_demand" | "auto" | "human";
@@ -2409,12 +2725,20 @@ export interface components {
         CaptchaSolveId: string;
         CaptchaSolvesInput: {
             cursor?: string | null;
+            instance_id?: components["schemas"]["InstanceId"] | null;
             /** Format: uint32 */
             limit?: number | null;
         };
         CaptchaSolvesOutput: {
             next_cursor?: string | null;
             solves: components["schemas"]["CaptchaSolve"][];
+        };
+        CaptchaStatsInput: {
+            /** Format: uint32 */
+            days?: number | null;
+        };
+        CaptchaStatsOutput: {
+            days: components["schemas"]["DayStats"][];
         };
         /** @enum {string} */
         CaptchaType: "recaptcha_v2" | "recaptcha_v3" | "hcaptcha" | "turnstile" | "funcaptcha" | "geetest" | "image";
@@ -2498,6 +2822,9 @@ export interface components {
         ClientId: string;
         /** @enum {string} */
         ClientKind: "mcp" | "cli" | "rest" | "ui" | "connect";
+        ClientListOutput: {
+            clients: components["schemas"]["ClientView"][];
+        };
         ClientSettings: {
             /**
              * Format: uint32
@@ -2509,6 +2836,18 @@ export interface components {
              * @default 10
              */
             rest_idle_min: number;
+        };
+        ClientView: {
+            /** Format: int64 */
+            created_at: number;
+            current_tab_id?: components["schemas"]["TabId"] | null;
+            /** Format: int64 */
+            ended_at?: number | null;
+            id: components["schemas"]["ClientId"];
+            kind: components["schemas"]["ClientKind"];
+            label: string;
+            /** Format: uint32 */
+            lease_count: number;
         };
         /** @enum {string} */
         ColorScheme: "dark" | "light";
@@ -2547,10 +2886,31 @@ export interface components {
         };
         /** @enum {string} */
         CookieFormat: "json" | "netscape";
+        /** @description A cookie to set: name, value and a `domain` or `url` are required, the rest default. */
+        CookieInput: {
+            /** @description Defaults to the host of `url`. */
+            domain?: string | null;
+            /**
+             * Format: double
+             * @description Unix seconds; defaults to a session cookie.
+             */
+            expires?: number | null;
+            httpOnly?: boolean | null;
+            name: string;
+            /** @description Defaults to "/". */
+            path?: string | null;
+            /** @description Defaults to Lax. */
+            sameSite?: components["schemas"]["SameSite"] | null;
+            secure?: boolean | null;
+            /** @description Supplies the domain, and the secure flag when it is https and `secure` is not given. */
+            url?: string | null;
+            value: string;
+        };
         CookiesOut: {
             cookies: components["schemas"]["Cookie"][];
         };
         Credential: {
+            bitwarden_item_id?: string | null;
             /** Format: int64 */
             created_at: number;
             id: components["schemas"]["CredentialId"];
@@ -2559,6 +2919,7 @@ export interface components {
             profile_ids: components["schemas"]["ProfileId"][];
             selectors: components["schemas"]["CredentialSelectors"];
             site: string;
+            source: components["schemas"]["CredentialSource"];
             totp_set: boolean;
             /** Format: int64 */
             updated_at: number;
@@ -2611,6 +2972,8 @@ export interface components {
             /** @default null */
             username_selector: string | null;
         };
+        /** @enum {string} */
+        CredentialSource: "local" | "bitwarden";
         CredentialUpdateInput: {
             credential_id: components["schemas"]["CredentialId"];
             /** @default null */
@@ -2622,6 +2985,17 @@ export interface components {
             site?: string | null;
             totp?: string | null;
             username?: string | null;
+        };
+        DayStats: {
+            day: string;
+            /** Format: uint32 */
+            failures: number;
+            /** Format: uint32 */
+            solves: number;
+            /** Format: uint64 */
+            spend_usd_micros: number;
+            /** Format: int64 */
+            start_ms: number;
         };
         Delivery: {
             artifact_id?: components["schemas"]["ArtifactId"] | null;
@@ -2641,6 +3015,10 @@ export interface components {
         };
         /** @enum {string} */
         Display: "headless" | "visible" | "virtual";
+        DisplayUnavailable: {
+            display: components["schemas"]["Display"];
+            reason: string;
+        };
         Download: {
             artifact_id?: components["schemas"]["ArtifactId"] | null;
             filename: string;
@@ -3052,6 +3430,19 @@ export interface components {
             kind: "login.relogin_suspended";
         } | {
             data: {
+                /** Format: uint32 */
+                items: number;
+            };
+            /** @constant */
+            kind: "bitwarden.synced";
+        } | {
+            data: {
+                error: string;
+            };
+            /** @constant */
+            kind: "bitwarden.sync_failed";
+        } | {
+            data: {
                 country?: string | null;
                 exit_ip?: string | null;
                 healthy: boolean;
@@ -3114,9 +3505,15 @@ export interface components {
             versions: components["schemas"]["ExtensionVersion"][];
         };
         ExtensionAddInput: {
+            /** @description For an uploaded file: the engine it is for. Default: read from the package (a gecko manifest or Mozilla signature is Camoufox, anything else Chromium). */
+            engine?: components["schemas"]["Engine"] | null;
             file?: string | null;
             ref?: string | null;
             source?: components["schemas"]["ExtensionSource"] | null;
+        };
+        ExtensionChanges: {
+            added: components["schemas"]["ExtensionId"][];
+            removed: components["schemas"]["ExtensionId"][];
         };
         ExtensionCompanionInput: Record<string, never>;
         ExtensionCompanionOutput: {
@@ -3168,6 +3565,7 @@ export interface components {
             profiles: components["schemas"]["ProfileRef"][];
             source: components["schemas"]["ExtensionSource"];
             source_ref: string;
+            template_ids: components["schemas"]["TemplateId"][];
             versions: components["schemas"]["ExtensionVersion"][];
         };
         ExtensionsSettings: {
@@ -3175,6 +3573,11 @@ export interface components {
             amo_api: string;
             /** @default https://clients2.google.com/service/update2/crx */
             cws_update_url: string;
+        };
+        FieldChange: {
+            field: string;
+            from: unknown;
+            to: unknown;
         };
         Fingerprint: {
             /** @default [] */
@@ -3204,6 +3607,62 @@ export interface components {
             /** Format: uint64 */
             timeout?: number | null;
             wait_until?: components["schemas"]["WaitUntil"] | null;
+        };
+        Host: {
+            /** Format: int64 */
+            created_at: number;
+            docker_url: string;
+            enabled: boolean;
+            id: components["schemas"]["HostId"];
+            /** Format: uint32 */
+            max_instances: number;
+            name: string;
+            /**
+             * @default {
+             *       "checked_at": null,
+             *       "error": null,
+             *       "image_present": null,
+             *       "mem_available_mb": null,
+             *       "mem_total_mb": null,
+             *       "reachable": false,
+             *       "running": 0
+             *     }
+             */
+            status: components["schemas"]["HostStatus"];
+        };
+        HostCreateInput: {
+            docker_url: string;
+            /** Format: uint32 */
+            max_instances: number;
+            name: string;
+        };
+        HostId: string;
+        HostInput: {
+            host: string;
+        };
+        HostListOutput: {
+            hosts: components["schemas"]["Host"][];
+        };
+        HostStatus: {
+            /** Format: int64 */
+            checked_at?: number | null;
+            error?: string | null;
+            image_present?: boolean | null;
+            /** Format: uint64 */
+            mem_available_mb?: number | null;
+            /** Format: uint64 */
+            mem_total_mb?: number | null;
+            reachable: boolean;
+            /** Format: uint32 */
+            running: number;
+        };
+        HostUpdateInput: {
+            docker_url?: string | null;
+            enabled?: boolean | null;
+            host: string;
+            /** Format: uint32 */
+            max_instances?: number | null;
+            name?: string | null;
         };
         /** @enum {string} */
         HumanReason: "captcha" | "dialog" | "login";
@@ -3258,6 +3717,10 @@ export interface components {
             ended_at?: number | null;
             ephemeral: boolean;
             error?: string | null;
+            /** @default null */
+            extensions: components["schemas"]["InstanceExtension"][] | null;
+            /** @default null */
+            host_id: components["schemas"]["HostId"] | null;
             id: components["schemas"]["InstanceId"];
             kind: components["schemas"]["InstanceKind"];
             /** Format: int64 */
@@ -3276,6 +3739,8 @@ export interface components {
             /** @default null */
             profile_name: string | null;
             promote_to_name?: string | null;
+            /** @default null */
+            proxy_id: components["schemas"]["ProxyId"] | null;
             /** Format: int64 */
             queued_at: number;
             /** Format: uint32 */
@@ -3285,6 +3750,10 @@ export interface components {
              * @default null
              */
             rss_bytes: number | null;
+            /** @default null */
+            sandbox: components["schemas"]["SandboxMode"] | null;
+            /** @default null */
+            settings: components["schemas"]["ProfileSettings"] | null;
             /** Format: int64 */
             started_at?: number | null;
             state: components["schemas"]["InstanceState"];
@@ -3293,6 +3762,12 @@ export interface components {
              * @default 0
              */
             tab_count: number;
+            /** @default null */
+            template_id: components["schemas"]["TemplateId"] | null;
+            /** @default null */
+            template_name: string | null;
+            /** @default null */
+            traffic: components["schemas"]["Traffic"] | null;
         };
         InstanceAttachInput: {
             cdp_url?: string | null;
@@ -3305,6 +3780,11 @@ export interface components {
         };
         InstanceDetachInput: {
             instance_id: components["schemas"]["InstanceId"];
+        };
+        InstanceExtension: {
+            id: components["schemas"]["ExtensionId"];
+            name: string;
+            version: string;
         };
         InstanceGetInput: {
             instance_id: components["schemas"]["InstanceId"];
@@ -3330,10 +3810,24 @@ export interface components {
         };
         InstanceListInput: {
             cursor?: string | null;
+            end_reason?: components["schemas"]["EndReason"] | null;
             /** Format: uint32 */
             limit?: number | null;
             profile?: string | null;
+            /**
+             * Format: int64
+             * @description Epoch milliseconds, e.g. 1794864186771
+             * @default null
+             */
+            since: number | null;
             state?: string | null;
+            template?: string | null;
+            /**
+             * Format: int64
+             * @description Epoch milliseconds, e.g. 1794864186771
+             * @default null
+             */
+            until: number | null;
         };
         InstanceListOutput: {
             instances: components["schemas"]["Instance"][];
@@ -3399,6 +3893,8 @@ export interface components {
         LeaseListInput: {
             client_id?: components["schemas"]["ClientId"] | null;
             cursor?: string | null;
+            /** @default false */
+            include_released: boolean;
             instance_id?: components["schemas"]["InstanceId"] | null;
             /** Format: uint32 */
             limit?: number | null;
@@ -3570,6 +4066,22 @@ export interface components {
         };
         /** @enum {string} */
         LoginStatus: "unknown" | "ok" | "failed";
+        McpSettings: {
+            /**
+             * @default [
+             *       "browser",
+             *       "instances",
+             *       "profiles",
+             *       "builds",
+             *       "network",
+             *       "credentials",
+             *       "captcha",
+             *       "storage",
+             *       "system"
+             *     ]
+             */
+            default_toolsets: components["schemas"]["Toolset"][];
+        };
         MessagesOut: {
             messages: components["schemas"]["ConsoleMessage"][];
         };
@@ -3682,6 +4194,8 @@ export interface components {
             settings: components["schemas"]["ProfileSettings"];
             tags: string[];
             template_id?: components["schemas"]["TemplateId"] | null;
+            /** @default null */
+            template_name: string | null;
             /** Format: int64 */
             updated_at: number;
         };
@@ -3744,9 +4258,11 @@ export interface components {
             filename?: string | null;
         };
         ProfileExtension: {
+            /** @default true */
             auto_update: boolean;
             extension_id: components["schemas"]["ExtensionId"];
-            pinned_version?: string | null;
+            /** @default null */
+            pinned_version: string | null;
         };
         ProfileExtensionsGetInput: {
             profile: string;
@@ -3778,6 +4294,14 @@ export interface components {
         ProfileListOutput: {
             next_cursor?: string | null;
             profiles: components["schemas"]["Profile"][];
+        };
+        ProfileReapplyTemplateInput: {
+            dry_run?: boolean | null;
+            profile: string;
+        };
+        ProfileReapplyTemplateOutput: {
+            changes: components["schemas"]["FieldChange"][];
+            extensions: components["schemas"]["ExtensionChanges"];
         };
         ProfileRef: {
             id: components["schemas"]["ProfileId"];
@@ -4038,6 +4562,34 @@ export interface components {
         ReturnMode: "auto" | "inline" | "url" | "both";
         /** @enum {string} */
         SameSite: "Strict" | "Lax" | "None";
+        /** @enum {string} */
+        SandboxMode: "none" | "docker";
+        SandboxSettings: {
+            /**
+             * Format: double
+             * @default 2
+             */
+            cpus: number;
+            /** @default null */
+            image: string | null;
+            /**
+             * Format: uint32
+             * @default 2048
+             */
+            memory_mb: number;
+            /** @default none */
+            mode: components["schemas"]["SandboxMode"];
+            /**
+             * Format: uint32
+             * @default 1024
+             */
+            pids: number;
+            /**
+             * Format: uint32
+             * @default 1024
+             */
+            shm_mb: number;
+        };
         ScreenSize: string;
         SecretStatus: {
             hint?: string | null;
@@ -4102,6 +4654,13 @@ export interface components {
              *     }
              */
             backup: components["schemas"]["BackupSettings"];
+            /**
+             * @default {
+             *       "server_url": "https://vault.bitwarden.com",
+             *       "sync_interval_min": 15
+             *     }
+             */
+            bitwarden: components["schemas"]["BitwardenSettings"];
             /**
              * @default {
              *       "check_at": "04:00",
@@ -4187,6 +4746,22 @@ export interface components {
             login_check: components["schemas"]["LoginCheckSettings"];
             /**
              * @default {
+             *       "default_toolsets": [
+             *         "browser",
+             *         "instances",
+             *         "profiles",
+             *         "builds",
+             *         "network",
+             *         "credentials",
+             *         "captcha",
+             *         "storage",
+             *         "system"
+             *       ]
+             *     }
+             */
+            mcp: components["schemas"]["McpSettings"];
+            /**
+             * @default {
              *       "linger_s": 60,
              *       "pool_size": 0,
              *       "profile": "oneshot"
@@ -4217,6 +4792,17 @@ export interface components {
              *     }
              */
             retention: components["schemas"]["RetentionSettings"];
+            /**
+             * @default {
+             *       "cpus": 2,
+             *       "image": null,
+             *       "memory_mb": 2048,
+             *       "mode": "none",
+             *       "pids": 1024,
+             *       "shm_mb": 1024
+             *     }
+             */
+            sandbox: components["schemas"]["SandboxSettings"];
             /**
              * @default {
              *       "bind": "127.0.0.1:9898",
@@ -4305,6 +4891,27 @@ export interface components {
         };
         /** @enum {string} */
         SolvedBy: "provider" | "human";
+        Step: {
+            /**
+             * @description The tool's own arguments. Set `tab_id`; `client_id` is not allowed here, pass it on batch_run.
+             * @default {}
+             */
+            args: {
+                [key: string]: unknown;
+            };
+            /** @description A Browser tool name as listed by tools/list, for example `navigate`, `click`, `fill` or `get_metadata`. */
+            tool: string;
+        };
+        StepResult: {
+            error?: components["schemas"]["ErrorBody"] | null;
+            ok: boolean;
+            output?: unknown;
+            /** Format: uint */
+            step: number;
+            tool: string;
+        };
+        /** @enum {string} */
+        Stopped: "error" | "deadline";
         /** @enum {string} */
         StorageArea: "local" | "session";
         StorageAreaInput: {
@@ -4392,8 +4999,16 @@ export interface components {
             checks: components["schemas"]["Check"][];
         };
         SystemInfo: {
+            at_capacity: boolean;
+            /** Format: uint32 */
+            browsers_running: number;
             config_path: string;
             data_dir: string;
+            display_unavailable: components["schemas"]["DisplayUnavailable"][];
+            /** Format: uint32 */
+            hosts_max: number;
+            /** Format: uint32 */
+            hosts_running: number;
             /** Format: double */
             load_per_core: number;
             /** Format: uint32 */
@@ -4460,7 +5075,7 @@ export interface components {
             urls?: string[] | null;
         };
         TabCookiesSetInput: {
-            cookies: components["schemas"]["Cookie"][];
+            cookies: components["schemas"]["CookieInput"][];
             tab_id?: components["schemas"]["TabId"] | null;
         };
         TabDblclickInput: {
@@ -4553,6 +5168,26 @@ export interface components {
             timeout?: number | null;
             url: string;
             wait_until?: components["schemas"]["WaitUntil"] | null;
+        };
+        TabNavigateOutput: {
+            /** Format: int64 */
+            closed_at?: number | null;
+            /** Format: int64 */
+            created_at: number;
+            /** @description Present and true when the URL answered with a file: the file is saved as a Download and the Tab stays on its page. */
+            download: boolean;
+            id: components["schemas"]["TabId"];
+            instance_id: components["schemas"]["InstanceId"];
+            /** Format: int64 */
+            last_activity_at: number;
+            /** @default null */
+            lease: components["schemas"]["TabLease"] | null;
+            opened_by_brr: boolean;
+            pinned: boolean;
+            state: components["schemas"]["TabState"];
+            target_id: string;
+            title: string;
+            url: string;
         };
         TabNetworkLogInput: {
             /** Format: uint32 */
@@ -4682,6 +5317,8 @@ export interface components {
             created_at: number;
             /** @default null */
             description: string | null;
+            /** @default [] */
+            extensions: components["schemas"]["ProfileExtension"][];
             id: components["schemas"]["TemplateId"];
             name: string;
             settings: components["schemas"]["ProfileSettings"];
@@ -4689,6 +5326,9 @@ export interface components {
             updated_at: number;
         };
         TemplateCreateInput: {
+            description?: string | null;
+            /** @default [] */
+            extensions: components["schemas"]["ProfileExtension"][];
             name: string;
             settings: components["schemas"]["ProfileSettings"];
         };
@@ -4710,12 +5350,35 @@ export interface components {
             profile: string;
         };
         TemplateUpdateInput: {
+            /** @default null */
+            description: string | null;
+            extensions?: components["schemas"]["ProfileExtension"][] | null;
             name?: string | null;
             settings?: components["schemas"]["ProfileSettings"] | null;
             template: string;
         };
         /** @enum {string} */
         Theme: "system" | "light" | "dark";
+        /** @enum {string} */
+        Toolset: "browser" | "instances" | "profiles" | "builds" | "network" | "credentials" | "captcha" | "storage" | "system";
+        Traffic: {
+            /** Format: uint64 */
+            received_bytes: number;
+            /** Format: uint64 */
+            sent_bytes: number;
+        };
+        /** @enum {string} */
+        TrafficBy: "profile" | "proxy";
+        TrafficItem: {
+            id: string;
+            name: string;
+            /** Format: uint64 */
+            received_bytes: number;
+            /** Format: uint64 */
+            runs: number;
+            /** Format: uint64 */
+            sent_bytes: number;
+        };
         UiSettings: {
             /** @default system */
             theme: components["schemas"]["Theme"];
@@ -4725,6 +5388,40 @@ export interface components {
             mime?: string | null;
             name: string;
         };
+        UsageBucket: {
+            /** Format: uint32 */
+            attached: number;
+            /** Format: uint32 */
+            camoufox: number;
+            /** Format: uint32 */
+            chromium: number;
+            /** Format: int64 */
+            start_ms: number;
+            /** Format: uint64 */
+            traffic_bytes: number;
+        };
+        UsageHistoryInput: {
+            window?: components["schemas"]["UsageWindow"] | null;
+        };
+        UsageHistoryOutput: {
+            /** Format: int64 */
+            bucket_ms: number;
+            buckets: components["schemas"]["UsageBucket"][];
+            window: components["schemas"]["UsageWindow"];
+        };
+        UsageTrafficInput: {
+            /** Format: uint32 */
+            days?: number | null;
+            group: components["schemas"]["TrafficBy"];
+        };
+        UsageTrafficOutput: {
+            /** Format: uint32 */
+            days: number;
+            group: components["schemas"]["TrafficBy"];
+            items: components["schemas"]["TrafficItem"][];
+        };
+        /** @enum {string} */
+        UsageWindow: "1d" | "7d";
         UsdMicros: number;
         VaultSettings: {
             /** @default null */
@@ -5010,6 +5707,258 @@ export interface operations {
             };
         };
     };
+    "batch.run": {
+        parameters: {
+            query?: never;
+            header?: {
+                "Brr-Client"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description Keep going after a failed step. Default: stop at the first error.
+                     * @default false
+                     */
+                    continue_on_error?: boolean;
+                    /** @description 1 to 50 steps, run in order. Each is a Browser tool name and its arguments. */
+                    steps: components["schemas"]["Step"][];
+                };
+            };
+        };
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchRunOutput"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "bitwarden.connect": {
+        parameters: {
+            query?: never;
+            header?: {
+                "Brr-Client"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    client_id: string;
+                    client_secret: string;
+                    master_password: string;
+                    server_url?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BitwardenStatus"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "bitwarden.disconnect": {
+        parameters: {
+            query?: never;
+            header?: {
+                "Brr-Client"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BitwardenStatus"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "bitwarden.items": {
+        parameters: {
+            query?: {
+                query?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BitwardenItemsOutput"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "bitwarden.link": {
+        parameters: {
+            query?: never;
+            header?: {
+                "Brr-Client"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    item_id: string;
+                    profile_ids?: string[] | null;
+                    selectors?: components["schemas"]["CredentialSelectors"] | null;
+                };
+            };
+        };
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Credential"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "bitwarden.status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BitwardenStatus"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "bitwarden.sync": {
+        parameters: {
+            query?: never;
+            header?: {
+                "Brr-Client"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BitwardenStatus"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     "build.list": {
         parameters: {
             query?: {
@@ -5213,7 +6162,9 @@ export interface operations {
     };
     "captcha.balance": {
         parameters: {
-            query?: never;
+            query?: {
+                refresh?: boolean | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -5317,6 +6268,7 @@ export interface operations {
         parameters: {
             query?: {
                 cursor?: string | null;
+                instance_id?: components["schemas"]["InstanceId"] | null;
                 limit?: number | null;
             };
             header?: never;
@@ -5332,6 +6284,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CaptchaSolvesOutput"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "captcha.stats": {
+        parameters: {
+            query?: {
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaptchaStatsOutput"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "client.list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientListOutput"];
                 };
             };
             /** @description error */
@@ -5727,6 +6739,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** @description For an uploaded file: the engine it is for. Default: read from the package (a gecko manifest or Mozilla signature is Camoufox, anything else Chromium). */
+                    engine?: components["schemas"]["Engine"] | null;
                     file?: string | null;
                     ref?: string | null;
                     source?: components["schemas"]["ExtensionSource"] | null;
@@ -5853,13 +6867,230 @@ export interface operations {
             };
         };
     };
+    "host.list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HostListOutput"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "host.create": {
+        parameters: {
+            query?: never;
+            header?: {
+                "Brr-Client"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    docker_url: string;
+                    /** Format: uint32 */
+                    max_instances: number;
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Host"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "host.get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                host: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Host"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "host.delete": {
+        parameters: {
+            query?: never;
+            header?: {
+                "Brr-Client"?: string;
+            };
+            path: {
+                host: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Host"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "host.update": {
+        parameters: {
+            query?: never;
+            header?: {
+                "Brr-Client"?: string;
+            };
+            path: {
+                host: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    docker_url?: string | null;
+                    enabled?: boolean | null;
+                    /** Format: uint32 */
+                    max_instances?: number | null;
+                    name?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Host"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "host.check": {
+        parameters: {
+            query?: never;
+            header?: {
+                "Brr-Client"?: string;
+            };
+            path: {
+                host: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Host"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     "instance.list": {
         parameters: {
             query?: {
                 cursor?: string | null;
+                end_reason?: components["schemas"]["EndReason"] | null;
                 limit?: number | null;
                 profile?: string | null;
+                since?: number | null;
                 state?: string | null;
+                template?: string | null;
+                until?: number | null;
             };
             header?: never;
             path?: never;
@@ -6147,6 +7378,7 @@ export interface operations {
             query?: {
                 client_id?: components["schemas"]["ClientId"] | null;
                 cursor?: string | null;
+                include_released?: boolean;
                 instance_id?: components["schemas"]["InstanceId"] | null;
                 limit?: number | null;
             };
@@ -7619,6 +8851,45 @@ export interface operations {
             };
         };
     };
+    "profile.reapply_template": {
+        parameters: {
+            query?: never;
+            header?: {
+                "Brr-Client"?: string;
+            };
+            path: {
+                profile: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    dry_run?: boolean | null;
+                };
+            };
+        };
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileReapplyTemplateOutput"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     "template.save_from_profile": {
         parameters: {
             query?: never;
@@ -8776,7 +10047,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    cookies: components["schemas"]["Cookie"][];
+                    cookies: components["schemas"]["CookieInput"][];
                 };
             };
         };
@@ -9612,7 +10883,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Tab"];
+                    "application/json": components["schemas"]["TabNavigateOutput"];
                 };
             };
             /** @description error */
@@ -10485,6 +11756,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    description?: string | null;
+                    /** @default [] */
+                    extensions?: components["schemas"]["ProfileExtension"][];
                     name: string;
                     settings: components["schemas"]["ProfileSettings"];
                 };
@@ -10589,6 +11863,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** @default null */
+                    description?: string | null;
+                    extensions?: components["schemas"]["ProfileExtension"][] | null;
                     name?: string | null;
                     settings?: components["schemas"]["ProfileSettings"] | null;
                 };
@@ -10602,6 +11879,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Template"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "usage.history": {
+        parameters: {
+            query?: {
+                window?: components["schemas"]["UsageWindow"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageHistoryOutput"];
+                };
+            };
+            /** @description error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    "usage.traffic": {
+        parameters: {
+            query: {
+                days?: number | null;
+                group: components["schemas"]["TrafficBy"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageTrafficOutput"];
                 };
             };
             /** @description error */

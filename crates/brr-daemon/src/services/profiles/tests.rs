@@ -5,8 +5,11 @@ use brr_core::{
     now_ms,
 };
 use brr_store::{Connection, Store, build};
+use test_case::test_case;
 
-use super::resolve_build;
+use super::{resolve_build, validate_name};
+
+const FIELD: &str = "name";
 
 fn build_row(
     source: BuildSource,
@@ -136,4 +139,23 @@ async fn resolve_build_picks_the_newest_version_of_any_source_without_system_fal
 
     assert_eq!(found.id, new.id);
     assert!(reason(missing).starts_with("no brave stable build installed"));
+}
+
+#[test_case("."; "dot")]
+#[test_case(".."; "dot dot")]
+#[test_case("-rf"; "leading dash")]
+#[test_case(""; "empty")]
+#[test_case("a b"; "space")]
+fn names_that_read_as_paths_or_flags_are_refused(name: &str) {
+    assert!(matches!(
+        validate_name(name, FIELD),
+        Err(Error::InvalidArgument { field, .. }) if field == FIELD
+    ));
+}
+
+#[test_case("work"; "plain")]
+#[test_case(".hidden"; "leading dot")]
+#[test_case("a-b.c_d"; "punctuation inside")]
+fn ordinary_names_pass(name: &str) {
+    assert!(validate_name(name, FIELD).is_ok());
 }

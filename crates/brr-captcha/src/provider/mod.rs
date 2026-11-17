@@ -20,6 +20,10 @@ const IMAGE_FIRST_POLL: Duration = Duration::from_secs(2);
 const RECAPTCHA_V3_MIN_SCORE: f64 = 0.7;
 const MICROS_DIGITS: usize = 6;
 const MAX_LOGGED_CODE_CHARS: usize = 64;
+const API_KEY_FIELD: &str = "api_key";
+const KEY_MISSING: &str = "ERROR_KEY_DOES_NOT_EXIST";
+const KEY_WRONG: &str = "ERROR_WRONG_USER_KEY";
+const IP_NOT_ALLOWED: &str = "ERROR_IP_NOT_ALLOWED";
 
 pub enum Provider {
     TwoCaptcha(TwoCaptcha),
@@ -132,7 +136,10 @@ impl TwoCaptcha {
     }
 
     async fn balance(&self) -> Result<u64, Error> {
-        let reply = self.call("getBalance", json!({})).await?;
+        let reply = self
+            .send("getBalance", json!({}))
+            .await?
+            .map_err(|code| balance_error(&code))?;
 
         micros(&reply["balance"]).ok_or_else(|| {
             tracing::info!(
@@ -143,8 +150,15 @@ impl TwoCaptcha {
         })
     }
 
-    // The key only ever leaves in this JSON body; failures log the provider's error code, never the request
     async fn call(&self, path: &str, fields: Value) -> Result<Value, Error> {
+        self.send(path, fields)
+            .await?
+            .map_err(|_| Error::CaptchaFailed)
+    }
+
+    // The key only ever leaves in this JSON body; failures log the provider's error code, never the
+    // request. The inner Err is the provider's error code, reduced to the characters codes use.
+    async fn send(&self, path: &str, fields: Value) -> Result<Result<Value, String>, Error> {
         let body = Request {
             client_key: self.api_key.expose(),
             fields,
@@ -169,13 +183,35 @@ impl TwoCaptcha {
                 .as_str()
                 .unwrap_or_default()
                 .chars()
+                .filter(|c| c.is_ascii_alphanumeric() || *c == '_')
                 .take(MAX_LOGGED_CODE_CHARS)
                 .collect();
             tracing::info!(provider = PROVIDER_NAME, path, error_code = ?code, "provider rejected the request");
-            return Err(Error::CaptchaFailed);
+            return Ok(Err(code));
         }
 
-        Ok(reply)
+        Ok(Ok(reply))
+    }
+}
+
+fn balance_error(code: &str) -> Error {
+    match code {
+        KEY_MISSING | KEY_WRONG => Error::InvalidArgument {
+            field: API_KEY_FIELD.to_string(),
+            message: format!(
+                "{PROVIDER_NAME} says the API key does not exist ({code}); check it in Settings → Captcha"
+            ),
+        },
+        IP_NOT_ALLOWED => Error::InvalidArgument {
+            field: API_KEY_FIELD.to_string(),
+            message: format!(
+                "{PROVIDER_NAME} refuses this machine's IP address ({code}); allow it in the {PROVIDER_NAME} account settings"
+            ),
+        },
+        _ => Error::DependencyMissing {
+            name: format!("the {PROVIDER_NAME} balance"),
+            help: format!("{PROVIDER_NAME} answered {code}; check the API key and retry"),
+        },
     }
 }
 

@@ -12,7 +12,7 @@ use tracing::debug;
 
 use crate::chromium::is_user_page;
 use crate::common::{EVENTS_QUEUE, internal};
-use crate::{Chromium, Driver, DriverEvent};
+use crate::{Chromium, Driver, DriverEvent, Navigated};
 
 #[cfg(test)]
 mod tests;
@@ -286,7 +286,7 @@ impl Live {
         url: &str,
         wait_until: WaitUntil,
         timeout: Duration,
-    ) -> Result<(), Error> {
+    ) -> Result<Navigated, Error> {
         self.attach_tab(target_id).await?;
 
         self.chromium

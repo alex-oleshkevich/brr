@@ -3,6 +3,8 @@ export type ConfirmOptions = {
   description: string;
   confirmLabel: string;
   tone?: 'primary' | 'danger';
+  // Info only: a single button, no Cancel.
+  info?: boolean;
 };
 
 class ConfirmState {

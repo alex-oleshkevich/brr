@@ -28,6 +28,7 @@ const EPHEMERAL_DIR: &str = "ephemeral";
 const BUILDS_DIR: &str = "builds";
 const STORAGE_DIR: &str = "storage";
 const DOWNLOADS_DIR: &str = "downloads";
+const RUNS_DIR: &str = "runs";
 const LOG_EXTENSION: &str = "log";
 const INSTANCE_LOG_DIR: &str = "instances";
 const DAEMON_LOG: &str = "daemon.log";
@@ -106,6 +107,10 @@ impl Paths {
 
     pub fn downloads_dir(&self) -> PathBuf {
         self.data_dir.join(DOWNLOADS_DIR)
+    }
+
+    pub fn runs_dir(&self) -> PathBuf {
+        self.data_dir.join(RUNS_DIR)
     }
 
     pub fn instance_log(&self, instance_id: &InstanceId) -> PathBuf {

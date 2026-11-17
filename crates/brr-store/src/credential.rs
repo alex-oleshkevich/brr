@@ -1,6 +1,8 @@
 use std::{collections::HashMap, fmt};
 
-use brr_core::{CredentialId, CredentialSelectors, Error, LastLogin, Page, ProfileId};
+use brr_core::{
+    CredentialId, CredentialSelectors, CredentialSource, Error, LastLogin, Page, ProfileId,
+};
 use rusqlite::{Connection, Row, params};
 
 use crate::{
@@ -9,20 +11,24 @@ use crate::{
 };
 
 const TABLE: &str = "credential";
-const COLUMNS: &str = "id, site, login_url, username_enc, password_enc, totp_enc, notes_enc, selectors, created_at, updated_at";
+const COLUMNS: &str = "id, site, login_url, username_enc, password_enc, totp_enc, notes_enc, selectors, created_at, updated_at, source, bitwarden_item_id";
 
 #[derive(Clone)]
 pub struct CredentialRow {
     pub id: CredentialId,
     pub site: String,
     pub login_url: Option<String>,
-    pub username_enc: Vec<u8>,
-    pub password_enc: Vec<u8>,
+    // None only for Bitwarden rows: the username may be a sealed display hint, the password
+    // lives in the vault.
+    pub username_enc: Option<Vec<u8>>,
+    pub password_enc: Option<Vec<u8>>,
     pub totp_enc: Option<Vec<u8>>,
     pub notes_enc: Option<Vec<u8>>,
     pub selectors: CredentialSelectors,
     pub created_at: i64,
     pub updated_at: i64,
+    pub source: CredentialSource,
+    pub bitwarden_item_id: Option<String>,
 }
 
 impl fmt::Debug for CredentialRow {
@@ -46,13 +52,15 @@ fn decode(row: &Row) -> rusqlite::Result<CredentialRow> {
         selectors: json_col(row, "selectors")?,
         created_at: row.get("created_at")?,
         updated_at: row.get("updated_at")?,
+        source: col(row, "source")?,
+        bitwarden_item_id: row.get("bitwarden_item_id")?,
     })
 }
 
 pub fn insert(c: &Connection, row: &CredentialRow) -> Result<(), Error> {
     c.execute(
         &format!(
-            "INSERT INTO credential ({COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)"
+            "INSERT INTO credential ({COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)"
         ),
         params![
             Text(&row.id),
@@ -65,6 +73,8 @@ pub fn insert(c: &Connection, row: &CredentialRow) -> Result<(), Error> {
             Json(&row.selectors),
             row.created_at,
             row.updated_at,
+            Text(&row.source),
+            row.bitwarden_item_id,
         ],
     )
     .map_err(internal)?;
@@ -76,7 +86,7 @@ pub fn update(c: &Connection, row: &CredentialRow) -> Result<(), Error> {
     let changed = c
         .execute(
             "UPDATE credential SET site = ?2, login_url = ?3, username_enc = ?4, password_enc = ?5, totp_enc = ?6,
-             notes_enc = ?7, selectors = ?8, updated_at = ?9 WHERE id = ?1",
+             notes_enc = ?7, selectors = ?8, updated_at = ?9, source = ?10, bitwarden_item_id = ?11 WHERE id = ?1",
             params![
                 Text(&row.id),
                 row.site,
@@ -87,6 +97,8 @@ pub fn update(c: &Connection, row: &CredentialRow) -> Result<(), Error> {
                 row.notes_enc,
                 Json(&row.selectors),
                 row.updated_at,
+                Text(&row.source),
+                row.bitwarden_item_id,
             ],
         )
         .map_err(internal)?;
@@ -104,6 +116,23 @@ pub fn get(c: &Connection, credential_id: &CredentialId) -> Result<CredentialRow
     )?;
 
     first_or_not_found(rows, format!("credential {credential_id}"))
+}
+
+pub fn find_by_bitwarden_item(
+    c: &Connection,
+    item_id: &str,
+) -> Result<Option<CredentialRow>, Error> {
+    let rows = query(
+        c,
+        TABLE,
+        &format!(
+            "SELECT {COLUMNS} FROM credential WHERE source = 'bitwarden' AND bitwarden_item_id = ?1 ORDER BY id LIMIT 1"
+        ),
+        params![item_id],
+        decode,
+    )?;
+
+    Ok(rows.into_iter().next())
 }
 
 pub fn list(c: &Connection, page: &Page) -> Result<(Vec<CredentialRow>, Option<String>), Error> {

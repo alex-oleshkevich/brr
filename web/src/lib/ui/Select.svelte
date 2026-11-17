@@ -6,6 +6,7 @@
 
   let {
     value = $bindable(),
+    name,
     label,
     hideLabel = false,
     options,
@@ -16,6 +17,7 @@
     onchange,
   }: {
     value?: string;
+    name?: string;
     label: string;
     hideLabel?: boolean;
     options: (Option | { group: string; options: Option[] })[];
@@ -50,6 +52,7 @@
     <select
       class="control"
       id={selectId}
+      {name}
       bind:value
       onchange={(e) => onchange?.(e.currentTarget.value)}
       {disabled}

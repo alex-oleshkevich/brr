@@ -24,7 +24,7 @@ Search in this order and stop at the first hit:
 serde_json, schemars, inventory, rusqlite (bundled), rusqlite_migration, ulid, toml, toml_edit,
 thiserror, anyhow, tracing, tracing-subscriber, clap, nix, libc, bytes, command-fds, object_store (aws),
 rust-embed, chacha20poly1305, keyring, totp-rs, age, tar, zstd, zip, sha2, base64, rand,
-dom_smoothie, htmd, adblock, aes, cbc, tokio-rustls, rustls, rustls-platform-verifier, lzma-rs, maxminddb, zeroize; dev: test-case, tempfile. Web: SvelteKit + adapter-static,
+dom_smoothie, htmd, adblock, aes, cbc, tokio-rustls, rustls, rustls-platform-verifier, lzma-rs, maxminddb, zeroize, hmac, hkdf, pbkdf2, argon2, rsa, sha1 (2026-11-17, Bitwarden); dev: test-case, tempfile. Web: SvelteKit + adapter-static,
 openapi-typescript, openapi-fetch, hand-written CSS, no component library; web dev: @playwright/test, @axe-core/playwright (spec §21). Extension: typescript, @types/chrome (dev).
 
 **Any other crate or npm package needs the user's approval — hard stop.** A sub-agent that needs

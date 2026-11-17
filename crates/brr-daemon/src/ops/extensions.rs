@@ -1,8 +1,8 @@
 use brr_core::{
-    Error, EventData, Extension, ExtensionId, ExtensionSource, Http, Method, OperationSpec, Page,
-    ProfileExtension, ProfileId, Toolset, Upload, schema,
+    Engine, Error, EventData, Extension, ExtensionId, ExtensionSource, Http, Method, OperationSpec,
+    Page, ProfileExtension, ProfileId, TemplateId, Toolset, Upload, schema,
 };
-use brr_store::{extension, profile, profile_extension};
+use brr_store::{extension, profile, profile_extension, template_extension};
 use futures::{FutureExt, future::BoxFuture};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -18,7 +18,7 @@ static LIST: OperationSpec = OperationSpec {
     name: "extension.list",
     group: "extension",
     toolset: Toolset::Profiles,
-    summary: "List the extension library with the Profiles that enable each",
+    summary: "List the extension library with the Profiles that enable each and the Templates that carry it",
     http: Http {
         method: Method::Get,
         path: "/v1/extensions",
@@ -166,6 +166,7 @@ struct ExtensionView {
     extension: Extension,
     latest_version: Option<String>,
     profiles: Vec<ProfileRef>,
+    template_ids: Vec<TemplateId>,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -181,6 +182,10 @@ struct AddInput {
     #[serde(rename = "ref")]
     reference: Option<String>,
     file: Option<Upload>,
+    #[schemars(
+        description = "For an uploaded file: the engine it is for. Default: read from the package (a gecko manifest or Mozilla signature is Camoufox, anything else Chromium)."
+    )]
+    engine: Option<Engine>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -218,9 +223,16 @@ struct ProfileExtensionsOutput {
 fn add_source(input: AddInput) -> Result<AddSource, Error> {
     match (input.file, input.reference) {
         (Some(file), None) => match input.source {
-            None | Some(ExtensionSource::Local) => Ok(AddSource::File { bytes: file.0 }),
+            None | Some(ExtensionSource::Local) => Ok(AddSource::File {
+                bytes: file.0,
+                engine: input.engine,
+            }),
             Some(_) => Err(invalid("source", "an uploaded file is a local extension")),
         },
+        (None, Some(_)) if input.engine.is_some() => Err(invalid(
+            "engine",
+            "only an uploaded file takes an engine; Web Store extensions are Chromium and Firefox add-ons Camoufox",
+        )),
         (None, Some(reference)) => match input.source {
             Some(ExtensionSource::Cws) => Ok(AddSource::Cws { reference }),
             Some(ExtensionSource::Amo) => Ok(AddSource::Amo { reference }),
@@ -252,11 +264,13 @@ fn list(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
                             .into_iter()
                             .map(|(id, name)| ProfileRef { id, name })
                             .collect();
+                        let template_ids = template_extension::templates_using(c, &row.id)?;
 
                         Ok(ExtensionView {
                             latest_version: row.versions.first().map(|v| v.version.clone()),
                             extension: row,
                             profiles,
+                            template_ids,
                         })
                     })
                     .collect::<Result<Vec<_>, Error>>()?;

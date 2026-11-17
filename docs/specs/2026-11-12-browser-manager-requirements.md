@@ -251,15 +251,15 @@ SQLite, one file `$XDG_DATA_HOME/brr/brr.db`, WAL mode, migrations via `rusqlite
 |---|---|---|
 | `build` | id, source (`cft`,`headless_shell`,`ungoogled`,`fingerprint_chromium`,`brave`,`edge`,`system`,`camoufox`), engine, version, channel?, path, state (`installing`,`installed`,`failed`,`registered`), sha256?, size_bytes, capabilities JSON, installed_at, last_referenced_at | unique(source, version) |
 | `asset` | id, kind (`geoip_db`,`adblock_list`,`autoconsent_rules`,`device_list`), version, path, updated_at | shared downloads |
-| `template` | id, name unique, builtin bool, description? (one plain line: written for built-ins, the source Profile's notes for saved ones), settings JSON (P3 shape) | |
-| `profile` | id, name unique, kind (`persistent`,`ephemeral`), template_id? (informational), build_id?, channel?, settings JSON (P3), pinned, notes, data_dir?, disk_quota_bytes?, backup_schedule?, backup_keep, created_at, updated_at | `profile_tag(profile_id, tag)` |
+| `template` | id, name unique, builtin bool, description? (one plain line: written for built-ins, the source Profile's notes for saved ones), settings JSON (P3 shape) | `template_extension(template_id, extension_id, pinned_version?, auto_update)`, copied into `profile_extension` when a Profile is created from it; removed with the extension |
+| `profile` | id, name unique, kind (`persistent`,`ephemeral`), template_id? (informational), template_name? (the Template's name at creation), build_id?, channel?, settings JSON (P3), pinned, notes, data_dir?, disk_quota_bytes?, backup_schedule?, backup_keep, created_at, updated_at | `profile_tag(profile_id, tag)` |
 | `extension` | id, engine, source (`cws`,`amo`,`local`), source_ref, name | `extension_version(extension_id, version, path, fetched_at)` |
 | `profile_extension` | profile_id, extension_id, pinned_version?, auto_update | PK(profile_id, extension_id) |
 | `credential` | id, site, login_url?, username_enc, password_enc, totp_enc?, notes_enc?, selectors JSON, created_at, updated_at | `credential_profile(credential_id, profile_id)` |
 | `login_check` | id, profile_id, site, url, expect_selector?, expect_text?, credential_id?, auto_relogin, last_status (`unknown`,`ok`,`failed`), last_checked_at | |
 | `proxy` | id, scheme, host, port, username?, password_enc?, healthy?, exit_ip?, country?, latency_ms?, last_error? (one plain sentence from the last failed check), checked_at? | |
 | `proxy_pool` | id, name, mode (`sticky`,`rotate`) | `pool_member(pool_id, proxy_id)`, `pool_sticky(pool_id, profile_id, proxy_id)` |
-| `instance` | id, kind (`managed`,`live`), profile_id?, build_id?, state, display, priority, admission, pid?, log_path?, cdp_url?, data_dir?, ephemeral, promote_to_name?, restart_count, last_activity_at, queued_at, started_at?, ended_at?, end_reason?, error?, profile_name? (the Profile's name at launch; survives the Profile's deletion, where `profile_id` becomes null) | state ∈ §7.2a |
+| `instance` | id, kind (`managed`,`live`), profile_id?, build_id?, state, display, priority, admission, pid?, log_path?, cdp_url?, data_dir?, ephemeral, promote_to_name?, restart_count, last_activity_at, queued_at, started_at?, ended_at?, end_reason?, error?, profile_name? (the Profile's name at launch; survives the Profile's deletion, where `profile_id` becomes null); what a managed launch ran with: settings JSON?, template_id?, template_name?, extensions JSON? (`[{id, name, version}]` loaded), proxy_id? (the pool's pick); null for Live browsers | state ∈ §7.2a |
 | `tab` | id, instance_id, target_id, state, url, title, opened_by_brr, pinned, last_activity_at, created_at, closed_at? | |
 | `client` | id, kind (`mcp`,`cli`,`rest`,`ui`,`connect`), label, current_tab_id?, created_at, ended_at? | |
 | `lease` | id, client_id, instance_id, tab_id?, exclusive, acquired_at, released_at?, release_reason? | at most one active lease per tab_id (partial unique index) |
@@ -313,10 +313,11 @@ Errors are `{code, message, details}` (§14). Lists take `?limit&cursor`. Every 
 
 | Method + path | Operation |
 |---|---|
-| `POST /v1/clients` · `DELETE /v1/clients/{id}` | client.create / client.end |
+| `GET /v1/clients` · `POST /v1/clients` · `DELETE /v1/clients/{id}` | client.list (active Clients with `lease_count`) / client.create / client.end |
 | `GET /v1/builds` · `GET /v1/builds/available?source=` · `POST /v1/builds` `{source, version|channel}` · `GET /v1/builds/{id}` · `DELETE /v1/builds/{id}` · `POST /v1/builds/detect` | build.list / available / install / get / remove / detect |
-| `GET/POST /v1/templates` · `GET/PATCH/DELETE /v1/templates/{id}` · `POST /v1/profiles/{id}/save-as-template` | template.* |
+| `GET/POST /v1/templates` (`POST` body takes `extensions`) · `GET/PATCH/DELETE /v1/templates/{id}` · `POST /v1/profiles/{id}/save-as-template` | template.* (a template carries the extensions it hands to new Profiles; `save-as-template` copies the Profile's enabled extensions) |
 | `GET/POST /v1/profiles` · `GET/PATCH/DELETE /v1/profiles/{id}` | profile.list / create `{name, template, kind}` / get / update / delete |
+| `POST /v1/profiles/{id}/reapply-template` `{dry_run?}` | profile.reapply_template (returns `{changes:[{field, from, to}], extensions:{added, removed}}`; without `dry_run` it copies the template's settings and extensions over the Profile; `Conflict{profile_running}` while it runs, `Conflict{template_gone}` when its template was deleted) |
 | `POST /v1/profiles/{id}/launch` `{priority, admission, exclusive, display?}` | instance.launch (returns Instance + first Tab + Lease) |
 | `GET/PUT /v1/profiles/{id}/cookies?format=json|netscape` | profile.cookies_export / import |
 | `GET/PUT /v1/profiles/{id}/bookmarks` | profile.bookmarks_export / import |
@@ -327,20 +328,21 @@ Errors are `{code, message, details}` (§14). Lists take `?limit&cursor`. Every 
 | `GET/POST /v1/credentials` · `PATCH/DELETE /v1/credentials/{id}` · `POST /v1/credentials/import` | credential.* (responses never contain secret fields) |
 | `GET/POST /v1/proxies` · `PATCH/DELETE /v1/proxies/{id}` · `POST /v1/proxies/import` · `POST /v1/proxies/{id}/check` | proxy.* |
 | `GET/POST /v1/proxy-pools` · `PATCH/DELETE /v1/proxy-pools/{id}` | pool.* |
-| `GET /v1/instances?state=` · `GET /v1/instances/{id}` · `POST /v1/instances/{id}/stop` · `POST /v1/instances/{id}/promote` `{name}` | instance.* |
+| `GET /v1/instances?state=&profile=&template=&end_reason=&since=&until=` · `GET /v1/instances/{id}` · `POST /v1/instances/{id}/stop` · `POST /v1/instances/{id}/promote` `{name}` | instance.* (`template` matches a template id or name; `since` inclusive and `until` exclusive, both epoch ms, on the run's time; an Instance also reports the `settings`, `template_id`, `template_name`, `extensions[{id, name, version}]` and `proxy_id` its managed launch ran with, null for Live browsers) |
 | `POST /v1/instances/attach` `{cdp_url | install_name | via:"extension"}` · `POST /v1/instances/{id}/detach` | instance.attach / detach |
 | `GET /v1/instances/{id}/tabs` · `POST /v1/instances/{id}/tabs` `{url?}` | tab.list / tab.open |
 | `GET /v1/tabs/{id}` · `DELETE /v1/tabs/{id}` · `POST /v1/tabs/{id}/switch` · `POST /v1/tabs/{id}/pin` · `POST /v1/tabs/{id}/unpin` | tab.get / close / switch / pin / unpin |
 | `POST /v1/tabs/{id}/{tool}` | every Tab tool in §8.3 (e.g. `/navigate`, `/click`, `/screenshot`) |
 | `GET /v1/leases` · `POST /v1/leases` `{instance_id, tab_id?, exclusive}` · `DELETE /v1/leases/{id}` | lease.list / acquire / release |
 | `GET/PUT /v1/limits` · `GET /v1/admission/queue` | limits.get / set, admission.queue |
-| `GET/PUT /v1/captcha/settings` · `GET /v1/captcha/solves` · `GET /v1/captcha/balance` | captcha.* |
+| `GET/PUT /v1/captcha/settings` · `GET /v1/captcha/solves` · `GET /v1/captcha/stats?days=` · `GET /v1/captcha/balance?refresh=` | captcha.* (`stats` is per local day, oldest first, 1–30 days, default 7; `balance` is cached for 10 min and returns `fetched_at`) |
 | `GET /v1/storage/usage` · `GET/PUT /v1/storage/backend` · `POST /v1/storage/backend/test` | storage.* |
 | `GET /v1/artifacts` · `GET /v1/artifacts/{id}` · `GET /v1/artifacts/{id}/content` (local: `GET /v1/a/{public_id}`) · `DELETE /v1/artifacts/{id}` | artifact.* |
 | `GET/PUT /v1/retention` · `POST /v1/retention/sweep?dry_run=true|false` | retention.* |
 | `GET/PATCH /v1/settings` | settings.get / set |
 | `GET /v1/events?since&kinds&limit` · `GET /v1/events/stream` (SSE) | events.list / stream |
 | `GET /v1/system/info` · `GET /v1/system/doctor` | system.info / doctor |
+| `GET /v1/usage/history?window=1d|7d` | usage.history (Browsers running per bucket by engine: hourly for `1d`, 6-hourly for `7d`; default `1d`) |
 | `GET\|POST /v1/{screenshot,pdf,mhtml,markdown,content,links}` | oneshot.* (T3) |
 | WS `/v1/tabs/{id}/screencast` · WS `/v1/extension-relay` · WS `/cdp` | live view, companion relay, T4 |
 | `/mcp` · `/metrics` · `/openapi.json` · `/` (UI) | |
@@ -351,13 +353,13 @@ Tab tools take optional `tab_id` (default: current Tab) and optional `client_id`
 
 **Tab tools:** `navigate{url, wait_until}`, `go_back`, `go_forward`, `reload`, `click{button, modifiers}`, `dblclick`, `hover`, `type{text, delay}`, `fill{value}`, `press_key{key}`, `select_option{values}`, `check`, `uncheck`, `drag{to_ref|to_selector}`, `upload_file{files[]}`, `scroll{dx, dy | into_view}`, `wait_for{selector|text|url|network_idle, timeout}`, `handle_dialog{accept, prompt_text}`, `evaluate{expression}`, `screenshot` (RO, T2 params), `pdf` (RO, Cap pdf), `mhtml` (RO, Cap mhtml), `get_html` (RO), `get_text` (RO), `get_markdown` (RO), `snapshot` (RO), `get_links` (RO), `get_metadata` (RO), `cookies_get` (RO) / `cookies_set` / `cookies_clear`, `storage_get{area: local|session}` (RO) / `storage_set` / `storage_clear`, `console_messages` (RO), `network_log` (RO), `har_start` / `har_stop` (Cap har → Artifact), `emulate{viewport, device, geolocation, timezone, offline, color_scheme}`, `block_requests{patterns, types}` (Cap request_interception), `tab_list` (RO), `tab_open{url}`, `tab_close`, `tab_switch`, `tab_pin` / `tab_unpin`, `artifact_list` (RO), `artifact_fetch{id, return}` (RO), `login{credential_id}`, `solve_captcha`, `await_human{reason, timeout}`.
 
-**Management tools:** `client_create`, `client_end`; `build_list`, `build_available`, `build_install`, `build_remove`, `build_detect`; `template_list|get|create|update|delete`; `profile_list|get|create|update|delete|launch`, `profile_cookies_export|import`, `profile_bookmarks_export|import`, `profile_export|import`, `backup_list|list_all|create|restore|delete`, `login_check_list|create|update|delete|run`; `extension_list|add|remove|update`; `credential_list|create|update|delete|import`; `proxy_list|create|update|delete|import|check`, `pool_list|create|update|delete`; `instance_list|get|stop|promote|attach|detach`; `lease_list|acquire|release`; `limits_get|set`, `admission_queue`; `captcha_settings_get|set`, `captcha_solves`, `captcha_balance`; `storage_usage`, `storage_backend_get|set|test`; `retention_get|set|sweep`; `settings_get|set`; `events_watch`; `system_info`, `system_doctor`; `oneshot_screenshot|pdf|mhtml|markdown|content|links`.
+**Management tools:** `client_list`, `client_create`, `client_end`; `build_list`, `build_available`, `build_install`, `build_remove`, `build_detect`; `template_list|get|create|update|delete`; `profile_list|get|create|update|delete|launch|reapply_template`, `profile_cookies_export|import`, `profile_bookmarks_export|import`, `profile_export|import`, `backup_list|list_all|create|restore|delete`, `login_check_list|create|update|delete|run`; `extension_list|add|remove|update`; `credential_list|create|update|delete|import`; `proxy_list|create|update|delete|import|check`, `pool_list|create|update|delete`; `instance_list|get|stop|promote|attach|detach`; `lease_list|acquire|release`; `limits_get|set`, `admission_queue`, `usage_history`; `captcha_settings_get|set`, `captcha_solves`, `captcha_stats`, `captcha_balance`; `storage_usage`, `storage_backend_get|set|test`; `retention_get|set|sweep`; `settings_get|set`; `events_watch`; `system_info`, `system_doctor`; `oneshot_screenshot|pdf|mhtml|markdown|content|links`.
 
 ### 8.4 CLI tree
 
 ```
 brr daemon run | start | stop | status | install | uninstall | logs
-brr mcp [--toolsets a,b]     # stdio MCP, auto-starts daemon (§8.5)
+brr mcp [--toolsets a,b]     # stdio MCP, auto-starts daemon; default toolsets from `mcp.default_toolsets` (§8.5)
 brr doctor
 brr prime                    # agent guide + what runs now; never starts the daemon
 brr skill [install [--dir <skills folder>]...]   # print or install skills/brr/SKILL.md (default ~/.claude/skills, ~/.agents/skills)
@@ -365,6 +367,7 @@ brr version | completion <shell>
 brr build list | available [--source] | install <source> [--version|--channel] | remove <id> | detect
 brr template list | get | create | update | delete
 brr profile list | get | create <name> --template <t> [--ephemeral] | update | delete | launch <name> [--priority --admission --exclusive --display]
+brr profile reapply-template <name> [--dry-run]
 brr profile cookies export|import <name> [--format json|netscape] [-o|-i path]
 brr profile bookmarks export|import <name>
 brr profile export <name> -o file --passphrase <file> | import --file <archive> --passphrase <file>
@@ -374,12 +377,14 @@ brr extension list | add <cws-id|amo-slug|path> | remove | update
 brr credential list | create | update | delete | import <csv>
 brr proxy list | create | update | delete | import <file> | check <id>
 brr pool list | create | update | delete
-brr instance list | get | stop | promote <id> --name | attach (--cdp-url|--install-name|--extension) | detach
+brr instance list [--state --profile --template --end-reason --since --until] | get | stop | promote <id> --name | attach (--cdp-url|--install-name|--extension) | detach
 brr tab list [--instance] | open | close | switch | pin | unpin
+brr client list | create | end
 brr tab <tool> --tab-id <id> [args]  # navigate, click, screenshot -o file, … (every §8.3 Tab tool)
 brr lease list | acquire | release
 brr limits get | set
-brr captcha settings get|set | solves | balance
+brr captcha settings get|set | solves | stats [--days] | balance [--refresh]
+brr usage history [--window 1d|7d]
 brr storage usage | backend get|set|test
 brr artifact list | get | fetch <id> -o file | delete
 brr retention get | set | sweep [--dry-run]
@@ -393,7 +398,7 @@ Output is human-readable by default; `--json` prints the operation's typed outpu
 
 ### 8.5 MCP toolsets
 
-MCP tools are grouped into toolsets: `browser` (Tab tools and `tab.*`, one-shot tools), `instances` (client, instance, lease, limits, admission), `profiles` (template, profile, backup, login_check, extension), `builds`, `network` (proxy, pool), `credentials`, `captcha` (captcha settings, solves, balance), `storage` (storage, retention), `system` (settings, events, system). Select toolsets with `brr mcp --toolsets=a,b` and HTTP `/mcp?toolsets=a,b`. The default is all toolsets, so MCP lists every tool unless the user narrows it.
+MCP tools are grouped into toolsets: `browser` (Tab tools and `tab.*`, one-shot tools), `instances` (client, instance, lease, limits, admission, usage), `profiles` (template, profile, backup, login_check, extension), `builds`, `network` (proxy, pool), `credentials`, `captcha` (captcha settings, solves, stats, balance), `storage` (storage, retention), `system` (settings, events, system). Select toolsets with `brr mcp --toolsets=a,b` and HTTP `/mcp?toolsets=a,b`. Without that, the setting `mcp.default_toolsets` applies to both (the daemon reads it for HTTP; `brr mcp` reads it for stdio). Its default is all toolsets, so MCP lists every tool unless the user narrows it; an empty list is `InvalidArgument{field: mcp.default_toolsets}`.
 
 ## 9. Captcha
 
@@ -401,7 +406,7 @@ MCP tools are grouped into toolsets: `browser` (Tab tools and `tab.*`, one-shot 
 - K1a. `off`: no detection. `on-demand`: detection only; solving runs only when a Client calls `solve_captcha`. `auto`: detect and solve. `human`: detect, then go straight to `awaiting_human`. Budgets reset at 00:00 in the daemon's local time zone. The provider API key is stored in the `secret` table.
 - K2. Detection: reCAPTCHA v2 and v3, hCaptcha, Turnstile, FunCaptcha, GeeTest, image captchas.
 - K3. Solving goes through a provider interface; 2captcha is first. The Profile's upstream proxy (not the local forwarder) is passed so tokens match the site's view of the IP; Profiles without a proxy use proxyless tasks.
-- K4. Daily limits, editable in the UI: $5 and 200 solves (defaults). Every solve is logged with site, type, cost, duration and result; the UI shows the balance.
+- K4. Daily limits, editable in the UI: $5 and 200 solves (defaults). Every solve is logged with site, type, cost, duration and result; the UI shows the balance. `captcha.stats` returns spend, solves and failures per local day (1–30 days, default 7, oldest first, zeros for days without a solve). `captcha.balance` asks the provider at most once per 10 min: it caches the answer with `fetched_at`, `refresh` forces a new request, and setting a new API key clears the cache.
 - K5. Fallback when a solve fails, the type is unsupported, or the budget is exhausted: the Tab goes to `awaiting_human`. The caller waits up to 5 min, then gets `CaptchaFailed`.
 
 ## 10. Live view and Live browsers
@@ -526,7 +531,7 @@ Typed errors are shared by all surfaces. Each maps to an HTTP status, an MCP `is
 |---|---|---|---|
 | `InvalidArgument{field}` | 400 | 2 | validation failure, engine/extension mismatch |
 | `NotFound` | 404 | 3 | |
-| `Conflict{reason}` | 409 | 4 | `profile_locked`, `profile_running`, `downgrade`, `credential_not_linked`, name taken |
+| `Conflict{reason}` | 409 | 4 | `profile_locked`, `profile_running`, `downgrade`, `credential_not_linked`, `template_gone` (`profile.reapply_template` on a Profile whose template was deleted or never set), name taken |
 | `InvalidTransition{from, to}` | 409 | 5 | |
 | `LeaseHeld{client_id}` | 423 | 6 | Tab or Instance leased by another Client |
 | `LeaseLost` | 410 | 7 | Lease released during the call |
@@ -552,7 +557,7 @@ REST body: `{code, message, details}`. MCP: `isError: true` and `content[0].text
 
 ## 15. Platform and distribution
 
-Linux x86_64 and arm64. Shipped as one binary, with `brr daemon install` writing a systemd user service (with `PassEnvironment=DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR`), plus a Docker image (with Xvfb and `tini` as init) for servers. The Docker image documents `--shm-size=2g`, launches Chromium with `--disable-dev-shm-usage`, and documents a sandbox policy (`--no-sandbox` or a seccomp profile allowing user namespaces). Process and path handling stay portable for a later macOS port. `brr doctor` checks all of these.
+Linux x86_64 and arm64. Shipped as one binary, with `brr daemon install` writing a systemd user service (with `PassEnvironment=DISPLAY WAYLAND_DISPLAY XDG_RUNTIME_DIR`), plus a Docker image (with Xvfb and `tini` as init) for servers. The Docker image documents `--shm-size=2g`, launches Chromium with `--disable-dev-shm-usage`, and documents a sandbox policy (`--no-sandbox` or a seccomp profile allowing user namespaces). With `sandbox.mode = docker` each managed browser instead runs in its own container with no network but brr's forwarder ([ADR 0005](../adr/0005-browser-sandbox-modes.md), [sandbox spec](2026-11-17-browser-sandbox.md)). Process and path handling stay portable for a later macOS port. `brr doctor` checks all of these.
 
 ## 16. Out of scope (v1)
 
@@ -635,6 +640,7 @@ Keys are `config.toml` paths unless noted.
 | `vault.key_source` | `file` for a new vault (keyring is opt-in: its Secret Service store can raise a blocking unlock prompt); fixed once chosen |
 | `storage.public_endpoint` | unset (presign host override) |
 | `client.rest_idle_min` / `client.mcp_http_idle_min` | 10 / 10 |
+| `mcp.default_toolsets` | all toolsets (§8.5); at least one |
 | `oneshot.profile` | `oneshot` (built-in Ephemeral, from `chromium-headless`) |
 | `oneshot.pool_size` / `oneshot.linger_s` | 0 / 60 |
 | `results.inline_max_mb` | 5 |
@@ -650,6 +656,8 @@ Keys are `config.toml` paths unless noted.
 | `login_check.interval_min` | 60 |
 | `proxy.health_interval_min` | 60 |
 | `captcha.daily_usd` / `captcha.daily_solves` / `captcha.human_wait_s` | 5 / 200 / 300 |
+| `captcha.balance` cache | 10 min (not a setting); `refresh` bypasses it |
+| `captcha.stats` `days` / `usage.history` `window` | 7 (max 30) / `1d` (`7d`) |
 | `builds.check_at` | `04:00` local, daily |
 | `backup.keep` | 7 |
 | `retention.*` | as in the §11 D4 table |
@@ -657,35 +665,34 @@ Keys are `config.toml` paths unless noted.
 
 ## 21. Web UI
 
-**Shell.** Left sidebar nav and a top bar holding a global queue/pressure indicator, a theme toggle (System/Light/Dark, persisted in `ui.theme`), and a notification bell for `tab.awaiting_human`, `build.install_failed`, `captcha.budget_exhausted`, `backup.failed` and `login.relogin_suspended`. Every list updates live from SSE.
+Design and screen-by-screen detail: `2026-11-16-web-ui-redesign.md` (§3 words, §4 routes, §5 screens, §6 confirmations). The UI says Browser for Instance, Run for an Instance of any state, Template for Profile template, Browser version for Build and Login for Credential; the API, CLI and MCP keep the GLOSSARY terms.
 
-| Page | Contents | Primary actions |
+**Shell.** Left sidebar with 8 items in two groups (Work: Overview, Browsers, History; Library: Profiles, Templates, Extensions, Logins, Browser versions) and a Settings button at its foot. The top bar holds the capacity/pressure indicator, a theme toggle (System/Light/Dark, persisted in `ui.theme`) and a notification bell for `tab.awaiting_human`, `build.install_failed`, `captcha.budget_exhausted`, `backup.failed` and `login.relogin_suspended`. Every list updates live from SSE. Deleted routes redirect (308, query kept) to their replacement; `/design` is a dev-only route outside the nav.
+
+| Route | Contents | Primary actions |
 |---|---|---|
-| Dashboard | counts by state, RAM/CPU vs thresholds, admission queue, Tabs awaiting a human | Open step-in |
-| Instances | table: Profile, Build, state, display, Tabs, Leases, idle-for, RSS | Launch, Stop, Promote |
-| Instance detail | Tabs list with state and lessee, live view (screencast), Leases, events timeline | Take over / Hand back, Close Tab, Pin |
-| Profiles | table with tags, kind, Build/channel, login status, disk usage (with an "Over quota" badge when the Profile's quota is exceeded) | New from template, Import profile, Launch |
-| Profile editor | sections matching P3 (Browser, Display, Network/Proxy, Locale & fingerprint, Extensions, Credentials & login checks, Captcha, Content, Storage & retention, Idle & pinning, Backups) | Save, Save as template, Export profile (Persistent, stopped; download or storage backend, passphrase asked in the dialog), Import and export cookies/bookmarks. The Backups section holds the schedule (Off, Daily, Weekly; local time) and keep count, which Save sends, plus the Profile's backups with Back up now, Restore as new profile and Delete. The Credentials & login checks section applies at once, outside Save |
-| Templates | built-in (read-only) and user templates | Duplicate, Edit, Delete |
-| Builds | installed (with Capabilities, referenced-by), available per source, install progress | Install, Remove, Detect system |
-| Extensions | library with engine, version, Profiles using it | Add, Update, Remove |
-| Credentials | site, username, linked Profiles, last login status (never secrets) | Add, Import CSV, Link |
-| Proxies | entries with health, pools | Add, Bulk import, Check |
-| Captcha | policy defaults, provider key (set/unset), budget vs spend today, balance, solve log | Save |
-| Storage | backend config and Test, usage per Profile/Build/extension/Artifact, Artifact browser | Clean now (preview dialog first), Delete |
-| Limits | mode, static maxima, adaptive thresholds, admission default | Save |
-| Events | filterable log (kind, subject, time) | Export JSON |
-| Settings | bind, idle defaults, retention defaults, one-shot, backups passphrase (set once, then replaced), About/doctor | Save |
+| `/` Overview | Get started checklist until done or dismissed; Needs you (Tabs awaiting a human, failed login checks, captcha budget at 80 %, low balance, Profile over quota, low disk, failed backup, unhealthy proxy in use, failed install); stat strip (browsers running vs capacity, open tabs, queued launches, RAM and CPU vs thresholds, captcha spend and balance); usage and spend charts; Running now; Recent runs; "No browser yet" panel when there is no Browser version | Open, Retry, Fix (opens a Settings section) |
+| `/browsers`, `/browsers/[id]` | non-final Instances: Profile or Attached badge, Template, version, display, Tabs, clients, idle-for, RAM, state. Detail: Tabs list with state and lessee, live view (screencast), Leases, events timeline, collapsible run details | Launch, Attach, Stop, Keep this run's data (Promote), Detach, Take over / Hand back, Close Tab, Pin |
+| `/history`, `/history/[id]` | tabs Runs (finished runs; filters Profile, Template, end reason, date; paged), Activity (filterable event log), Files (Artifacts); the retention note links to Settings → Storage. Run detail tabs: Summary, Settings (as the run ran, optional diff against the Profile now), Template & extensions, Network (proxy actually used), Logins, Captcha, Files, Activity. Runs before the history snapshot show "Not recorded" | Launch again, Export JSON |
+| `/profiles`, `/profiles/[id]` | table: name, kind (Keeps data / Fresh each time), Template it came from, last run, disk use (with an "Over quota" badge), login status. Detail tabs: Overview, Settings (sections matching P3 and Extensions; banner "Copied from Template X"), Logins & checks, Cookies & bookmarks, Backups (schedule, keep count, the Profile's backups with Back up now, Restore as new profile, Delete) | New profile (choose Template, name, kind), Import, Launch, Duplicate, Export (Persistent, stopped), Back up now, Save, Save as template, Delete |
+| `/templates`, `/templates/[id]` | cards in Built-in and Yours: engine, display, proxy, extension count, Profiles made from it. Editor with the config sections including Extensions; built-ins are read-only | New template, Edit, Duplicate, New profile from this, Delete, Save |
+| `/extensions` | library with engine, source, version, Templates and Profiles using it | Add extension, Update, Add to templates, Remove |
+| `/logins` | site, username, linked Profiles, last check result (never secrets) | Add login, Import CSV, Edit, Link to profiles, Delete |
+| `/versions` | installed (with Capabilities, used by) and available per source, install progress | Install, Detect installed browsers, Remove |
+| Settings dialog | opened from the sidebar or by `?settings=<section>` on any route; sections General, Proxies, Captcha, Idle & resources, Capacity, Storage, Agents, Updates | per section: Save, Add proxy, Bulk import, Check, Test, Clean now (preview dialog first), Delete |
+
+**Settings dialog.** A large modal (`min(1100px, 95vw)` by `min(760px, 90vh)`) with the section list on the left and the section body on the right. The open section is the `?settings=` URL parameter (ids `general`, `proxies`, `captcha`, `resources`, `capacity`, `storage`, `agents`, `updates`); closing removes it. Each section saves on its own and shows a save bar when dirty. Switching section or closing with unsaved changes asks to discard. Child dialogs (Add proxy, Bulk import, Clean now) stack as native modals and Esc closes only the top one. Rarely changed fields sit under an Advanced disclosure; fields that need a daemon restart (`server.bind`, `server.socket`) say so. Every `settings.get` key has exactly one field, in the section given by redesign §5.9.
 
 **Flows.**
-1. Human step-in: notification → Instance detail with that Tab selected → live view takes input → "Done" → Tab goes to `ready`, Lease handed back.
-2. First run with no Build: Dashboard shows "No browser yet": "Use system Chrome" (detect) or "Install Chrome for Testing".
-3. New Profile: choose template → name → kind → editor.
-4. Clean now: preview list grouped by rule → confirm.
+1. Human step-in: notification → Browser detail with that Tab selected → live view takes input → "Done" → Tab goes to `ready`, Lease handed back.
+2. First run with no Browser version: Overview shows "No browser yet": "Use system Chrome" (detect) or "Install Chrome for Testing".
+3. First-user path: Browser version → Template with a proxy and extensions → Profile from the Template (choose Template → name → kind → Profile opens) → Launch → Stop → the run in History with its settings, Template, extension versions, proxy and files.
+4. Clean now: Settings → Storage → preview list grouped by rule → confirm.
+5. Settings: sidebar Settings → section → edit → Save; an alert's Fix link opens the matching section.
 
 **UI acceptance.**
-- Every page renders in light and dark, following `prefers-color-scheme` when set to System. Text and controls meet WCAG 2.2 AA contrast in both. Checked by Playwright plus `axe-core` on every route in both themes.
-- No page shows more than 3 primary (filled) buttons. Secondary actions go in row or overflow menus. One accent color, one font family, a 4 px spacing grid.
+- Every route and every Settings section renders in light and dark, following `prefers-color-scheme` when set to System. Text and controls meet WCAG 2.2 AA contrast in both. Checked by Playwright plus `axe-core` on every route and Settings section in both themes.
+- No page or Settings section shows more than 3 primary (filled) buttons. Secondary actions go in row or overflow menus. One accent color, one font family, a 4 px spacing grid.
 - Empty, loading and error states exist for every list (checked by the Playwright suite with an empty DB and with the API stubbed to fail).
-- Usable at 1280×800 without horizontal scroll. The sidebar collapses below 1024 px.
+- Usable at 1280×800 without horizontal scroll, the Settings dialog included. The sidebar collapses below 1024 px.
 - No secret ever appears in the DOM (test: fill a Credential, then grep the page HTML on every route).

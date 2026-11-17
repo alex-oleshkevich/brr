@@ -12,7 +12,8 @@ use serde::{Deserialize, Serialize};
 use toml_edit::{DocumentMut, Item, Table, ser::ValueSerializer};
 
 use crate::{
-    AdmissionMode, BackendKind, CaptchaPolicy, Error, KeySource, LocalTime, Theme, UsdMicros,
+    AdmissionMode, BackendKind, CaptchaPolicy, Error, KeySource, LocalTime, SandboxMode, Theme,
+    Toolset, UsdMicros, range_message,
 };
 
 #[cfg(test)]
@@ -21,14 +22,26 @@ mod tests;
 const ENV_PREFIX: &str = "BRR_";
 const ENV_SEPARATOR: &str = "__";
 const KEY_SEPARATOR: char = '.';
+const LIST_SEPARATOR: char = ',';
 const DEFAULT_CONFIG_MODE: u32 = 0o600;
 const MODE_MASK: u32 = 0o777;
 const TEMP_EXTENSION: &str = "tmp";
-const MIN_ONE: &str = "must be at least 1";
+const MAX_TIMEOUT_S: u64 = 3_600;
+const MAX_WAIT_S: u64 = 86_400;
+const MAX_FREE_RAM_MB: u64 = 1_048_576;
+const MAX_BUFFER: u64 = 100_000;
+const MIN_CPUS: f64 = 0.1;
+const MAX_CPUS: f64 = 64.0;
+const URL_SCHEMES: [&str; 2] = ["http://", "https://"];
+const URL_MESSAGE: &str = "must be an http or https URL, for example https://example.com";
 const VALUE_PROBE_KEY: &str = "value";
 pub const STORAGE_SECRET: &str = "storage.secret_access_key";
 const DEFAULT_PORT: u16 = 9898;
 const DEFAULT_DAILY_USD_MICROS: u64 = 5_000_000;
+const DEFAULT_BITWARDEN_URL: &str = "https://vault.bitwarden.com";
+const LOCAL_HTTP_PREFIXES: [&str; 2] = ["http://localhost", "http://127.0.0.1"];
+const BITWARDEN_URL_MESSAGE: &str =
+    "must be an https URL, for example https://vault.bitwarden.com (http only for localhost)";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Source {
@@ -52,6 +65,7 @@ pub struct Settings {
     pub vault: VaultSettings,
     pub storage: StorageSettings,
     pub client: ClientSettings,
+    pub mcp: McpSettings,
     pub oneshot: OneshotSettings,
     pub results: ResultsSettings,
     pub artifacts: ArtifactSettings,
@@ -65,6 +79,8 @@ pub struct Settings {
     pub backup: BackupSettings,
     pub retention: RetentionSettings,
     pub ui: UiSettings,
+    pub sandbox: SandboxSettings,
+    pub bitwarden: BitwardenSettings,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
@@ -174,6 +190,12 @@ pub struct ClientSettings {
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 #[serde(default, deny_unknown_fields)]
+pub struct McpSettings {
+    pub default_toolsets: Vec<Toolset>,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[serde(default, deny_unknown_fields)]
 pub struct OneshotSettings {
     pub profile: String,
     pub pool_size: u32,
@@ -264,6 +286,26 @@ pub struct RetentionSettings {
 #[serde(default, deny_unknown_fields)]
 pub struct UiSettings {
     pub theme: Theme,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[serde(default, deny_unknown_fields)]
+pub struct SandboxSettings {
+    pub mode: SandboxMode,
+    // None: the image of the container brr itself runs in.
+    pub image: Option<String>,
+    pub memory_mb: u32,
+    pub cpus: f64,
+    pub pids: u32,
+    pub shm_mb: u32,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[serde(default, deny_unknown_fields)]
+pub struct BitwardenSettings {
+    // https, or http only for localhost, so a vault password never crosses the network in clear.
+    pub server_url: String,
+    pub sync_interval_min: u32,
 }
 
 impl Default for ServerSettings {
@@ -361,6 +403,14 @@ impl Default for ClientSettings {
         ClientSettings {
             rest_idle_min: 10,
             mcp_http_idle_min: 10,
+        }
+    }
+}
+
+impl Default for McpSettings {
+    fn default() -> McpSettings {
+        McpSettings {
+            default_toolsets: Toolset::ALL.to_vec(),
         }
     }
 }
@@ -480,37 +530,212 @@ impl Default for UiSettings {
     }
 }
 
+impl Default for SandboxSettings {
+    fn default() -> SandboxSettings {
+        SandboxSettings {
+            mode: SandboxMode::default(),
+            image: None,
+            memory_mb: 2048,
+            cpus: 2.0,
+            pids: 1024,
+            shm_mb: 1024,
+        }
+    }
+}
+
+impl Default for BitwardenSettings {
+    fn default() -> BitwardenSettings {
+        BitwardenSettings {
+            server_url: DEFAULT_BITWARDEN_URL.to_string(),
+            sync_interval_min: 15,
+        }
+    }
+}
+
 impl Settings {
-    // Spec A1 minimums; zero here would queue every launch or cancel every Download with no hint why.
+    // Spec A1 minimums: zero here would queue every launch or cancel every Download with no hint
+    // why. The maximums catch a slip of the keyboard before it becomes a day-long wait.
     pub fn validate(&self) -> Result<(), Error> {
-        let minimums = [
-            ("limits.max_instances", self.limits.max_instances),
+        let buffer = |value: usize| u64::try_from(value).unwrap_or(u64::MAX);
+        let bounds = [
+            (
+                "limits.max_instances",
+                self.limits.max_instances.into(),
+                1,
+                u64::MAX,
+            ),
             (
                 "limits.max_instances_per_engine.chromium",
-                self.limits.max_instances_per_engine.chromium,
+                self.limits.max_instances_per_engine.chromium.into(),
+                1,
+                u64::MAX,
             ),
             (
                 "limits.max_instances_per_engine.camoufox",
-                self.limits.max_instances_per_engine.camoufox,
+                self.limits.max_instances_per_engine.camoufox.into(),
+                1,
+                u64::MAX,
             ),
             (
                 "limits.max_tabs_per_instance",
-                self.limits.max_tabs_per_instance,
+                self.limits.max_tabs_per_instance.into(),
+                1,
+                u64::MAX,
             ),
-            ("idle.tab_min", self.idle.tab_min),
-            ("idle.instance_min", self.idle.instance_min),
+            ("idle.tab_min", self.idle.tab_min.into(), 1, u64::MAX),
+            (
+                "idle.instance_min",
+                self.idle.instance_min.into(),
+                1,
+                u64::MAX,
+            ),
+            (
+                "retention.download_max_mb",
+                self.retention.download_max_mb,
+                1,
+                u64::MAX,
+            ),
+            (
+                "instance.start_timeout_s",
+                self.instance.start_timeout_s,
+                1,
+                MAX_TIMEOUT_S,
+            ),
+            (
+                "instance.stop_timeout_s",
+                self.instance.stop_timeout_s,
+                1,
+                MAX_TIMEOUT_S,
+            ),
+            (
+                "adaptive.min_free_ram_mb",
+                self.adaptive.min_free_ram_mb,
+                0,
+                MAX_FREE_RAM_MB,
+            ),
+            (
+                "tab.console_buffer",
+                buffer(self.tab.console_buffer),
+                1,
+                MAX_BUFFER,
+            ),
+            (
+                "tab.network_buffer",
+                buffer(self.tab.network_buffer),
+                1,
+                MAX_BUFFER,
+            ),
+            (
+                "admission.queue_timeout_s",
+                self.admission.queue_timeout_s,
+                0,
+                MAX_WAIT_S,
+            ),
+            (
+                "lease.exclusive_wait_s",
+                self.lease.exclusive_wait_s,
+                0,
+                MAX_WAIT_S,
+            ),
+            (
+                "sandbox.memory_mb",
+                self.sandbox.memory_mb.into(),
+                256,
+                65_536,
+            ),
+            ("sandbox.pids", self.sandbox.pids.into(), 64, 65_536),
+            ("sandbox.shm_mb", self.sandbox.shm_mb.into(), 64, 16_384),
+            (
+                "bitwarden.sync_interval_min",
+                self.bitwarden.sync_interval_min.into(),
+                1,
+                1440,
+            ),
         ];
 
-        for (field, value) in minimums {
-            if value == 0 {
-                return Err(invalid_argument(field, MIN_ONE.to_string()));
+        for (field, value, min, max) in bounds {
+            if value < min {
+                return Err(invalid_argument(field, format!("must be at least {min}")));
+            }
+            if value > max {
+                return Err(invalid_argument(field, format!("must be at most {max}")));
             }
         }
-        if self.retention.download_max_mb == 0 {
+        let cpus = self.sandbox.cpus;
+        if !(MIN_CPUS..=MAX_CPUS).contains(&cpus) {
             return Err(invalid_argument(
-                "retention.download_max_mb",
-                MIN_ONE.to_string(),
+                "sandbox.cpus",
+                format!("must be between {MIN_CPUS} and {MAX_CPUS}"),
             ));
+        }
+        if let Some(image) = &self.sandbox.image
+            && (image.trim().is_empty()
+                || image.chars().any(|c| c.is_whitespace() || c.is_control()))
+        {
+            return Err(invalid_argument(
+                "sandbox.image",
+                "name an image without spaces, for example brr-sandbox:latest".to_string(),
+            ));
+        }
+        if self.mcp.default_toolsets.is_empty() {
+            return Err(invalid_argument(
+                "mcp.default_toolsets",
+                "name at least one toolset".to_string(),
+            ));
+        }
+        if self.oneshot.profile.trim().is_empty() {
+            return Err(invalid_argument(
+                "oneshot.profile",
+                "name the Profile that one-shot calls use, for example oneshot".to_string(),
+            ));
+        }
+        let bitwarden_url = self.bitwarden.server_url.as_str();
+        let local_http = LOCAL_HTTP_PREFIXES.iter().any(|prefix| {
+            bitwarden_url
+                .strip_prefix(prefix)
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with([':', '/']))
+        });
+        let https = bitwarden_url
+            .strip_prefix("https://")
+            .is_some_and(|rest| !rest.is_empty());
+        if !https && !local_http {
+            return Err(invalid_argument(
+                "bitwarden.server_url",
+                BITWARDEN_URL_MESSAGE.to_string(),
+            ));
+        }
+        if self
+            .server
+            .socket
+            .as_ref()
+            .is_some_and(|socket| !socket.is_absolute())
+        {
+            return Err(invalid_argument(
+                "server.socket",
+                "must be an absolute path, for example /run/user/1000/brr/brr.sock".to_string(),
+            ));
+        }
+
+        let urls = [
+            ("builds.github_api", &self.builds.github_api),
+            ("extensions.cws_update_url", &self.extensions.cws_update_url),
+            ("extensions.amo_api", &self.extensions.amo_api),
+            ("proxy.check_url", &self.proxy.check_url),
+            ("captcha.provider_url", &self.captcha.provider_url),
+        ];
+        let lists = self
+            .content
+            .adblock_lists
+            .iter()
+            .map(|list| ("content.adblock_lists", list));
+        for (field, url) in urls.into_iter().chain(lists) {
+            let is_http = URL_SCHEMES.iter().any(|scheme| {
+                url.strip_prefix(scheme)
+                    .is_some_and(|rest| !rest.is_empty())
+            });
+            if !is_http {
+                return Err(invalid_argument(field, URL_MESSAGE.to_string()));
+            }
         }
 
         Ok(())
@@ -602,7 +827,8 @@ pub fn patch(
         if json.is_null() {
             section_table.remove(key);
         } else {
-            let value = json
+            let value = list_from_text(section, key, json)
+                .unwrap_or_else(|| json.clone())
                 .serialize(ValueSerializer::new())
                 .map_err(|error| invalid_argument(leaf, error.to_string()))?;
             section_table.insert(key, Item::Value(value));
@@ -610,7 +836,13 @@ pub fn patch(
 
         // `message()` leaves out the TOML source snippet and line numbers, which mean nothing to an API caller.
         toml::from_str::<Settings>(&document.to_string())
-            .map_err(|error| invalid_argument(leaf, error.message().to_string()))?
+            .map_err(|error| {
+                let message = error.message();
+                invalid_argument(
+                    leaf,
+                    range_message(message).unwrap_or_else(|| message.to_string()),
+                )
+            })?
             .validate()?;
     }
 
@@ -630,6 +862,20 @@ pub fn patch(
         .and_then(|()| file.sync_all())
         .map_err(|error| io_error(&temp_file, error))?;
     fs::rename(&temp_file, config_file).map_err(|error| io_error(config_file, error))
+}
+
+// `browser,instances` typed for a list setting means the list of those items.
+fn list_from_text(section: &str, key: &str, json: &serde_json::Value) -> Option<serde_json::Value> {
+    let text = json.as_str()?;
+    let defaults = serde_json::to_value(Settings::default()).ok()?;
+
+    defaults.get(section)?.get(key)?.is_array().then(|| {
+        text.split(LIST_SEPARATOR)
+            .map(str::trim)
+            .filter(|item| !item.is_empty())
+            .map(serde_json::Value::from)
+            .collect()
+    })
 }
 
 fn default_sources() -> Sources {

@@ -6,7 +6,10 @@ use std::{
 use brr_core::{
     ConflictReason, CredentialId, Error, EventData, LoginFailure, WaitUntil, now_ms, site_origin,
 };
-use brr_engine::page::{ClickOptions, MouseButton, Page, Target};
+use brr_engine::{
+    Navigated,
+    page::{ClickOptions, MouseButton, Page, Target},
+};
 use brr_store::credential;
 use brr_vault::totp::{STEP_SECONDS, totp_code};
 use tracing::info;
@@ -21,6 +24,7 @@ use crate::{
 mod tests;
 
 const MAX_STEPS: u8 = 3;
+const FIRST_STEP: u8 = 1;
 const NAVIGATE_TIMEOUT: Duration = Duration::from_secs(30);
 const STEP_WAIT: Duration = Duration::from_secs(15);
 const ACTION_TIMEOUT: Duration = Duration::from_secs(10);
@@ -358,7 +362,8 @@ async fn prepare(
     // Always: the form loads in a fresh document, so no script the Tab ran earlier is still
     // listening on it.
     let creds = unseal(app, credential_id).await?;
-    app.instances
+    let (_, navigated) = app
+        .instances
         .navigate(
             &tab.instance_id,
             &tab.tab_id,
@@ -367,6 +372,10 @@ async fn prepare(
             NAVIGATE_TIMEOUT.min(deadline.saturating_duration_since(Instant::now())),
         )
         .await?;
+    // A file instead of a page: there is no form to fill.
+    if navigated == Navigated::Download {
+        return Err(failed(FIRST_STEP, LoginFailure::NoForm));
+    }
 
     Ok(creds)
 }

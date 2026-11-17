@@ -72,7 +72,7 @@
 <style>
   .region {
     position: fixed;
-    inset: auto var(--space-6) var(--space-6) auto;
+    inset: auto var(--space-4) calc(var(--space-4) + var(--savebar-h) + var(--space-4)) var(--space-4);
     margin: 0;
     padding: 0;
     border: 0;
@@ -82,8 +82,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    width: var(--toast-w);
+    width: 420px;
     max-width: calc(100vw - var(--space-8));
+    margin-inline: auto;
     pointer-events: none;
   }
 

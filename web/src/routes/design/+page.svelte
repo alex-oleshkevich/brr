@@ -1,12 +1,15 @@
 <script lang="ts">
   import { ApiError } from '$lib/api/client';
   import { knownStates, type StateKind, type Tone } from '$lib/state';
+  import AreaChart from '$lib/ui/AreaChart.svelte';
   import Badge from '$lib/ui/Badge.svelte';
+  import BarChart from '$lib/ui/BarChart.svelte';
   import Button from '$lib/ui/Button.svelte';
   import Card from '$lib/ui/Card.svelte';
   import Checkbox from '$lib/ui/Checkbox.svelte';
   import CodeBlock from '$lib/ui/CodeBlock.svelte';
   import { confirm } from '$lib/ui/confirm.svelte';
+  import DetailLayout from '$lib/ui/DetailLayout.svelte';
   import Dialog from '$lib/ui/Dialog.svelte';
   import EmptyState from '$lib/ui/EmptyState.svelte';
   import Input from '$lib/ui/Input.svelte';
@@ -17,6 +20,7 @@
   import SegmentedControl from '$lib/ui/SegmentedControl.svelte';
   import Select from '$lib/ui/Select.svelte';
   import Skeleton from '$lib/ui/Skeleton.svelte';
+  import StatCard from '$lib/ui/StatCard.svelte';
   import StateBadge from '$lib/ui/StateBadge.svelte';
   import StatusDot from '$lib/ui/StatusDot.svelte';
   import Switch from '$lib/ui/Switch.svelte';
@@ -28,6 +32,36 @@
   const tones: Tone[] = ['neutral', 'accent', 'success', 'warning', 'danger'];
   const kinds: StateKind[] = ['instance', 'tab', 'build', 'login', 'proxy'];
   const variants = ['primary', 'secondary', 'ghost', 'danger'] as const;
+  const barSeries = [
+    { key: 'launches', label: 'Launches' },
+    { key: 'captchas', label: 'Captchas' },
+    { key: 'errors', label: 'Errors' },
+  ];
+  const barData = [
+    { x: 'Mon', values: { launches: 12, captchas: 3, errors: 1 } },
+    { x: 'Tue', values: { launches: 18, captchas: 6, errors: 0 } },
+    { x: 'Wed', values: { launches: 9, captchas: 2, errors: 2 } },
+    { x: 'Thu', values: { launches: 22, captchas: 9, errors: 1 } },
+    { x: 'Fri', values: { launches: 15, captchas: 4, errors: 3 } },
+  ];
+  const spendSeries = [
+    { key: 'captcha', label: 'Captcha' },
+    { key: 'proxy', label: 'Proxy' },
+    { key: 'storage', label: 'Storage' },
+  ];
+  const spendData = [
+    { x: 'Mon', values: { captcha: 1.2, proxy: 0.8, storage: 0.1 } },
+    { x: 'Tue', values: { captcha: 2.4, proxy: 0.6, storage: 0.1 } },
+    { x: 'Wed', values: { captcha: 0.9, proxy: 1.1, storage: 0.3 } },
+    { x: 'Thu', values: { captcha: 3.1, proxy: 0.9, storage: 0.2 } },
+    { x: 'Fri', values: { captcha: 1.8, proxy: 1.4, storage: 0.4 } },
+  ];
+  const money = (n: number) => `$${n.toFixed(2)}`;
+  const detailTabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'history', label: 'History' },
+  ];
+  let detailTab = $state<string>();
 
   let dialogOpen = $state(false);
   let name = $state('work');
@@ -261,6 +295,52 @@
       <CodeBlock code={json} label="Profile JSON" />
     </Card>
   </div>
+
+  <Card title="Stat cards" description="Tone colors the value only. The whole card is a link when href is set.">
+    <div class="grid">
+      <StatCard label="Running instances" value="3" sub="of 12 profiles" />
+      <StatCard label="Captchas solved" value="128" sub="Today" tone="success" />
+      <StatCard label="Failed launches" value="4" sub="Last hour" tone="warning" />
+      <StatCard label="Daemon errors" value="1" sub="Since restart" tone="danger" href="/design" />
+    </div>
+  </Card>
+
+  <div class="grid">
+    <Card title="Bar chart" description="Stacked per period. Hover a segment for its value.">
+      <BarChart label="Launches, captchas and errors per day" series={barSeries} data={barData} />
+    </Card>
+    <Card title="Area chart" description="Stacked over time, formatted as currency.">
+      <AreaChart label="Spend per day" series={spendSeries} data={spendData} format={money} />
+    </Card>
+  </div>
+
+  <div class="grid">
+    <Card title="Empty bar chart">
+      <BarChart label="No launches" series={barSeries} data={[]} />
+    </Card>
+    <Card title="Empty area chart">
+      <AreaChart label="No spend" series={spendSeries} data={[]} format={money} />
+    </Card>
+  </div>
+
+  <DetailLayout
+    title="work-profile"
+    description="Chromium 131 · launched 2 min ago"
+    back={{ href: '/design', label: 'Profiles' }}
+    tabs={detailTabs}
+    bind:tab={detailTab}
+  >
+    {#snippet actions()}
+      <Button size="sm" icon="refresh">Restart</Button>
+      <Button size="sm" variant="primary">Launch</Button>
+    {/snippet}
+    {#snippet side()}
+      <Card title="Details">
+        <KeyValue items={[{ label: 'Id', value: '01J9Z3K2M4N5P6Q7R8S9T0V1W2', mono: true }]} />
+      </Card>
+    {/snippet}
+    <p>Showing the {detailTab} tab.</p>
+  </DetailLayout>
 </div>
 
 <Dialog bind:open={dialogOpen} title="Rename profile" description="The name is shown across the dashboard.">

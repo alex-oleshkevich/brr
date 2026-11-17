@@ -45,6 +45,8 @@ export const KINDS: { kind: string; label: string; transient: boolean; category:
   { kind: 'captcha.solved', label: 'Captcha solved', transient: false, category: 'logins' },
   { kind: 'captcha.failed', label: 'Captcha failed', transient: false, category: 'logins' },
   { kind: 'captcha.budget_exhausted', label: 'Captcha budget used up', transient: false, category: 'logins' },
+  { kind: 'bitwarden.synced', label: 'Bitwarden synced', transient: false, category: 'logins' },
+  { kind: 'bitwarden.sync_failed', label: 'Bitwarden sync failed', transient: false, category: 'logins' },
   { kind: 'login.performed', label: 'Login attempted', transient: false, category: 'logins' },
   { kind: 'login.check_result', label: 'Login checked', transient: false, category: 'logins' },
   { kind: 'login.relogin_suspended', label: 'Auto re-login paused', transient: false, category: 'logins' },

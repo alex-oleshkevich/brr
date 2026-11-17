@@ -64,6 +64,14 @@ pub struct Captcha {
     spent_micros: AtomicU64,
     solved: AtomicU64,
     failed: AtomicU64,
+    // The provider's last balance answer; captcha.balance serves it for a while, a key change drops it.
+    pub balance: Mutex<Option<CachedBalance>>,
+}
+
+#[derive(Clone, Copy)]
+pub struct CachedBalance {
+    pub usd_micros: u64,
+    pub fetched_at: i64,
 }
 
 struct FlowGuard {

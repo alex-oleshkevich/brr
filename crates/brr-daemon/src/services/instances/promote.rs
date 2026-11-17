@@ -82,6 +82,7 @@ pub(crate) async fn finish_promote(
                 name,
                 kind: ProfileKind::Persistent,
                 template_id: source.template_id,
+                template_name: source.template_name,
                 settings: source.settings,
                 pinned: false,
                 notes: format!("promoted from instance {instance_id}"),

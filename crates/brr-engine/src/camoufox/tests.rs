@@ -1,10 +1,10 @@
-use serde_json::json;
+use serde_json::{Value, json};
 use test_case::test_case;
 
 use super::downloads::{content_length, is_attachment};
 use super::input::modifiers;
 use super::network::{resource_type, translate as translate_network};
-use super::session::{from_serialized, translate};
+use super::session::{from_serialized, remote_result, translate};
 use crate::page::{JS_DIALOG_CLOSED, JS_DIALOG_OPENING};
 
 #[test]
@@ -163,4 +163,18 @@ fn the_page_worlds_serialization_becomes_json() {
         Some(json!({ "n": 1, "list": [null, "x"] }))
     );
     assert_eq!(from_serialized(&json!({ "v": "undefined" })), None);
+}
+
+// Juggler drops `value: undefined` from the wire, so undefined arrives as an empty result.
+#[test_case(json!({ "result": {} }), json!({ "type": "undefined" }) ; "undefined")]
+#[test_case(json!({}), json!({ "type": "undefined" }) ; "no result")]
+#[test_case(json!({ "result": { "value": null } }), json!({ "value": null }) ; "null")]
+#[test_case(json!({ "result": { "value": false } }), json!({ "value": false }) ; "a value")]
+#[test_case(
+    json!({ "result": { "objectId": "o1", "type": "object" } }),
+    json!({ "objectId": "o1", "type": "object" }) ;
+    "an object"
+)]
+fn call_results_keep_undefined_apart_from_values(response: Value, expected: Value) {
+    assert_eq!(remote_result(response).unwrap(), expected);
 }

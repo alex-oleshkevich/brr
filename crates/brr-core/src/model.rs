@@ -7,7 +7,7 @@ use crate::{
     error::Error,
     id::{
         ArtifactId, AssetId, BackupId, BuildId, CaptchaSolveId, ClientId, CredentialId,
-        ExtensionId, InstanceId, LeaseId, LoginCheckId, PoolId, ProfileId, ProxyId, TabId,
+        ExtensionId, HostId, InstanceId, LeaseId, LoginCheckId, PoolId, ProfileId, ProxyId, TabId,
         TargetId, TemplateId,
     },
     state::{InstanceState, TabState},
@@ -36,6 +36,7 @@ const ARGS_FIELD: &str = "args";
 const ENV_FIELD: &str = "env";
 const CHANNEL_FIELD: &str = "channel";
 const TOOLSETS_FIELD: &str = "toolsets";
+const ALL_TOOLSETS: &str = "all";
 const DEFAULT_CHANNEL_NAME: &str = "stable";
 const RESERVED_ENV_PREFIX: &str = "BRR_";
 const GEOLOCATION_FIELD: &str = "settings.geolocation";
@@ -44,6 +45,10 @@ const VIEWPORT_FIELD: &str = "settings.viewport";
 const FINGERPRINT_SCREEN_FIELD: &str = "settings.fingerprint.screen";
 const MAX_PREF_KEY_LEN: usize = 200;
 pub(crate) const MAX_SCREEN_SIDE: u32 = 10_000;
+const LOCALE_FIELD: &str = "settings.locale";
+const TIMEZONE_FIELD: &str = "settings.timezone";
+const MAX_SUBTAG_LEN: usize = 8;
+const MAX_ZONE_LEN: usize = 64;
 
 macro_rules! enums {
     ($($name:ident { $($variant:ident),+ $(,)? })+) => {$(
@@ -85,7 +90,7 @@ enums! {
     PoolMode { Sticky, Rotate }
     ExtensionSource { Cws, Amo, Local }
     AssetKind { GeoipDb, AdblockList, AutoconsentRules, DeviceList, FpgenModel, FontsBundle }
-    BuildRefKind { Profile, Channel, Instance }
+    BuildRefKind { Profile, Template, Channel, Instance }
     CookieFormat { Json, Netscape }
     PasswordCsvFormat { Chrome, Firefox }
     CaptchaType { RecaptchaV2, RecaptchaV3, Hcaptcha, Turnstile, Funcaptcha, Geetest, Image }
@@ -100,6 +105,29 @@ pub enum WebRtcPolicy {
     DefaultPublicAndPrivateInterfaces,
     DefaultPublicInterfaceOnly,
     DisableNonProxiedUdp,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq, Default)]
+pub struct Traffic {
+    pub sent_bytes: u64,
+    pub received_bytes: u64,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SandboxMode {
+    #[default]
+    None,
+    Docker,
+}
+
+impl SandboxMode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            SandboxMode::None => "none",
+            SandboxMode::Docker => "docker",
+        }
+    }
 }
 
 impl Capability {
@@ -152,6 +180,7 @@ impl BuildRefKind {
     pub fn as_str(self) -> &'static str {
         match self {
             BuildRefKind::Profile => "profile",
+            BuildRefKind::Template => "template",
             BuildRefKind::Channel => "channel",
             BuildRefKind::Instance => "instance",
         }
@@ -209,6 +238,10 @@ impl Toolset {
     }
 
     pub fn parse_list(s: &str) -> Result<Vec<Toolset>, Error> {
+        if s.trim() == ALL_TOOLSETS {
+            return Ok(Toolset::ALL.to_vec());
+        }
+
         s.split(',')
             .map(str::trim)
             .map(|name| {
@@ -218,7 +251,7 @@ impl Toolset {
                     .ok_or_else(|| Error::InvalidArgument {
                         field: TOOLSETS_FIELD.to_string(),
                         message: format!(
-                            "unknown toolset; use any of: {}",
+                            "unknown toolset {name:?}; pass `{ALL_TOOLSETS}` or a comma-separated list of: {}",
                             Toolset::ALL.map(Toolset::as_str).join(", ")
                         ),
                     })
@@ -605,6 +638,24 @@ impl ProfileSettings {
             check_screen(screen, FINGERPRINT_SCREEN_FIELD)?;
         }
 
+        if let Some(locale) = &self.locale
+            && !is_language_tag(locale)
+        {
+            return Err(Error::InvalidArgument {
+                field: LOCALE_FIELD.to_string(),
+                message: "use a language tag such as en-US or de".to_string(),
+            });
+        }
+
+        if let Some(timezone) = &self.timezone
+            && !is_zone_name(timezone)
+        {
+            return Err(Error::InvalidArgument {
+                field: TIMEZONE_FIELD.to_string(),
+                message: "use an IANA time zone name such as Europe/Berlin or UTC".to_string(),
+            });
+        }
+
         Ok(())
     }
 }
@@ -618,6 +669,31 @@ fn check_screen(size: &Size, field: &str) -> Result<(), Error> {
         field: field.to_string(),
         message: format!("width and height must be within 1..={MAX_SCREEN_SIDE}"),
     })
+}
+
+// BCP 47 in shape: a 2-3 letter language, then subtags of 1-8 letters or digits.
+fn is_language_tag(tag: &str) -> bool {
+    let mut subtags = tag.split('-');
+    let language_ok = subtags.next().is_some_and(|language| {
+        (2..=3).contains(&language.len()) && language.chars().all(|c| c.is_ascii_alphabetic())
+    });
+
+    language_ok
+        && subtags.all(|subtag| {
+            (1..=MAX_SUBTAG_LEN).contains(&subtag.len())
+                && subtag.chars().all(|c| c.is_ascii_alphanumeric())
+        })
+}
+
+// IANA names in shape only (no zone list ships with brr): `Area/Location` parts or a bare `UTC`.
+fn is_zone_name(zone: &str) -> bool {
+    zone.len() <= MAX_ZONE_LEN
+        && zone.split('/').all(|part| {
+            part.chars().next().is_some_and(|c| c.is_ascii_alphabetic())
+                && part
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '+'))
+        })
 }
 
 pub fn compare_versions(a: &str, b: &str) -> Ordering {
@@ -696,6 +772,33 @@ pub struct Pool {
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
+pub struct Host {
+    pub id: HostId,
+    pub name: String,
+    // ssh://user@host[:port]
+    pub docker_url: String,
+    pub max_instances: u32,
+    pub enabled: bool,
+    pub created_at: i64,
+    // From the last probe and the running browsers; not stored.
+    #[serde(default)]
+    pub status: HostStatus,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq, Default)]
+pub struct HostStatus {
+    pub reachable: bool,
+    pub error: Option<String>,
+    pub mem_total_mb: Option<u64>,
+    pub mem_available_mb: Option<u64>,
+    pub running: u32,
+    // None until a probe knew which image to look for.
+    pub image_present: Option<bool>,
+    // None until the first probe since the daemon started.
+    pub checked_at: Option<i64>,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
 pub struct ExtensionVersion {
     pub version: String,
     pub path: PathBuf,
@@ -717,8 +820,22 @@ pub struct Extension {
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
 pub struct ProfileExtension {
     pub extension_id: ExtensionId,
+    #[serde(default)]
     pub pinned_version: Option<String>,
+    #[serde(default = "auto_update_default")]
     pub auto_update: bool,
+}
+
+// An enabled extension follows its updates unless the caller pins it or turns that off.
+fn auto_update_default() -> bool {
+    true
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
+pub struct InstanceExtension {
+    pub id: ExtensionId,
+    pub name: String,
+    pub version: String,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
@@ -776,6 +893,8 @@ pub struct Template {
     #[serde(default)]
     pub description: Option<String>,
     pub settings: ProfileSettings,
+    #[serde(default)]
+    pub extensions: Vec<ProfileExtension>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -786,6 +905,8 @@ pub struct Profile {
     pub name: String,
     pub kind: ProfileKind,
     pub template_id: Option<TemplateId>,
+    #[serde(default)]
+    pub template_name: Option<String>,
     pub settings: ProfileSettings,
     pub pinned: bool,
     pub notes: String,
@@ -830,6 +951,26 @@ pub struct Instance {
     pub error: Option<String>,
     #[serde(default)]
     pub profile_name: Option<String>,
+    // What a managed launch ran with; None for Live browsers and runs from before it was kept.
+    #[serde(default)]
+    pub settings: Option<ProfileSettings>,
+    #[serde(default)]
+    pub template_id: Option<TemplateId>,
+    #[serde(default)]
+    pub template_name: Option<String>,
+    #[serde(default)]
+    pub extensions: Option<Vec<InstanceExtension>>,
+    #[serde(default)]
+    pub proxy_id: Option<ProxyId>,
+    // The sandbox a managed launch ran in; None for Live browsers and runs from before it was kept.
+    #[serde(default)]
+    pub sandbox: Option<SandboxMode>,
+    // Bytes through brr's forwarder; None when the run had no forwarder (not measured).
+    #[serde(default)]
+    pub traffic: Option<Traffic>,
+    // The Host the run is on; None for brr's own machine.
+    #[serde(default)]
+    pub host_id: Option<HostId>,
     #[serde(default)]
     pub build: Option<BuildRef>,
     #[serde(default)]
@@ -923,6 +1064,14 @@ pub struct LastLogin {
     pub at: i64,
 }
 
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum CredentialSource {
+    #[default]
+    Local,
+    Bitwarden,
+}
+
 // Password, TOTP and notes are deliberately absent: no output type may carry them.
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct Credential {
@@ -932,10 +1081,33 @@ pub struct Credential {
     pub username: String,
     pub selectors: CredentialSelectors,
     pub totp_set: bool,
+    pub source: CredentialSource,
+    pub bitwarden_item_id: Option<String>,
     pub profile_ids: Vec<ProfileId>,
     pub last_login: Option<LastLogin>,
     pub created_at: i64,
     pub updated_at: i64,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+pub struct BitwardenStatus {
+    pub connected: bool,
+    pub unlocked: bool,
+    pub email: Option<String>,
+    pub items: u32,
+    pub synced_at: Option<i64>,
+    pub error: Option<String>,
+}
+
+// A login item of the connected vault, listed for linking; no secrets.
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+pub struct BitwardenItem {
+    pub id: String,
+    pub name: String,
+    pub uris: Vec<String>,
+    pub username: String,
+    pub has_totp: bool,
+    pub linked: Option<CredentialId>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]

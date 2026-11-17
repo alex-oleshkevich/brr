@@ -7,6 +7,7 @@ pub mod client;
 pub mod credential;
 pub mod event;
 pub mod extension;
+pub mod host;
 pub mod instance;
 pub mod lease;
 pub mod login_check;
@@ -18,6 +19,7 @@ pub mod retention;
 pub mod secret;
 pub mod tab;
 pub mod template;
+pub mod template_extension;
 
 use std::{
     fmt::Display,
@@ -81,7 +83,9 @@ impl Store {
     fn init(mut conn: Connection) -> Result<Store, Error> {
         conn.pragma_update(None, "journal_mode", "WAL")
             .map_err(internal)?;
-        conn.pragma_update(None, "foreign_keys", "ON")
+        // Off while migrating: SQLite ignores the pragma inside a transaction, and a table
+        // rebuild must not cascade through the tables that reference it.
+        conn.pragma_update(None, "foreign_keys", "OFF")
             .map_err(internal)?;
         conn.pragma_update(None, "synchronous", "NORMAL")
             .map_err(internal)?;
@@ -92,9 +96,16 @@ impl Store {
             M::up(include_str!("migrations/0002_m3.sql")),
             M::up(include_str!("migrations/0003_retention_indexes.sql")),
             M::up(include_str!("migrations/0004_ux.sql")),
+            M::up(include_str!("migrations/0005_history.sql")),
+            M::up(include_str!("migrations/0006_sandbox.sql")),
+            M::up(include_str!("migrations/0007_bitwarden.sql")).foreign_key_check(),
+            M::up(include_str!("migrations/0008_traffic.sql")),
+            M::up(include_str!("migrations/0009_hosts.sql")).foreign_key_check(),
         ])
         .to_latest(&mut conn)
         .map_err(internal)?;
+        conn.pragma_update(None, "foreign_keys", "ON")
+            .map_err(internal)?;
 
         let swept =
             retention::sweep_finished_rows(&conn, now_ms() - retention::FINISHED_ROWS_MAX_AGE_MS)?;
@@ -155,7 +166,7 @@ fn parse_cursor<T: std::str::FromStr>(cursor: &str) -> Result<T, Error> {
 fn bad_cursor() -> Error {
     Error::InvalidArgument {
         field: "cursor".to_string(),
-        message: "not a cursor from a previous page; start again without one".to_string(),
+        message: "not a cursor from a previous page; pass next_cursor from the previous page, or omit cursor for the first page".to_string(),
     }
 }
 
@@ -247,4 +258,9 @@ fn json_col<T: DeserializeOwned>(row: &Row, name: &str) -> rusqlite::Result<T> {
 fn opt_col<T: DeserializeOwned>(row: &Row, name: &str) -> rusqlite::Result<Option<T>> {
     row.get::<_, Option<Text<T>>>(name)
         .map(|text| text.map(|text| text.0))
+}
+
+fn opt_json_col<T: DeserializeOwned>(row: &Row, name: &str) -> rusqlite::Result<Option<T>> {
+    row.get::<_, Option<Json<T>>>(name)
+        .map(|json| json.map(|json| json.0))
 }

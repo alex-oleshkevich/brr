@@ -47,6 +47,14 @@ impl Group {
 
         self
     }
+
+    pub fn header(&self) -> &str {
+        &self.header
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
 }
 
 pub fn list(groups: &[Group]) -> io::Result<()> {

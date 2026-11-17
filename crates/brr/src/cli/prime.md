@@ -48,7 +48,8 @@ steps. Use it only when you know every step in advance, such as filling a form a
   the steps after it.
 - **It stops at the first error** unless `continue_on_error` is set, or after about two minutes
   between steps. Steps that already ran stay applied; steps after the stop are not run and not
-  listed. Each entry in `results` has its `step` index; compare `completed` with `total`, then
+  listed. Each entry in `results` has its `step` index; `completed` counts the steps that ran
+  (failed ones included) and `failed` the ones that failed. Compare `completed` with `total`, then
   take a `snapshot` before you continue.
 - **Do not batch** a step whose input comes from an earlier step's output, anything that may hit a
   captcha or login wall, or exploratory browsing. Make those separate calls.

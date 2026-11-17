@@ -2,7 +2,8 @@ use brr_core::{Error, Page, Proxy, ProxyId};
 use rusqlite::{Connection, Row, params};
 
 use crate::{
-    Text, col, expect_changed, first_or_not_found, internal, name_conflict, next_cursor, query,
+    Text, col, expect_changed, first_or_not_found, internal, name_conflict, next_cursor,
+    parse_cursor, query,
 };
 
 const TABLE: &str = "proxy";
@@ -84,11 +85,19 @@ pub fn get(c: &Connection, proxy_id: &ProxyId) -> Result<Proxy, Error> {
 }
 
 pub fn list(c: &Connection, page: &Page) -> Result<(Vec<Proxy>, Option<String>), Error> {
+    let cursor = page
+        .cursor
+        .as_deref()
+        .map(parse_cursor::<ProxyId>)
+        .transpose()?;
     let rows = query(
         c,
         TABLE,
         &format!("SELECT {COLUMNS} FROM proxy WHERE id > ?1 ORDER BY id LIMIT ?2"),
-        params![page.cursor.as_deref().unwrap_or_default(), page.limit],
+        params![
+            cursor.map(|id| id.to_string()).unwrap_or_default(),
+            page.limit
+        ],
         decode,
     )?;
     let next = next_cursor(&rows, page, |p| p.id.to_string());

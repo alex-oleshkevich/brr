@@ -10,6 +10,9 @@ use crate::{
     services::cookies::{ensure_not_exporting, files_dir, profile_running},
 };
 
+const DATA_FIELD: &str = "data";
+const NO_BOOKMARKS: &str = "no bookmarks found in this file; export them as HTML from your browser";
+
 // Bookmarks are only touched while the browser is stopped: it rewrites its own file on exit. The
 // work runs inside the store transaction a launch also needs, so none can start meanwhile.
 async fn while_stopped<T: Send + 'static>(
@@ -55,9 +58,19 @@ pub async fn export(app: &Arc<App>, profile: &Profile) -> Result<(String, u32), 
 pub async fn import(app: &Arc<App>, profile: &Profile, html: &str) -> Result<u32, Error> {
     let roots = bookmark::from_html(html)?;
     let html = html.to_owned();
-    let imported = while_stopped(app, profile, true, move |dir, engine| match engine {
-        Engine::Camoufox => import_bookmarks_offline(dir, &html),
-        Engine::Chromium => profile_files::add_bookmarks(dir, &roots),
+    // Checked after the running check, which says more about why nothing could change.
+    let imported = while_stopped(app, profile, true, move |dir, engine| {
+        if bookmark::count(&roots) == 0 {
+            return Err(Error::InvalidArgument {
+                field: DATA_FIELD.to_owned(),
+                message: NO_BOOKMARKS.to_owned(),
+            });
+        }
+
+        match engine {
+            Engine::Camoufox => import_bookmarks_offline(dir, &html),
+            Engine::Chromium => profile_files::add_bookmarks(dir, &roots),
+        }
     })
     .await?;
 

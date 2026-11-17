@@ -1,15 +1,20 @@
 use brr_core::{
-    ConflictReason, Error, Http, Method, OperationSpec, Page, ProfileSettings, Template,
-    TemplateId, Toolset, now_ms, schema,
+    ConflictReason, Error, Http, Method, OperationSpec, Page, ProfileExtension, ProfileSettings,
+    Template, TemplateId, Toolset, now_ms, schema,
 };
-use brr_store::{profile, template};
+use brr_store::{profile, profile_extension, template};
 use futures::{FutureExt, future::BoxFuture};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use super::{OpRegistration, output, parse};
-use crate::{app::Ctx, services::profiles::validate_name};
+use super::{OpRegistration, invalid, output, parse, some};
+use crate::{
+    app::Ctx,
+    services::{extensions, profiles::validate_name},
+};
+
+const MAX_DESCRIPTION_CHARS: usize = 200;
 
 static LIST: OperationSpec = OperationSpec {
     name: "template.list",
@@ -51,7 +56,7 @@ static CREATE: OperationSpec = OperationSpec {
     name: "template.create",
     group: "template",
     toolset: Toolset::Profiles,
-    summary: "Create a user template from settings",
+    summary: "Create a user template from settings and the extensions it hands to new Profiles",
     http: Http {
         method: Method::Post,
         path: "/v1/templates",
@@ -105,7 +110,7 @@ static SAVE_FROM_PROFILE: OperationSpec = OperationSpec {
     name: "template.save_from_profile",
     group: "template",
     toolset: Toolset::Profiles,
-    summary: "Save a Profile's settings as a new user template",
+    summary: "Save a Profile's settings and extensions as a new user template",
     http: Http {
         method: Method::Post,
         path: "/v1/profiles/{profile}/save-as-template",
@@ -167,7 +172,10 @@ struct GetInput {
 #[serde(deny_unknown_fields)]
 struct CreateInput {
     name: String,
+    description: Option<String>,
     settings: ProfileSettings,
+    #[serde(default)]
+    extensions: Vec<ProfileExtension>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -175,7 +183,10 @@ struct CreateInput {
 struct UpdateInput {
     template: String,
     name: Option<String>,
+    #[serde(default, deserialize_with = "some")]
+    description: Option<Option<String>>,
     settings: Option<ProfileSettings>,
+    extensions: Option<Vec<ProfileExtension>>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -185,8 +196,30 @@ struct SaveInput {
     name: String,
 }
 
-fn user_template(name: String, settings: ProfileSettings) -> Result<Template, Error> {
+fn validate_description(description: &str) -> Result<(), Error> {
+    if description.chars().count() > MAX_DESCRIPTION_CHARS
+        || description.chars().any(char::is_control)
+    {
+        return Err(invalid(
+            "description",
+            &format!("use one line of at most {MAX_DESCRIPTION_CHARS} characters"),
+        ));
+    }
+
+    Ok(())
+}
+
+fn user_template(
+    name: String,
+    description: Option<String>,
+    settings: ProfileSettings,
+    extensions: Vec<ProfileExtension>,
+) -> Result<Template, Error> {
     validate_name(&name, "name")?;
+    description
+        .as_deref()
+        .map(validate_description)
+        .transpose()?;
     settings.validate()?;
     let now = now_ms();
 
@@ -194,8 +227,9 @@ fn user_template(name: String, settings: ProfileSettings) -> Result<Template, Er
         id: TemplateId::new(),
         name,
         builtin: false,
-        description: None,
+        description,
         settings,
+        extensions,
         created_at: now,
         updated_at: now,
     })
@@ -244,15 +278,25 @@ fn get(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
 fn create(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
     async move {
         let input: CreateInput = parse(input)?;
-        let created = user_template(input.name, input.settings)?;
+        let created = user_template(
+            input.name,
+            input.description,
+            input.settings,
+            input.extensions,
+        )?;
 
-        let inserted = created.clone();
-        ctx.app
+        let stored = ctx
+            .app
             .store
-            .run(move |c| template::insert(c, &inserted))
+            .run(move |c| {
+                extensions::check_list(c, &created.extensions, &created.settings)?;
+                template::insert(c, &created)?;
+
+                template::get(c, &created.id)
+            })
             .await?;
 
-        output(&created)
+        output(&stored)
     }
     .boxed()
 }
@@ -266,6 +310,9 @@ fn update(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
         if let Some(settings) = &input.settings {
             settings.validate()?;
         }
+        if let Some(Some(description)) = &input.description {
+            validate_description(description)?;
+        }
 
         let updated = ctx
             .app
@@ -273,12 +320,18 @@ fn update(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
             .run(move |c| {
                 let mut found = template::find(c, &input.template)?;
                 refuse_builtin(&found)?;
+                let recheck = input.settings.is_some() || input.extensions.is_some();
                 found.name = input.name.unwrap_or(found.name);
+                found.description = input.description.unwrap_or(found.description);
                 found.settings = input.settings.unwrap_or(found.settings);
+                found.extensions = input.extensions.unwrap_or(found.extensions);
+                if recheck {
+                    extensions::check_list(c, &found.extensions, &found.settings)?;
+                }
                 found.updated_at = now_ms();
                 template::update(c, &found)?;
 
-                Ok(found)
+                template::get(c, &found.id)
             })
             .await?;
 
@@ -316,11 +369,13 @@ fn save_from_profile(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value,
             .store
             .run(move |c| {
                 let source = profile::find(c, &input.profile)?;
-                let mut saved = user_template(input.name, source.settings)?;
+                let enabled = profile_extension::get(c, &source.id)?;
+                let mut saved = user_template(input.name, None, source.settings, enabled)?;
                 saved.description = Some(source.notes).filter(|notes| !notes.is_empty());
+                extensions::check_list(c, &saved.extensions, &saved.settings)?;
                 template::insert(c, &saved)?;
 
-                Ok(saved)
+                template::get(c, &saved.id)
             })
             .await?;
 

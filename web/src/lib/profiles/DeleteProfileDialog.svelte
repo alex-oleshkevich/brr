@@ -5,6 +5,7 @@
   import Button from '$lib/ui/Button.svelte';
   import Dialog from '$lib/ui/Dialog.svelte';
   import { toast } from '$lib/ui/toast.svelte';
+  import { settingsHref } from '$lib/settings/sections';
 
   type Profile = components['schemas']['Profile'];
 
@@ -57,10 +58,11 @@
 <Dialog bind:open title="Delete {profile?.name ?? 'profile'}?" description="This can't be undone." size="sm" dismissible={!busy}>
   {#if loaded}
     <ul class="consequences">
-      <li>Deletes {bytes(size)} of browser data: cookies, logins and history.</li>
+      <li>Deletes {bytes(size)} of browser data (cookies, site storage and history); your stored Logins are kept.</li>
+      <li>Files from its runs are deleted.</li>
       <li>
         {#if backups}
-          {plural(backups, 'backup')} {backups === 1 ? 'is' : 'are'} kept. Find {backups === 1 ? 'it' : 'them'} under <a href="/storage">Storage → Backups</a>.
+          {plural(backups, 'backup')} {backups === 1 ? 'is' : 'are'} kept. Find {backups === 1 ? 'it' : 'them'} under <a href={settingsHref('storage')}>Settings → Storage</a>.
         {:else}
           This profile has no backups.
         {/if}

@@ -1,5 +1,6 @@
 import { ApiError, api, unwrap } from './api/client';
 import { events, type BrrEvent } from './api/events.svelte';
+import { session } from './api/session';
 import { attention, hostOf, REASON_VERBS } from './attention/attention.svelte';
 import { names } from './events/names.svelte';
 import { summarize } from './events/summary';
@@ -21,7 +22,12 @@ const titles: Record<string, { title: string; tone: ToastTone }> = {
 };
 
 // instance.state_changed is a notification only when the browser ended badly.
-const isFailure = (e: BrrEvent) => e.kind === 'instance.state_changed' && ['crashed', 'failed'].includes((e.data as { to?: string } | null)?.to ?? '');
+// An attached browser has no profile; one that never started is a failed attach, which the dialog already reports.
+const isFailure = (e: BrrEvent) => {
+  const data = e.data as { to?: string; profile_id?: string | null } | null;
+  if (e.kind !== 'instance.state_changed' || !['crashed', 'failed'].includes(data?.to ?? '')) return false;
+  return !(data?.to === 'failed' && !data.profile_id);
+};
 
 export const notificationTitle = (e: BrrEvent) => {
   if (isFailure(e)) {
@@ -33,9 +39,9 @@ export const notificationTitle = (e: BrrEvent) => {
 };
 
 export async function notificationHref(e: BrrEvent): Promise<string | null> {
-  if (e.kind === 'build.install_failed') return '/builds';
-  if (e.kind === 'captcha.budget_exhausted') return '/captcha';
-  if (isFailure(e)) return `/instances/${(e.data as { instance_id: string }).instance_id}`;
+  if (e.kind === 'build.install_failed') return '/versions';
+  if (e.kind === 'captcha.budget_exhausted') return '/?settings=captcha';
+  if (isFailure(e)) return `/browsers/${(e.data as { instance_id: string }).instance_id}`;
   if (e.kind === 'login.relogin_suspended') {
     const profileId = (e.data as { profile_id?: string } | null)?.profile_id;
     return profileId ? `/profiles/${profileId}#logins` : null;
@@ -48,7 +54,7 @@ export async function notificationHref(e: BrrEvent): Promise<string | null> {
 
   const tabId = (e.data as { tab_id: string }).tab_id;
   const tab = await unwrap(api.GET('/v1/tabs/{tab_id}', { params: { path: { tab_id: tabId } } }));
-  return `/instances/${tab.instance_id}?tab=${tabId}`;
+  return `/browsers/${tab.instance_id}?tab=${tabId}`;
 }
 
 class Notifications {
@@ -66,7 +72,9 @@ class Notifications {
       if (e.kind === 'instance.state_changed' && !isFailure(e)) return;
       if (this.items.some((item) => item.seq === e.seq)) return;
       this.items = [e, ...this.items].slice(0, LIMIT);
-      if (e.kind === 'tab.awaiting_human' || isFailure(e)) {
+      // A launch started from this UI reports its own failure; a second toast would say the same thing.
+      const reported = isFailure(e) && (e.data as { to: string }).to === 'failed' && session.uiClientIds.has(e.actor_client_id ?? '');
+      if (e.kind === 'tab.awaiting_human' || (isFailure(e) && !reported)) {
         const { title, tone } = notificationTitle(e);
         void names.preload(e.data as Record<string, unknown> | null).then(() => toast.show({ tone, title, description: summarize(e) }));
       }

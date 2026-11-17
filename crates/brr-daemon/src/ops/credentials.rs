@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use brr_core::{
-    Credential, CredentialId, CredentialSelectors, Error, Http, Method, OperationSpec, Page,
-    PasswordCsvFormat, Secret, TextUpload, Toolset, now_ms, schema, site_origin,
+    Credential, CredentialId, CredentialSelectors, CredentialSource, Error, Http, Method,
+    OperationSpec, Page, PasswordCsvFormat, Secret, TextUpload, Toolset, now_ms, schema,
+    site_origin,
 };
 use brr_store::credential;
 use brr_vault::totp::totp_check;
@@ -22,6 +23,7 @@ use crate::{
 
 const SITE_HELP: &str = "expected a site such as github.com or https://github.com";
 const LOGIN_URL_HELP: &str = "expected an http:// or https:// URL";
+const BITWARDEN_FIELD: &str = "comes from the linked Bitwarden item; change it in Bitwarden";
 
 static LIST: OperationSpec = OperationSpec {
     name: "credential.list",
@@ -254,7 +256,7 @@ fn list(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
             .map(|(row, profile_ids)| {
                 let last_login = last_logins.remove(&row.id);
 
-                credentials::view(&ctx.app.secrets, &row, profile_ids, last_login)
+                credentials::view(&ctx.app, &row, profile_ids, last_login)
             })
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -355,6 +357,17 @@ fn update(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
             .store
             .run(move |c| {
                 let mut row = credential::get(c, &credential_id)?;
+                let from_bitwarden = [
+                    ("site", site.is_some()),
+                    ("username", username.is_some()),
+                    ("password", password_enc.is_some()),
+                    ("totp", totp_enc.is_some()),
+                ]
+                .into_iter()
+                .find(|(_, given)| *given && row.source == CredentialSource::Bitwarden);
+                if let Some((field, _)) = from_bitwarden {
+                    return Err(invalid(field, BITWARDEN_FIELD));
+                }
                 if site.is_some() || username.is_some() {
                     let current = match username {
                         Some(username) => username,
@@ -372,8 +385,8 @@ fn update(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
                 }
                 row.site = site.unwrap_or(row.site);
                 row.login_url = login_url.unwrap_or(row.login_url);
-                row.username_enc = username_enc.unwrap_or(row.username_enc);
-                row.password_enc = password_enc.unwrap_or(row.password_enc);
+                row.username_enc = username_enc.or(row.username_enc);
+                row.password_enc = password_enc.or(row.password_enc);
                 row.totp_enc = totp_enc.unwrap_or(row.totp_enc);
                 row.notes_enc = notes_enc.or(row.notes_enc);
                 row.selectors = selectors.unwrap_or(row.selectors);

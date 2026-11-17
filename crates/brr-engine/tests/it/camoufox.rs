@@ -17,10 +17,10 @@ use brr_core::{
 };
 use brr_engine::page::{
     ClickOptions, Clip, EmulateOptions, MouseButton, MouseInput, MouseKind, Page,
-    ScreenshotOptions, StorageArea, Target,
+    ScreenshotOptions, StorageArea, Target, WaitCondition,
 };
 use brr_engine::{
-    CamoufoxSpec, DownloadState, Driver, DriverEvent, LaunchSpec, Launched, RequestRules,
+    CamoufoxSpec, DownloadState, Driver, DriverEvent, LaunchSpec, Launched, Navigated, RequestRules,
 };
 use serde_json::json;
 use tempfile::TempDir;
@@ -61,6 +61,8 @@ const SCALE: f64 = 2.0;
 const PNG_SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
 const PIXEL_BASE64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 const OTHER_PAGE: &str = "data:text/html,<p>other</p>";
+const LATE_ELEMENT_PAGE: &str = "data:text/html,<p id=hidden style=display:none>h</p><script>setTimeout(() => document.body.append(Object.assign(document.createElement('p'), { id: 'late', textContent: 'late' })), 300)</script>";
+const HIDDEN_TIMEOUT: Duration = Duration::from_secs(1);
 
 pub fn assets() -> Option<(PathBuf, PathBuf, PathBuf)> {
     let Some(camoufox) = std::env::var_os(CAMOUFOX_ENV).map(PathBuf::from) else {
@@ -115,6 +117,7 @@ pub fn spec(
             seed: Some(7),
             addons: Vec::new(),
         }),
+        sandbox: None,
     }
 }
 
@@ -926,5 +929,52 @@ async fn a_device_scale_is_refused_not_dropped() {
         "{refused:?}"
     );
 
+    harness.stop().await;
+}
+
+#[tokio::test]
+async fn waiting_for_a_selector_ends_once_the_element_is_visible() {
+    let Some(harness) = Harness::start(Display::Headless, None).await else {
+        return;
+    };
+    let page = harness.open(LATE_ELEMENT_PAGE).await;
+
+    page.wait_for(&WaitCondition::Selector("#late".to_owned()), ACTION_TIMEOUT)
+        .await
+        .unwrap();
+    let hidden = page
+        .wait_for(
+            &WaitCondition::Selector("#hidden".to_owned()),
+            HIDDEN_TIMEOUT,
+        )
+        .await;
+
+    assert!(matches!(hidden, Err(Error::Timeout { .. })), "{hidden:?}");
+    harness.stop().await;
+}
+
+#[tokio::test]
+async fn navigating_to_a_download_succeeds_and_keeps_the_page() {
+    let Some(mut harness) = Harness::start(Display::Headless, None).await else {
+        return;
+    };
+    let origin = serve();
+    let page = harness.open(&format!("http://{origin}/")).await;
+    let big = format!("http://{origin}/big");
+
+    let navigated = harness
+        .driver
+        .navigate(&harness.target_id, &big, WaitUntil::Load, NAVIGATE_TIMEOUT)
+        .await
+        .unwrap();
+
+    assert_eq!(navigated, Navigated::Download);
+    harness
+        .wait_for(|event| match event {
+            DriverEvent::DownloadStarted { url, .. } if *url == big => Some(()),
+            _ => None,
+        })
+        .await;
+    assert_eq!(eval(&page, "document.title").await, json!("served"));
     harness.stop().await;
 }

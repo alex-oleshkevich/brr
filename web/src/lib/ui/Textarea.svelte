@@ -1,6 +1,7 @@
 <script lang="ts">
   let {
     value = $bindable(),
+    name,
     label,
     hideLabel = false,
     id,
@@ -13,6 +14,7 @@
     rows = 4,
   }: {
     value?: string;
+    name?: string;
     label: string;
     hideLabel?: boolean;
     id?: string;
@@ -37,6 +39,7 @@
   <textarea
     class="control"
     id={inputId}
+    {name}
     bind:value
     {rows}
     {placeholder}

@@ -46,7 +46,7 @@
       <span class="num">· {countdown(first.deadline, now)}</span>
       {#if more > 0}<span>· and {more} more</span>{/if}
     </p>
-    <Button variant="primary" size="sm" href="/instances/{first.instanceId}?tab={first.tabId}">Step in</Button>
+    <Button variant="primary" size="sm" href="/browsers/{first.instanceId}?tab={first.tabId}">Step in</Button>
   </div>
 {/if}
 

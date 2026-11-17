@@ -193,6 +193,7 @@ fn build_choice_uses_tagged_keys() {
 
 #[test_case("browser,system", vec![Toolset::Browser, Toolset::System])]
 #[test_case("browser", vec![Toolset::Browser])]
+#[test_case("all", Toolset::ALL.to_vec())]
 fn toolset_parse_list(input: &str, expected: Vec<Toolset>) {
     assert_eq!(Toolset::parse_list(input).unwrap(), expected);
 }
@@ -206,6 +207,7 @@ fn toolset_parse_list_names_valid_values() {
 
     assert_eq!(field, "toolsets");
     assert!(message.contains("instances"));
+    assert!(message.contains("comma-separated"));
 }
 
 #[test_case(None, 100)]
@@ -275,6 +277,7 @@ fn sample_profile() -> Profile {
         name: "p".to_string(),
         kind: ProfileKind::Persistent,
         template_id: None,
+        template_name: None,
         settings: ProfileSettings::default(),
         pinned: false,
         notes: String::new(),

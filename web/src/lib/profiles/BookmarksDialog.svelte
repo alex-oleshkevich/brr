@@ -42,8 +42,9 @@
     busy = true;
     try {
       const data = await file.text();
-      await unwrap(api.PUT('/v1/profiles/{profile}/bookmarks', { params: { path: { profile: profileId } }, body: { data } }));
-      toast.success('Bookmarks imported');
+      const out = await unwrap(api.PUT('/v1/profiles/{profile}/bookmarks', { params: { path: { profile: profileId } }, body: { data } }));
+      if (out.imported === 0) toast.show({ tone: 'neutral', title: 'These bookmarks are already in this profile' });
+      else toast.success('Bookmarks imported');
       open = false;
     } catch (e) {
       toast.apiError(e, "Couldn't import bookmarks");
@@ -79,5 +80,21 @@
     flex-direction: column;
     gap: var(--space-2);
     align-items: flex-start;
+  }
+
+  input[type='file'] {
+    width: 100%;
+    height: auto;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  input[type='file']::file-selector-button {
+    margin-right: var(--space-3);
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-md);
+    font: inherit;
+    cursor: pointer;
   }
 </style>

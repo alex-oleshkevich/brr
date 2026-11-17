@@ -365,11 +365,11 @@ async fn pool_selection() {
         follower(&app, "rotating-user", json!({"pool_id": rotating["id"]})).await;
 
     let (first, second) = (InstanceId::new(), InstanceId::new());
-    proxies::for_launch(&app, &first, &sticky_profile)
+    proxies::for_launch(&app, &first, &sticky_profile, false)
         .await
         .unwrap()
         .unwrap();
-    proxies::for_launch(&app, &second, &sticky_profile)
+    proxies::for_launch(&app, &second, &sticky_profile, false)
         .await
         .unwrap()
         .unwrap();
@@ -383,7 +383,7 @@ async fn pool_selection() {
             .await
             .unwrap()
     };
-    let none = proxies::for_launch(&app, &InstanceId::new(), &broken_profile).await;
+    let none = proxies::for_launch(&app, &InstanceId::new(), &broken_profile, false).await;
 
     assert_eq!(port_of(&app, &first), live_addr.port());
     assert_eq!(port_of(&app, &second), live_addr.port());
@@ -395,7 +395,7 @@ async fn pool_selection() {
 
     let ids: Vec<InstanceId> = (0..4).map(|_| InstanceId::new()).collect();
     for id in &ids {
-        proxies::for_launch(&app, id, &rotating_profile)
+        proxies::for_launch(&app, id, &rotating_profile, false)
             .await
             .unwrap();
     }
@@ -413,7 +413,7 @@ async fn release_closes_the_forwarder_port() {
     let profile = follower(&app, "single", json!({"proxy_id": created["id"]})).await;
     let instance_id = InstanceId::new();
 
-    let url = proxies::for_launch(&app, &instance_id, &profile)
+    let url = proxies::for_launch(&app, &instance_id, &profile, false)
         .await
         .unwrap()
         .unwrap();

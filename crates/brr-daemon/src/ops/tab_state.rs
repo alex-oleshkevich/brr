@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use brr_core::{
-    ArtifactKind, Cookie, Error, Geolocation, Size, Tab, TabId,
+    ArtifactKind, Cookie, CookieInput, Error, Geolocation, SameSite, Size, Tab, TabId,
     capture::{ColorScheme, ResourceType, ReturnMode},
 };
 use brr_engine::{
@@ -22,6 +22,8 @@ use crate::{app::Ctx, services::artifacts::Delivery};
 const MAX_LATITUDE: f64 = 90.0;
 const MAX_LONGITUDE: f64 = 180.0;
 const DEFAULT_LIMIT: u32 = 100;
+const DEFAULT_COOKIE_PATH: &str = "/";
+const SESSION_COOKIE_EXPIRES: f64 = -1.0;
 const HAR_MIME: &str = "application/json";
 const HAR_FILENAME: &str = "recording.har";
 
@@ -174,7 +176,7 @@ struct CookiesOut {
 #[serde(deny_unknown_fields)]
 struct CookiesSetInput {
     tab_id: Option<TabId>,
-    cookies: Vec<Cookie>,
+    cookies: Vec<CookieInput>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -271,10 +273,53 @@ async fn cookies_get(ctx: Ctx, input: CookiesGetInput) -> Result<Value, Error> {
     output(&CookiesOut { cookies })
 }
 
+fn cookie_from_input(input: CookieInput) -> Result<Cookie, Error> {
+    let url = input
+        .url
+        .as_deref()
+        .map(|url| {
+            reqwest::Url::parse(url)
+                .map_err(|_| invalid("cookies", &format!("{url:?} is not an absolute URL")))
+        })
+        .transpose()?;
+    let domain = match (input.domain, url.as_ref().and_then(reqwest::Url::host_str)) {
+        (Some(domain), _) => domain,
+        (None, Some(host)) => host.to_string(),
+        (None, None) => {
+            return Err(invalid(
+                "cookies",
+                &format!(
+                    "cookie {:?} needs a domain or a url with a host",
+                    input.name
+                ),
+            ));
+        }
+    };
+    let https = url.as_ref().is_some_and(|url| url.scheme() == "https");
+
+    Ok(Cookie {
+        name: input.name,
+        value: input.value,
+        domain,
+        path: input
+            .path
+            .unwrap_or_else(|| DEFAULT_COOKIE_PATH.to_string()),
+        expires: input.expires.unwrap_or(SESSION_COOKIE_EXPIRES),
+        http_only: input.http_only.unwrap_or(false),
+        secure: input.secure.unwrap_or(https),
+        same_site: input.same_site.unwrap_or(SameSite::Lax),
+    })
+}
+
 async fn cookies_set(ctx: Ctx, input: CookiesSetInput) -> Result<Value, Error> {
     let call = tab_call(&ctx, input.tab_id, &COOKIES_SET).await?;
 
-    call.page.set_cookies(&input.cookies).await?;
+    let cookies = input
+        .cookies
+        .into_iter()
+        .map(cookie_from_input)
+        .collect::<Result<Vec<_>, _>>()?;
+    call.page.set_cookies(&cookies).await?;
 
     call.tab_out(&ctx).await
 }
@@ -423,3 +468,6 @@ async fn block_requests(ctx: Ctx, input: BlockRequestsInput) -> Result<Value, Er
 
     call.tab_out(&ctx).await
 }
+
+#[cfg(test)]
+mod tests;

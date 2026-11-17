@@ -314,6 +314,10 @@ pub enum EventData {
         site: String,
         failures: u32,
     },
+    #[serde(rename = "bitwarden.synced")]
+    BitwardenSynced { items: u32 },
+    #[serde(rename = "bitwarden.sync_failed")]
+    BitwardenSyncFailed { error: String },
     #[serde(rename = "proxy.health")]
     ProxyHealth {
         proxy_id: ProxyId,
@@ -380,6 +384,8 @@ impl EventData {
             EventData::LoginPerformed { .. } => "login.performed",
             EventData::LoginCheckResult { .. } => "login.check_result",
             EventData::LoginReloginSuspended { .. } => "login.relogin_suspended",
+            EventData::BitwardenSynced { .. } => "bitwarden.synced",
+            EventData::BitwardenSyncFailed { .. } => "bitwarden.sync_failed",
             EventData::ProxyHealth { .. } => "proxy.health",
             EventData::LimitsChanged { .. } => "limits.changed",
             EventData::SettingsChanged { .. } => "settings.changed",
@@ -441,6 +447,9 @@ impl EventData {
             EventData::MemoryPressure { .. } => subject(SubjectType::System, "memory"),
             EventData::SweepCompleted { .. } => subject(SubjectType::System, "retention"),
             EventData::CaptchaBudgetExhausted { .. } => subject(SubjectType::System, "captcha"),
+            EventData::BitwardenSynced { .. } | EventData::BitwardenSyncFailed { .. } => {
+                subject(SubjectType::System, "bitwarden")
+            }
             EventData::LimitsChanged { .. } => subject(SubjectType::System, "limits"),
             EventData::SettingsChanged { .. } => subject(SubjectType::System, "settings"),
         }

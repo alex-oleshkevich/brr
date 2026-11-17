@@ -2,17 +2,21 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use brr_core::{
     AdmissionMode, BuildRef, BuildSource, Capability, ConflictReason, Display, EndReason, Error,
-    Http, Instance, InstanceId, InstanceKind, InstanceState, InstanceTrigger, Lease, Method,
-    OperationSpec, Page, ProfileId, ReleaseReason, Tab, TabState, Toolset, WaitUntil, schema,
+    HostId, Http, Instance, InstanceId, InstanceKind, InstanceState, InstanceTrigger, Lease,
+    Method, OperationSpec, Page, ProfileId, ReleaseReason, SandboxMode, Tab, TabState, Toolset,
+    WaitUntil, schema,
 };
 use brr_store::{
     build,
     instance::{self, Filter},
-    profile,
+    profile, template,
 };
-use futures::{FutureExt, future::BoxFuture};
+use futures::{
+    FutureExt,
+    future::{BoxFuture, join_all},
+};
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de};
 use serde_json::Value;
 
 use super::{
@@ -26,8 +30,12 @@ use crate::{
         host,
         instances::{LaunchRequest, promote},
         profiles::validate_name,
+        proxies,
     },
 };
+
+const EPOCH_MS_HINT: &str = "expects epoch milliseconds, e.g. 1794864186771";
+const INSTANCE_ID_HINT: &str = "not a valid InstanceId; expected a 26-character ULID";
 
 static LAUNCH: OperationSpec = OperationSpec {
     name: "instance.launch",
@@ -51,7 +59,7 @@ static LIST: OperationSpec = OperationSpec {
     name: "instance.list",
     group: "instance",
     toolset: Toolset::Instances,
-    summary: "List Instances, newest first, optionally only some states (comma-separated) or one Profile",
+    summary: "List Instances, newest first, optionally only some states (comma-separated), one Profile or Template, one end reason or a time window",
     http: Http {
         method: Method::Get,
         path: "/v1/instances",
@@ -165,6 +173,14 @@ struct LaunchOutput {
 struct ListInput {
     state: Option<String>,
     profile: Option<String>,
+    template: Option<String>,
+    end_reason: Option<EndReason>,
+    #[serde(default, deserialize_with = "epoch_ms")]
+    #[schemars(description = "Epoch milliseconds, e.g. 1794864186771")]
+    since: Option<i64>,
+    #[serde(default, deserialize_with = "epoch_ms")]
+    #[schemars(description = "Epoch milliseconds, e.g. 1794864186771")]
+    until: Option<i64>,
     limit: Option<u32>,
     cursor: Option<String>,
 }
@@ -178,7 +194,9 @@ struct ListOutput {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct InstanceInput {
-    instance_id: InstanceId,
+    // Text, so a Profile name passed by mistake gets a hint instead of a bare ULID error.
+    #[schemars(with = "InstanceId")]
+    instance_id: String,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -201,7 +219,7 @@ async fn instance_views(app: &Arc<App>, stored: Vec<Instance>) -> Result<Vec<Ins
     let mut profile_ids: Vec<ProfileId> = stored.iter().filter_map(|i| i.profile_id).collect();
     profile_ids.sort();
     profile_ids.dedup();
-    let (builds, profiles) = app
+    let (builds, profiles, docker_urls) = app
         .store
         .run(move |c| {
             let mut profiles = HashMap::new();
@@ -210,8 +228,12 @@ async fn instance_views(app: &Arc<App>, stored: Vec<Instance>) -> Result<Vec<Ins
                     profiles.insert(id, found.name);
                 }
             }
+            let docker_urls: HashMap<HostId, String> = brr_store::host::all(c)?
+                .into_iter()
+                .map(|found| (found.id, found.docker_url))
+                .collect();
 
-            Ok((build::all(c)?, profiles))
+            Ok((build::all(c)?, profiles, docker_urls))
         })
         .await?;
     let mut lease_counts: HashMap<InstanceId, u32> = HashMap::new();
@@ -219,10 +241,12 @@ async fn instance_views(app: &Arc<App>, stored: Vec<Instance>) -> Result<Vec<Ins
         *lease_counts.entry(lease.instance_id).or_default() += 1;
     }
 
-    let pss = if stored.iter().any(counts_memory) {
+    // A container's processes are not in the daemon's pid tree; Docker counts them.
+    let in_docker = |instance: &Instance| instance.sandbox == Some(SandboxMode::Docker);
+    let mut rss = if stored.iter().any(|i| counts_memory(i) && !in_docker(i)) {
         let browsers: Vec<_> = stored
             .iter()
-            .filter(|instance| counts_memory(instance))
+            .filter(|instance| counts_memory(instance) && !in_docker(instance))
             .filter_map(|instance| Some((instance.id, instance.pid?)))
             .collect();
 
@@ -230,10 +254,26 @@ async fn instance_views(app: &Arc<App>, stored: Vec<Instance>) -> Result<Vec<Ins
     } else {
         HashMap::new()
     };
+    // Each Docker host (None: brr's own) runs its own `docker stats`, all at once.
+    let mut docker_hosts: Vec<Option<&str>> = stored
+        .iter()
+        .filter(|i| counts_memory(i) && in_docker(i))
+        .filter_map(|i| match i.host_id {
+            None => Some(None),
+            Some(host_id) => docker_urls.get(&host_id).map(|url| Some(url.as_str())),
+        })
+        .collect();
+    docker_hosts.sort_unstable();
+    docker_hosts.dedup();
+    let read = docker_hosts.into_iter().map(|url| app.sandbox.rss(url));
+    for found in join_all(read).await {
+        rss.extend(found);
+    }
 
     let views = stored
         .into_iter()
         .map(|row| {
+            let stored_traffic = row.traffic.clone();
             let (mut instance, tab_count) = match app.instances.view(&row.id) {
                 Some(view) => {
                     let open = view.tabs.iter().filter(|t| t.state != TabState::Closed);
@@ -265,9 +305,11 @@ async fn instance_views(app: &Arc<App>, stored: Vec<Instance>) -> Result<Vec<Ins
                 label: format!("{} {}", b.name, b.version),
             });
             instance.tab_count = tab_count;
+            // The meter's live count while the run has a forwarder, else what the record kept.
+            instance.traffic = proxies::live_traffic(app, &instance.id).or(stored_traffic);
             instance.lease_count = lease_counts.get(&instance.id).copied().unwrap_or(0);
             instance.rss_bytes = counts_memory(&instance)
-                .then(|| pss.get(&instance.id).copied())
+                .then(|| rss.get(&instance.id).copied())
                 .flatten();
 
             instance
@@ -306,13 +348,22 @@ fn absent_ok<T>(found: Result<T, Error>) -> Result<Option<T>, Error> {
     }
 }
 
+// serde's unknown-variant message already names every valid state.
 fn parse_states(list: &str) -> Result<Vec<InstanceState>, Error> {
     list.split(',')
         .map(|name| {
-            serde_json::from_value(Value::String(name.trim().to_string()))
-                .map_err(|_| invalid("state", &format!("{name:?} is not an instance state")))
+            serde_json::from_value(Value::String(name.trim().to_string())).map_err(|e| {
+                invalid(
+                    "state",
+                    &format!("{e}; separate several states with commas"),
+                )
+            })
         })
         .collect()
+}
+
+fn epoch_ms<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<i64>, D::Error> {
+    Option::<i64>::deserialize(deserializer).map_err(|_| de::Error::custom(EPOCH_MS_HINT))
 }
 
 fn launch(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
@@ -431,8 +482,26 @@ fn list(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
                     Some(profile_ref) => Some(profile::find(c, &profile_ref)?.id),
                     None => None,
                 };
+                // A deleted Template still names its past runs, so only a name nothing knows fails.
+                if let Some(template_ref) = &input.template
+                    && absent_ok(template::find(c, template_ref))?.is_none()
+                    && !instance::names_template(c, template_ref)?
+                {
+                    return Err(Error::NotFound {
+                        what: format!("template {template_ref}"),
+                    });
+                }
 
-                instance::list(c, &Filter { states, profile_id }, &page)
+                let filter = Filter {
+                    states,
+                    profile_id,
+                    template: input.template,
+                    end_reason: input.end_reason,
+                    since: input.since,
+                    until: input.until,
+                };
+
+                instance::list(c, &filter, &page)
             })
             .await?;
 
@@ -449,11 +518,20 @@ fn list(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
 fn get(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
     async move {
         let input: InstanceInput = parse(input)?;
-        let instance_id = input.instance_id;
+        let raw = input.instance_id;
         let stored = ctx
             .app
             .store
-            .run(move |c| instance::get(c, &instance_id))
+            .run(move |c| match raw.parse::<InstanceId>() {
+                Ok(instance_id) => instance::get(c, &instance_id),
+                Err(_) if absent_ok(profile::find(c, &raw))?.is_some() => Err(invalid(
+                    "instance_id",
+                    &format!(
+                        "{raw:?} is a Profile, not an Instance id; run `brr instance list --profile {raw}` to find its Instances"
+                    ),
+                )),
+                Err(_) => Err(invalid("instance_id", INSTANCE_ID_HINT)),
+            })
             .await?;
 
         output(&instance_view(&ctx.app, stored).await?)

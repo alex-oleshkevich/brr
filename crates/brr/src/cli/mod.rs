@@ -21,6 +21,7 @@ pub mod format;
 mod mcp;
 mod prime;
 mod render;
+mod runner;
 mod skill;
 mod systemd;
 
@@ -38,6 +39,11 @@ const FOLLOW: &str = "follow";
 const EVENTS_LIST: &str = "events.list";
 const ARTIFACT_FETCH: &str = "artifact.fetch";
 const CLIENT_END: &str = "client.end";
+const REAPPLY_TEMPLATE: &str = "profile.reapply_template";
+const TEMPLATE_DELETE: &str = "template.delete";
+const DRY_RUN: &str = "dry_run";
+const SETTINGS_SET: &str = "settings.set";
+const RESTART_REQUIRED: &str = "restart_required";
 
 const STREAM_QUERY_FIELDS: [&str; 3] = ["since", "kinds", "subject"];
 // The stream endpoint filters by these three only.
@@ -96,6 +102,7 @@ pub fn command() -> Command {
         )
         .subcommand(daemon::command())
         .subcommand(mcp::command())
+        .subcommand(runner::command())
         .subcommand(Command::new(doctor::NAME).about("Check this machine and the daemon's setup"))
         .subcommand(
             Command::new(prime::NAME)
@@ -169,6 +176,7 @@ pub async fn run(boot: Boot, matches: &ArgMatches, argv0: &str) -> anyhow::Resul
         Some((skill::NAME, skill)) => skill::run(skill),
         Some((MCP, mcp)) => mcp::run(&boot, mcp).await,
         Some((DAEMON, daemon)) => daemon::run(boot, daemon, json).await,
+        Some((runner::NAME, _)) => runner::run().await,
         _ => match leaf_op(matches) {
             Some((op, leaf)) => run_op(&boot, argv0, op, leaf, json).await,
             None => bail!("unknown command"),
@@ -215,8 +223,73 @@ async fn run_op(
     };
 
     let output = inline_artifact(&remote, output, file.as_ref(), path).await?;
+    if !json && let Some((verb, text)) = summary(spec.name, &input, &output) {
+        return Ok(format::status(verb, &text)?);
+    }
+    if !json && spec.name == SETTINGS_SET {
+        let changed = changed_settings(&input, &output);
+        let fields: Vec<(&str, String)> = changed
+            .iter()
+            .map(|(key, value)| (key.as_str(), value.clone()))
+            .collect();
+
+        return Ok(format::record(&fields)?);
+    }
 
     render::output(&output, json, file.as_ref(), path)
+}
+
+// A one-line answer where the whole output would only repeat what the command asked for.
+fn summary(op: &str, input: &Value, output: &Value) -> Option<(&'static str, String)> {
+    let count = |value: &Value| value.as_array().map_or(0, Vec::len);
+
+    match op {
+        REAPPLY_TEMPLATE if input[DRY_RUN] != json!(true) => {
+            let changes = count(&output["changes"])
+                + count(&output["extensions"]["added"])
+                + count(&output["extensions"]["removed"]);
+            let noun = if changes == 1 { "change" } else { "changes" };
+
+            Some(("Applied", format!("{changes} {noun}")))
+        }
+        TEMPLATE_DELETE => Some((
+            "Deleted",
+            format!("template {}", output["name"].as_str().unwrap_or_default()),
+        )),
+        _ => None,
+    }
+}
+
+// The keys the command set with their new values, not the whole settings object.
+fn changed_settings(input: &Value, output: &Value) -> Vec<(String, String)> {
+    let text = |value: &Value| match value {
+        Value::String(text) => text.clone(),
+        other => other.to_string(),
+    };
+    let mut fields: Vec<(String, String)> = input
+        .as_object()
+        .into_iter()
+        .flat_map(|changes| changes.keys())
+        .map(|key| {
+            let pointer = format!("/settings/{}", key.replace('.', "/"));
+
+            (
+                key.clone(),
+                output.pointer(&pointer).map(text).unwrap_or_default(),
+            )
+        })
+        .collect();
+    if output[RESTART_REQUIRED]
+        .as_array()
+        .is_some_and(|keys| !keys.is_empty())
+    {
+        fields.push((
+            RESTART_REQUIRED.to_string(),
+            text(&output[RESTART_REQUIRED]),
+        ));
+    }
+
+    fields
 }
 
 // The presence connection releases this Client's Leases if the process dies mid-call.

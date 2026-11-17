@@ -1,9 +1,9 @@
-use brr_core::{Error, Page, ProfileSettings, Template, TemplateId};
+use brr_core::{BuildChoice, Error, Page, ProfileSettings, Template, TemplateId};
 use rusqlite::{Connection, Row, params};
 
 use crate::{
     Json, Text, col, expect_changed, first_or_not_found, internal, json_col, name_conflict,
-    next_cursor, query,
+    next_cursor, query, template_extension,
 };
 
 const TABLE: &str = "template";
@@ -15,10 +15,19 @@ fn decode(row: &Row) -> rusqlite::Result<Template> {
         name: row.get("name")?,
         builtin: row.get("builtin")?,
         settings: json_col(row, "settings")?,
+        extensions: Vec::new(),
         created_at: row.get("created_at")?,
         updated_at: row.get("updated_at")?,
         description: row.get("description")?,
     })
+}
+
+fn with_extensions(c: &Connection, mut templates: Vec<Template>) -> Result<Vec<Template>, Error> {
+    for t in &mut templates {
+        t.extensions = template_extension::get(c, &t.id)?;
+    }
+
+    Ok(templates)
 }
 
 pub fn insert(c: &Connection, t: &Template) -> Result<(), Error> {
@@ -36,25 +45,28 @@ pub fn insert(c: &Connection, t: &Template) -> Result<(), Error> {
     )
     .map_err(name_conflict)?;
 
-    Ok(())
+    template_extension::set(c, &t.id, &t.extensions)
 }
 
 pub fn update(c: &Connection, t: &Template) -> Result<(), Error> {
     let changed = c
         .execute(
-            "UPDATE template SET name = ?2, builtin = ?3, settings = ?4, created_at = ?5, updated_at = ?6 WHERE id = ?1",
+            "UPDATE template SET name = ?2, builtin = ?3, settings = ?4, created_at = ?5, updated_at = ?6, description = ?7 WHERE id = ?1",
             params![
                 Text(&t.id),
                 t.name,
                 t.builtin,
                 Json(&t.settings),
                 t.created_at,
-                t.updated_at
+                t.updated_at,
+                t.description
             ],
         )
         .map_err(name_conflict)?;
 
-    expect_changed(changed, format!("template {}", t.id))
+    expect_changed(changed, format!("template {}", t.id))?;
+
+    template_extension::set(c, &t.id, &t.extensions)
 }
 
 pub fn get(c: &Connection, template_id: &TemplateId) -> Result<Template, Error> {
@@ -66,7 +78,7 @@ pub fn get(c: &Connection, template_id: &TemplateId) -> Result<Template, Error> 
         decode,
     )?;
 
-    first_or_not_found(rows, format!("template {template_id}"))
+    first_or_not_found(with_extensions(c, rows)?, format!("template {template_id}"))
 }
 
 pub fn find(c: &Connection, id_or_name: &str) -> Result<Template, Error> {
@@ -78,7 +90,7 @@ pub fn find(c: &Connection, id_or_name: &str) -> Result<Template, Error> {
         decode,
     )?;
 
-    first_or_not_found(rows, format!("template {id_or_name}"))
+    first_or_not_found(with_extensions(c, rows)?, format!("template {id_or_name}"))
 }
 
 pub fn list(c: &Connection, page: &Page) -> Result<(Vec<Template>, Option<String>), Error> {
@@ -91,10 +103,28 @@ pub fn list(c: &Connection, page: &Page) -> Result<(Vec<Template>, Option<String
     )?;
     let next = next_cursor(&rows, page, |t| t.name.clone());
 
-    Ok((rows, next))
+    Ok((with_extensions(c, rows)?, next))
 }
 
+// Built-in templates follow the default channels; counting them would make the last stable
+// Build impossible to remove.
+pub fn user_build_choices(c: &Connection) -> Result<Vec<(TemplateId, String, BuildChoice)>, Error> {
+    query(
+        c,
+        TABLE,
+        "SELECT id, name, json_extract(settings, '$.build') AS build FROM template WHERE builtin = 0 ORDER BY name",
+        [],
+        |row| Ok((col(row, "id")?, row.get("name")?, json_col(row, "build")?)),
+    )
+}
+
+// Profiles made from it keep their template_name snapshot; a null id tells clients it is gone.
 pub fn delete(c: &Connection, template_id: &TemplateId) -> Result<(), Error> {
+    c.execute(
+        "UPDATE profile SET template_id = NULL WHERE template_id = ?1",
+        params![Text(template_id)],
+    )
+    .map_err(internal)?;
     let changed = c
         .execute(
             "DELETE FROM template WHERE id = ?1",

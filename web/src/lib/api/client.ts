@@ -17,8 +17,10 @@ export class ApiError extends Error {
     const { message: text, field } = humanize(code, message);
     super(text);
     this.field = field;
-    // A malformed id in the URL is the same thing to the user as an id that doesn't exist.
-    if (code === 'InvalidArgument' && field && /(^|_)id$/.test(field) && /not a valid/.test(message)) {
+    // A malformed id in the URL is the same thing to the user as an id that doesn't exist. Only the
+    // bare path-id fields (`id`, `client_id`) map; body fields such as settings.build.build_id keep
+    // the server's message.
+    if (code === 'InvalidArgument' && (field === 'id' || field === 'client_id') && /not a valid/.test(message)) {
       this.code = 'NotFound';
       this.status = 404;
       this.message = 'This item does not exist.';

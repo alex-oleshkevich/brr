@@ -1,7 +1,7 @@
 // Last by file name: a crash leaves an unread notification that the bell checks in shell.spec.ts do not expect.
 import { expect, ready, test } from './fixtures';
 
-test('dashboard: a crashed browser needs attention until it is dismissed', async ({ page, request, pageErrors }) => {
+test('overview: a crashed browser needs attention until it is dismissed', async ({ page, request, pageErrors }) => {
   const name = 'e2e-crash';
   const profile = await (await request.post('/v1/profiles', { data: { name, template: 'chromium-headless' } })).json();
   const { instance } = await (await request.post(`/v1/profiles/${profile.id}/launch`, { data: { display: 'headless' } })).json();
@@ -21,12 +21,6 @@ test('dashboard: a crashed browser needs attention until it is dismissed', async
   await ready(page);
   await expect(crashAlert()).toHaveCount(0);
 
-  await page.goto('/instances');
-  await page.getByRole('tab', { name: /Ended/ }).click();
-  const row = page.getByRole('row').filter({ hasText: name });
-  await expect(row).toContainText('Crashed');
-  await row.getByRole('button', { name: /^Actions for / }).click();
-  await expect(page.getByRole('menuitem', { name: 'Launch again…' })).toBeVisible();
   expect(pageErrors).toEqual([]);
 
   await request.delete(`/v1/profiles/${profile.id}`);

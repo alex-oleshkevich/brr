@@ -89,6 +89,7 @@ ulid_ids!(
     BackupId,
     AssetId,
     CaptchaSolveId,
+    HostId,
 );
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]

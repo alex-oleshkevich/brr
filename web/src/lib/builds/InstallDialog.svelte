@@ -4,6 +4,7 @@
   import Dialog from '$lib/ui/Dialog.svelte';
   import SegmentedControl from '$lib/ui/SegmentedControl.svelte';
   import Select from '$lib/ui/Select.svelte';
+  import Button from '$lib/ui/Button.svelte';
   import { toast } from '$lib/ui/toast.svelte';
 
   let { open = $bindable(false), oninstalled }: { open?: boolean; oninstalled?: () => void } = $props();
@@ -15,19 +16,25 @@
   let versions = $state<string[]>([]);
   let installing = $state(false);
 
+  let loading = $state(false);
+  let loadError = $state('');
   let latestRequest = 0;
 
   async function loadVersions() {
     const request = ++latestRequest;
     versions = [];
     version = '';
+    loadError = '';
+    loading = true;
     try {
       const out = await unwrap(api.GET('/v1/builds/available', { params: { query: { source } } }));
       if (request !== latestRequest) return;
       versions = [...new Set(out.available.map((a) => a.version))];
       version = versions[0] ?? '';
     } catch (e) {
-      if (request === latestRequest) toast.apiError(e, "Couldn't load available versions");
+      if (request === latestRequest) loadError = e instanceof Error ? e.message : String(e);
+    } finally {
+      if (request === latestRequest) loading = false;
     }
   }
 
@@ -78,7 +85,13 @@
       {#if mode === 'channel'}
         <Select label="Channel" bind:value={channel} options={channelsFor(source)} />
       {:else}
-        <Select label="Version" bind:value={version} options={versions.map((v) => ({ value: v, label: v }))} hint={versions.length === 0 ? 'No versions available for this source.' : undefined} />
+        <Select label="Version" bind:value={version} options={versions.map((v) => ({ value: v, label: v }))} hint={!loading && !loadError && versions.length === 0 ? 'No versions available for this source.' : undefined} />
+        {#if loadError}
+          <div class="load-error" role="alert">
+            <span>Couldn't load the available versions: {loadError}</span>
+            <Button size="sm" onclick={() => void loadVersions()}>Retry</Button>
+          </div>
+        {/if}
       {/if}
     </div>
   </form>
@@ -89,6 +102,15 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+  }
+
+  .load-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    color: var(--danger-fg);
+    font-size: var(--text-sm-size);
   }
 
   .field {

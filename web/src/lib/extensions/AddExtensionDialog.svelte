@@ -80,10 +80,11 @@
 
     adding = true;
     try {
+      const known = new Set((await unwrap(api.GET('/v1/extensions'))).extensions.map((e) => e.id));
       const ext = await unwrap(api.POST('/v1/extensions', { body }));
       open = false;
       onadded?.();
-      toast.success(`Added ${ext.name}`);
+      toast.success(known.has(ext.id) ? 'Already in your library' : `Added ${ext.name}`);
     } catch (e) {
       toast.apiError(e, "Couldn't add the extension");
     } finally {
@@ -112,11 +113,11 @@
       {:else}
         <div class="field">
           <label class="field-label" for="extension-file">Extension file</label>
-          <input class="control" id="extension-file" type="file" accept=".crx,.xpi" bind:this={fileInput} onchange={() => (hasFile = !!fileInput?.files?.length)} />
+          <input class="control" id="extension-file" type="file" accept=".crx,.xpi,.zip" bind:this={fileInput} onchange={() => (hasFile = !!fileInput?.files?.length)} />
           {#if error}<p class="field-error">{error}</p>{/if}
         </div>
       {/if}
-      <p class="field-hint">To add an unpacked folder, run brr extension add &lt;path&gt; in a terminal.</p>
+      <p class="field-hint">A .zip is a packed unpacked-folder extension. The engine (Chromium or Camoufox) is detected from the file. To add an unpacked folder directly, run brr extension add &lt;path&gt; in a terminal.</p>
     </div>
   </form>
 </Dialog>
@@ -133,5 +134,21 @@
     flex-direction: column;
     gap: var(--space-2);
     align-items: flex-start;
+  }
+
+  input[type='file'] {
+    width: 100%;
+    height: auto;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  input[type='file']::file-selector-button {
+    margin-right: var(--space-3);
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-md);
+    font: inherit;
+    cursor: pointer;
   }
 </style>

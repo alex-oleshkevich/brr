@@ -53,6 +53,12 @@ zstd = "0.14"
 zip = { version = "9", default-features = false, features = ["deflate"] }
 sha2 = "0.11"
 zeroize = "1"
+hmac = "0.13"
+hkdf = "0.13"
+pbkdf2 = { version = "0.13", default-features = false, features = ["hmac"] }
+argon2 = "0.6"
+rsa = "0.10"
+sha1 = "0.11"
 aes = "0.9"
 cbc = { version = "0.2", features = ["alloc"] }
 base64 = "0.23"
@@ -74,6 +80,7 @@ brr-engine = { path = "crates/brr-engine" }
 brr-builds = { path = "crates/brr-builds" }
 brr-storage = { path = "crates/brr-storage" }
 brr-vault = { path = "crates/brr-vault" }
+brr-bitwarden = { path = "crates/brr-bitwarden" }
 brr-captcha = { path = "crates/brr-captcha" }
 brr-content = { path = "crates/brr-content" }
 brr-netproxy = { path = "crates/brr-netproxy" }

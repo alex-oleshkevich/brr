@@ -1,16 +1,19 @@
 use std::{
     collections::HashMap,
     net::Ipv6Addr,
-    sync::{Arc, Mutex, PoisonError},
+    sync::{Arc, Mutex, PoisonError, atomic::Ordering},
     time::Duration,
 };
 
 use brr_core::{
     ConflictReason, Error, EventData, InstanceId, Page, PoolId, PoolMode, Profile, Proxy,
-    ProxyChoice, ProxyId, ProxyScheme, Secret, now_ms,
+    ProxyChoice, ProxyId, ProxyScheme, Secret, Traffic, now_ms,
 };
-use brr_netproxy::{Forwarder, Upstream, check as check_upstream};
-use brr_store::{Connection, pool, profile, proxy};
+use brr_netproxy::{
+    Forwarder, Listen, Meter, Route as NetRoute, Upstream, check as check_upstream,
+};
+use brr_proto::frames::Stream;
+use brr_store::{Connection, instance, pool, profile, proxy};
 use futures::{StreamExt, stream};
 use tokio::time;
 use tracing::{info, warn};
@@ -33,11 +36,13 @@ const PASSWORD_MAX_CHARS: usize = 1024;
 const IMPORT_MAX_PARTS: usize = 4;
 const SECS_PER_MIN: u64 = 60;
 
-// The running forwarder of one launch, with the upstream and the Proxy it was picked from.
+// The running forwarder of one launch, with the upstream and the Proxy it was picked from; a
+// sandboxed launch without a Proxy has a direct forwarder and neither.
 struct Route {
-    upstream: Arc<Upstream>,
-    _forwarder: Forwarder,
-    proxy_id: ProxyId,
+    upstream: Option<Arc<Upstream>>,
+    forwarder: Forwarder,
+    proxy_id: Option<ProxyId>,
+    meter: Arc<Meter>,
 }
 
 #[derive(Default)]
@@ -605,18 +610,35 @@ async fn pick(app: &Arc<App>, profile: &Profile, choice: &ProxyChoice) -> Result
     }
 }
 
+// A sandboxed launch always gets a forwarder, its browser's only way out: it listens nowhere and
+// serves the tunnels the runner opens over the container's stdio (`serve_tunnel`).
 pub async fn for_launch(
     app: &Arc<App>,
     instance_id: &InstanceId,
     profile: &Profile,
+    sandboxed: bool,
 ) -> Result<Option<String>, Error> {
-    let Some(choice) = &profile.settings.proxy else {
-        return Ok(None);
+    let proxy_id = match &profile.settings.proxy {
+        Some(choice) => Some(pick(app, profile, choice).await?),
+        None if !sandboxed => return Ok(None),
+        None => None,
     };
-    let proxy_id = pick(app, profile, choice).await?;
+    let upstream = match &proxy_id {
+        Some(proxy_id) => Some(Arc::new(upstream(app, proxy_id).await?)),
+        None => None,
+    };
 
-    let upstream = Arc::new(upstream(app, &proxy_id).await?);
-    let forwarder = Forwarder::start(Arc::clone(&upstream)).await?;
+    let route = match &upstream {
+        Some(upstream) => NetRoute::Upstream(Arc::clone(upstream)),
+        None => NetRoute::Direct,
+    };
+    let listen = if sandboxed {
+        Listen::None
+    } else {
+        Listen::Loopback
+    };
+    let meter = Arc::new(Meter::default());
+    let forwarder = Forwarder::start(route, listen, Arc::clone(&meter)).await?;
     let url = forwarder.url();
     app.proxies
         .forwarders
@@ -626,12 +648,26 @@ pub async fn for_launch(
             *instance_id,
             Route {
                 upstream,
-                _forwarder: forwarder,
+                forwarder,
                 proxy_id,
+                meter,
             },
         );
 
-    Ok(Some(url))
+    Ok(url)
+}
+
+// A run without a forwarder (it ended) just closes the tunnel.
+pub fn serve_tunnel(app: &Arc<App>, instance_id: &InstanceId, tunnel: Stream) {
+    if let Some(route) = app
+        .proxies
+        .forwarders
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .get(instance_id)
+    {
+        route.forwarder.serve(tunnel);
+    }
 }
 
 pub fn release(app: &Arc<App>, instance_id: &InstanceId) {
@@ -642,16 +678,50 @@ pub fn release(app: &Arc<App>, instance_id: &InstanceId) {
         .remove(instance_id);
 }
 
-// The exit IP the launch's proxy showed at its last health check.
-pub async fn exit_ip(app: &Arc<App>, instance_id: &InstanceId) -> Result<Option<String>, Error> {
-    let proxy_id = app
-        .proxies
+// What a run's forwarder has counted so far; None for a run without one.
+pub fn live_traffic(app: &Arc<App>, instance_id: &InstanceId) -> Option<Traffic> {
+    app.proxies
         .forwarders
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
         .get(instance_id)
-        .map(|route| route.proxy_id);
-    let Some(proxy_id) = proxy_id else {
+        .map(|route| Traffic {
+            sent_bytes: route.meter.sent.load(Ordering::Relaxed),
+            received_bytes: route.meter.received.load(Ordering::Relaxed),
+        })
+}
+
+// A run that ended: its totals go to the record before the forwarder is dropped.
+pub async fn finish(app: &Arc<App>, instance_id: &InstanceId) {
+    let totals = live_traffic(app, instance_id);
+    release(app, instance_id);
+    let Some(totals) = totals else {
+        return;
+    };
+
+    let id = *instance_id;
+    if let Err(error) = app
+        .store
+        .run(move |c| instance::set_traffic(c, &id, &totals))
+        .await
+    {
+        warn!(instance_id = %instance_id, %error, "run traffic not recorded");
+    }
+}
+
+// The proxy the launch picked; a pool's pick differs between launches.
+pub fn instance_proxy_id(app: &Arc<App>, instance_id: &InstanceId) -> Option<ProxyId> {
+    app.proxies
+        .forwarders
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .get(instance_id)
+        .and_then(|route| route.proxy_id)
+}
+
+// The exit IP the launch's proxy showed at its last health check.
+pub async fn exit_ip(app: &Arc<App>, instance_id: &InstanceId) -> Result<Option<String>, Error> {
+    let Some(proxy_id) = instance_proxy_id(app, instance_id) else {
         return Ok(None);
     };
 
@@ -664,5 +734,5 @@ pub fn instance_upstream(app: &Arc<App>, instance_id: &InstanceId) -> Option<Arc
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
         .get(instance_id)
-        .map(|route| Arc::clone(&route.upstream))
+        .and_then(|route| route.upstream.clone())
 }

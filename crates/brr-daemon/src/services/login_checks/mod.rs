@@ -8,6 +8,7 @@ use brr_core::{
     ConflictReason, CredentialId, Error, EventData, InstanceId, InstanceState, LoginCheck,
     LoginCheckId, LoginStatus, ProfileId, TabCloseReason, TabId, WaitUntil, now_ms,
 };
+use brr_engine::Navigated;
 use brr_engine::page::{Page, WaitCondition};
 use brr_store::{credential, login_check};
 use futures::{FutureExt, future::BoxFuture};
@@ -346,9 +347,11 @@ async fn evaluate(
             LOAD_TIMEOUT,
         )
         .await;
+    // A file instead of a page shows nothing that proves a login.
     match navigated {
-        Ok(_) => {}
-        Err(Error::NavigationFailed { .. } | Error::Timeout { .. }) => return Ok(false),
+        Ok((_, Navigated::Page)) => {}
+        Ok((_, Navigated::Download))
+        | Err(Error::NavigationFailed { .. } | Error::Timeout { .. }) => return Ok(false),
         Err(error) => return Err(error),
     }
 

@@ -110,9 +110,10 @@ fn boot() -> Result<Boot, Error> {
         settings,
         sources,
         env,
+        // `DISPLAY= brr daemon run` sets an empty value; a browser cannot use it either.
         display_env: DisplayEnv {
-            display: std::env::var_os("DISPLAY"),
-            wayland_display: std::env::var_os("WAYLAND_DISPLAY"),
+            display: std::env::var_os("DISPLAY").filter(|value| !value.is_empty()),
+            wayland_display: std::env::var_os("WAYLAND_DISPLAY").filter(|value| !value.is_empty()),
         },
         path_env: std::env::var_os("PATH").unwrap_or_default(),
         cft_base_url: brr_builds::CFT_BASE_URL.to_string(),

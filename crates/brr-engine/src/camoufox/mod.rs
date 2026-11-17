@@ -11,6 +11,7 @@ mod session;
 mod state;
 mod targets;
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs::OpenOptions;
@@ -37,7 +38,9 @@ use crate::common::{
 };
 use crate::page::{ContentOptions, Page, PageState, Session};
 use crate::xvfb::{DEFAULT_VIRTUAL_SCREEN, Xvfb};
-use crate::{CamoufoxSpec, Driver, DriverEvent, LaunchSpec, Launched};
+use crate::{
+    BROWSER_CLOSED, CamoufoxSpec, Driver, DriverEvent, LaunchSpec, Launched, Navigated, sandbox,
+};
 
 pub(crate) use session::{PageSession, init_session, utility_context};
 
@@ -51,6 +54,8 @@ const VERSION_FIELD: &str = "Version=";
 const FIRST_PAGE_WAIT: Duration = Duration::from_secs(5);
 const CLOSE_TIMEOUT: Duration = Duration::from_secs(10);
 const TAB_WAIT: Duration = Duration::from_secs(10);
+// network.proxy.type: proxies configured by hand.
+const PROXY_TYPE_MANUAL: i64 = 1;
 
 #[derive(Clone)]
 pub struct Camoufox {
@@ -122,6 +127,29 @@ fn command(spec: &LaunchSpec, camoufox: &CamoufoxSpec) -> Result<Planned, Error>
         std::fs::create_dir_all(dir).map_err(internal)?;
     }
 
+    let user_prefs = match &spec.sandbox {
+        // The relay is the container's only way out: a Profile's own proxy prefs must not route
+        // around it, and loopback goes through it as on Chromium.
+        Some(_) => {
+            let mut prefs = settings.prefs.clone();
+            prefs.extend(
+                [
+                    ("network.proxy.type", json!(PROXY_TYPE_MANUAL)),
+                    ("network.proxy.http", json!(sandbox::RELAY_HOST)),
+                    ("network.proxy.http_port", json!(sandbox::RELAY_PORT)),
+                    ("network.proxy.ssl", json!(sandbox::RELAY_HOST)),
+                    ("network.proxy.ssl_port", json!(sandbox::RELAY_PORT)),
+                    ("network.proxy.no_proxies_on", json!("")),
+                    ("network.proxy.allow_hijacking_localhost", json!(true)),
+                ]
+                .map(|(name, value)| (name.to_owned(), value)),
+            );
+
+            Cow::Owned(prefs)
+        }
+        None => Cow::Borrowed(&settings.prefs),
+    };
+
     let input = LaunchInput {
         install_dir,
         fonts_dir: &camoufox.fonts_dir,
@@ -150,7 +178,7 @@ fn command(spec: &LaunchSpec, camoufox: &CamoufoxSpec) -> Result<Planned, Error>
         headless: spec.display == Display::Headless,
         // Page::evaluate runs in the page's own world, as on Chromium.
         main_world_eval: true,
-        user_prefs: &settings.prefs,
+        user_prefs: &user_prefs,
         seed: camoufox.seed,
         work_dir: &spec.user_data_dir,
     };
@@ -243,28 +271,37 @@ impl Camoufox {
             screen,
         } = command(&spec, &camoufox)?;
         // The display is made after the plan: its screen is the one the browser will use.
-        let xvfb = if spec.display == Display::Virtual {
-            let screen = screen.unwrap_or(DEFAULT_VIRTUAL_SCREEN);
-            let xvfb = Xvfb::start(screen, &spec.instance_id, &spec.log_file).await?;
-            command
-                .env(ENV_DISPLAY, xvfb.display())
-                .env(ENV_XAUTHORITY, xvfb.auth_file())
-                .env_remove(ENV_WAYLAND_DISPLAY);
+        let screen =
+            (spec.display == Display::Virtual).then(|| screen.unwrap_or(DEFAULT_VIRTUAL_SCREEN));
+        // In the docker sandbox the runner starts Xvfb inside the container.
+        let xvfb = match (&screen, &spec.sandbox) {
+            (Some(screen), None) => {
+                let xvfb = Xvfb::start(screen.clone(), &spec.instance_id, &spec.log_file).await?;
+                command
+                    .env(ENV_DISPLAY, xvfb.display())
+                    .env(ENV_XAUTHORITY, xvfb.auth_file())
+                    .env_remove(ENV_WAYLAND_DISPLAY);
 
-            Some(xvfb)
-        } else {
-            None
+                Some(xvfb)
+            }
+            _ => None,
         };
         let xvfb_pid = xvfb.as_ref().map(Xvfb::pid);
 
-        let spawned = match brr_proto::spawn(command) {
+        let spawned = match &spec.sandbox {
+            Some(sandbox) => sandbox::start(&spec, sandbox, &command, screen).await,
+            None => brr_proto::spawn(command)
+                .map(|spawned| (spawned, None))
+                .map_err(internal),
+        };
+        let (spawned, remote) = match spawned {
             Ok(spawned) => spawned,
             Err(error) => {
                 if let Some(mut xvfb) = xvfb {
                     xvfb.stop().await;
                 }
 
-                return Err(internal(error));
+                return Err(error);
             }
         };
         let mut child = spawned.child;
@@ -328,11 +365,15 @@ impl Camoufox {
 
         Ok(Launched {
             driver: Driver::Camoufox(camoufox),
-            events,
+            events: match remote {
+                Some(remote) => remote.relay(events),
+                None => events,
+            },
             pid,
             browser_version,
             first_target_id,
             xvfb_pid,
+            tunnels: spawned.opened,
         })
     }
 
@@ -341,7 +382,7 @@ impl Camoufox {
         ready: &mut oneshot::Receiver<TargetId>,
         start_timeout: Duration,
     ) -> Result<TargetId, Error> {
-        let closed = || internal("browser closed before its first tab attached");
+        let closed = || internal(BROWSER_CLOSED);
         let timeout = |_| Error::Timeout {
             after_ms: millis(start_timeout),
         };
@@ -470,18 +511,19 @@ impl Camoufox {
         url: &str,
         wait_until: WaitUntil,
         timeout: Duration,
-    ) -> Result<(), Error> {
+    ) -> Result<Navigated, Error> {
         let (session, state) = self.attached_tab(target_id).await?;
         let started = Instant::now();
 
-        session
+        let navigated = session
             .navigate(&state.main_frame(), url, wait_until, timeout)
             .await?;
-        if wait_until == WaitUntil::Networkidle {
+        // A download's own transfer would hold the idle wait for as long as it runs.
+        if wait_until == WaitUntil::Networkidle && navigated == Navigated::Page {
             state.wait_network_idle(started, timeout).await?;
         }
 
-        Ok(())
+        Ok(navigated)
     }
 
     // Juggler answers Browser.close with an EOF, not a reply, and a hung browser answers nothing:

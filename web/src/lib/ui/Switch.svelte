@@ -1,12 +1,13 @@
 <script lang="ts">
   let {
     checked = $bindable(false),
+    name,
     label,
     hint,
     disabled,
     hideLabel = false,
     onchange,
-  }: { checked?: boolean; label: string; hint?: string; disabled?: boolean; hideLabel?: boolean; onchange?: (checked: boolean) => void } = $props();
+  }: { checked?: boolean; name?: string; label: string; hint?: string; disabled?: boolean; hideLabel?: boolean; onchange?: (checked: boolean) => void } = $props();
 
   const uid = $props.id();
 </script>
@@ -16,6 +17,7 @@
     type="button"
     role="switch"
     id="switch-{uid}"
+    {name}
     class="track"
     aria-checked={checked}
     aria-labelledby="switch-{uid}-label"

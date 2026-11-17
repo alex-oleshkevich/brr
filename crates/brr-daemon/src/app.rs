@@ -22,12 +22,14 @@ use crate::{
     services::{
         admission::Admission,
         backups::{self, Exports},
+        bitwarden::Bitwarden,
         builds::channels,
         camoufox::CamoufoxAssets,
         captcha::Captcha,
         clients::{self, Clients},
         content::Content,
         events::EventBus,
+        hosts::{self, Hosts},
         instances::Instances,
         leases::Leases,
         login_checks::LoginChecks,
@@ -37,6 +39,7 @@ use crate::{
         reaper,
         relay::Relay,
         retention,
+        sandbox::{self, Sandbox},
         screencast::Screencasts,
         secrets::{DEFAULT_KEY_SOURCE, KEY_SOURCE_SETTING, Secrets},
         storage::Storage,
@@ -88,7 +91,10 @@ pub struct App {
     pub login_checks: LoginChecks,
     pub exports: Exports,
     pub captcha: Captcha,
+    pub bitwarden: Bitwarden,
     pub camoufox: CamoufoxAssets,
+    pub sandbox: Sandbox,
+    pub hosts: Hosts,
     pub http: reqwest::Client,
     settings: RwLock<(Arc<Settings>, Sources)>,
     env: Vec<(String, String)>,
@@ -181,7 +187,10 @@ impl App {
             login_checks: LoginChecks::default(),
             exports: Exports::default(),
             captcha: Captcha::default(),
+            bitwarden: Bitwarden::default(),
             camoufox: CamoufoxAssets::default(),
+            sandbox: Sandbox::default(),
+            hosts: Hosts::default(),
             http,
             settings: RwLock::new(loaded),
             env: boot.env,
@@ -189,6 +198,9 @@ impl App {
             _lock: lock,
         });
         Supervisor::reconcile(&app).await?;
+        // Before any launch: a sweep after one would take its container.
+        sandbox::clear_leftovers(&app).await;
+        hosts::sweep_all(&app).await;
         channels::spawn(Arc::clone(&app));
         proxies::spawn_health(Arc::clone(&app));
         reaper::spawn(Arc::clone(&app));
@@ -197,6 +209,7 @@ impl App {
         LoginChecks::spawn(&app);
         backups::start_scheduler(&app);
         Captcha::start(&app);
+        Bitwarden::start(&app);
 
         Ok(app)
     }

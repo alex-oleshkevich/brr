@@ -69,6 +69,7 @@ fn scheduled_profile(app: &App, schedule: Option<&str>) -> Profile {
         name: name.to_string(),
         kind: ProfileKind::Persistent,
         template_id: None,
+        template_name: None,
         settings: ProfileSettings::default(),
         pinned: false,
         notes: String::new(),

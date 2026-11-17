@@ -84,6 +84,7 @@ async fn add_profile(app: &Arc<App>, build_id: BuildId, kind: ProfileKind, name:
         name: name.to_owned(),
         kind,
         template_id: None,
+        template_name: None,
         settings: ProfileSettings {
             build: BuildChoice::BuildId(build_id),
             display: Display::Headless,
@@ -224,6 +225,7 @@ async fn reconcile_kills_marked_browser_processes() {
         console_buffer: 1000,
         network_buffer: 1000,
         camoufox: None,
+        sandbox: None,
     })
     .await
     .unwrap();

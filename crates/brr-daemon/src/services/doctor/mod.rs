@@ -7,13 +7,18 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use brr_core::{Build, BuildState, DisplayEnv, Engine, KeySource, Paths, Settings};
+use brr_core::{
+    Build, BuildState, DisplayEnv, Engine, Error, KeySource, Paths, SandboxMode, Settings,
+};
 use brr_vault::{KeyLocation, Vault};
 use nix::{sys::statvfs::statvfs, unistd::geteuid};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::services::{host::BYTES_PER_MB, quota::BYTES_PER_GB};
+use crate::{
+    app::App,
+    services::{backups, host::BYTES_PER_MB, profiles, quota::BYTES_PER_GB, sandbox},
+};
 
 #[cfg(test)]
 mod tests;
@@ -26,6 +31,12 @@ const MAX_USERNS: &str = "/proc/sys/user/max_user_namespaces";
 const USERNS_CLONE: &str = "/proc/sys/kernel/unprivileged_userns_clone";
 const APPARMOR_USERNS: &str = "/proc/sys/kernel/apparmor_restrict_unprivileged_userns";
 const PROBE_FILE: &str = ".brr-doctor-probe";
+const UNISOLATED: &str = "browsers run unisolated; set sandbox.mode docker to isolate them";
+const NO_DESKTOP: &str = "no desktop: browsers run headless or on a virtual display; display visible needs DISPLAY or WAYLAND_DISPLAY set before the daemon starts";
+const USERNS_NOT_NEEDED: &str =
+    "not needed: the docker sandbox isolates each browser in its own container";
+const MISSING_BACKUP_PASSPHRASE: &str =
+    "set a backup passphrase in Settings → Storage, or scheduled backups won't run";
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -80,7 +91,64 @@ pub async fn checks(env: &DoctorEnv<'_>, builds: &[Build]) -> Vec<Check> {
     })
     .await;
 
-    ran.unwrap_or_else(|error| vec![check("doctor", (CheckStatus::Fail, error.to_string()))])
+    let mut checks =
+        ran.unwrap_or_else(|error| vec![check("doctor", (CheckStatus::Fail, error.to_string()))]);
+    checks.push(check("sandbox", sandbox_status(env).await));
+
+    checks
+}
+
+// Scheduled backups need the passphrase; without one the scheduler skips them, which is a setup
+// state to fix, not a failure.
+pub async fn backups_check(app: &App) -> Result<Check, Error> {
+    let scheduled = profiles::all(&app.store)
+        .await?
+        .iter()
+        .any(|found| found.backup_schedule.is_some());
+    let outcome = if !scheduled {
+        (
+            CheckStatus::Ok,
+            "no profile has a backup schedule".to_owned(),
+        )
+    } else if backups::stored_passphrase(app).await?.is_some() {
+        (CheckStatus::Ok, "backup passphrase is set".to_owned())
+    } else {
+        (CheckStatus::Warn, MISSING_BACKUP_PASSPHRASE.to_owned())
+    };
+
+    Ok(check("backups", outcome))
+}
+
+// Unisolated browsers matter once others can reach the daemon.
+async fn sandbox_status(env: &DoctorEnv<'_>) -> (CheckStatus, String) {
+    if env.settings.sandbox.mode == SandboxMode::None {
+        let status = if env.settings.server.bind.ip().is_loopback() {
+            CheckStatus::Ok
+        } else {
+            CheckStatus::Warn
+        };
+
+        return (status, UNISOLATED.to_owned());
+    }
+
+    if let Err(message) = sandbox::probe().await {
+        return (CheckStatus::Fail, message);
+    }
+    let image = match sandbox::discover()
+        .await
+        .and_then(|discovery| sandbox::image(discovery.image.as_deref(), env.settings))
+    {
+        Ok(image) => image,
+        Err(error) => return (CheckStatus::Fail, error.to_string()),
+    };
+
+    match sandbox::image_present(&image).await {
+        Ok(()) => (
+            CheckStatus::Ok,
+            format!("browsers run isolated in docker image {image}"),
+        ),
+        Err(message) => (CheckStatus::Fail, message),
+    }
 }
 
 // Only its own probe file is ever written, and it is removed at once.
@@ -100,7 +168,7 @@ fn run_checks(env: &DoctorEnv<'_>, builds: &[Build]) -> Vec<Check> {
         ),
         check("display", display_status(env.display_env)),
         check("dev_shm", dev_shm_status()),
-        check("user_namespaces", namespaces_status()),
+        check("user_namespaces", namespaces_check(env)),
         check("chromium_build", chromium_build_status(builds)),
         check("disk_floor", disk_floor_status(env)),
         check("docker", docker_status()),
@@ -232,16 +300,21 @@ fn tool_status(path_env: &OsStr, tool: &str, remedy: &str) -> (CheckStatus, Stri
     }
 }
 
+// A server without a desktop is normal: headless and virtual displays work, only visible doesn't.
 fn display_status(display_env: &DisplayEnv) -> (CheckStatus, String) {
     if display_env.display.is_some() || display_env.wayland_display.is_some() {
         return (CheckStatus::Ok, "a display is available".to_owned());
     }
 
-    (
-        CheckStatus::Warn,
-        "display visible is unavailable; set DISPLAY or WAYLAND_DISPLAY before starting the daemon"
-            .to_owned(),
-    )
+    (CheckStatus::Ok, NO_DESKTOP.to_owned())
+}
+
+fn namespaces_check(env: &DoctorEnv<'_>) -> (CheckStatus, String) {
+    if env.settings.sandbox.mode == SandboxMode::Docker {
+        return (CheckStatus::Ok, USERNS_NOT_NEEDED.to_owned());
+    }
+
+    namespaces_status()
 }
 
 fn dev_shm_status() -> (CheckStatus, String) {

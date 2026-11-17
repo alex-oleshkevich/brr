@@ -12,22 +12,23 @@ WORKDIR /src
 COPY Cargo.toml Cargo.lock justfile ./
 COPY .cargo .cargo
 COPY crates crates
+COPY skills skills
 COPY --from=ui /src/web/build web/build
+COPY --from=ui /src/extension/dist extension/dist
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
     just build-release && install -D target/release/brr /out/brr
 
 FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        tini xvfb xauth ca-certificates chromium fonts-liberation fonts-noto-color-emoji \
-        libgtk-3-0t64 libdbus-glib-1-2 libxt6t64 libasound2t64 libx11-xcb1 libpci3 \
+        tini xvfb xauth xz-utils ca-certificates chromium fonts-dejavu-core fonts-liberation fonts-noto-core fonts-noto-color-emoji \
+        libgtk-3-0t64 libdbus-glib-1-2 libxt6t64 libasound2t64 libx11-xcb1 libpci3 docker-cli \
     && rm -rf /var/lib/apt/lists/*
 RUN useradd --uid 1000 --create-home --shell /usr/sbin/nologin brr \
     && mkdir -p /data /run/brr \
     && chown brr:brr /data /run/brr \
     && chmod 0700 /run/brr
 COPY --from=build /out/brr /usr/local/bin/brr
-COPY --from=ui /src/extension/dist /usr/share/brr/extension
 # MPL-2.0 source offer for autoconsent, and Playwright's license for the injected script
 COPY crates/brr-content/vendor/autoconsent/ /usr/share/doc/brr/autoconsent/
 COPY deploy/NOTICE /usr/share/doc/brr/NOTICE

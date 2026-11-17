@@ -21,6 +21,18 @@ const NULL: &str = "null";
 const UPLOAD_DATA: &str = "data";
 const UPLOAD_NAME: &str = "name";
 const TRUE: &str = "true";
+// `--tags a,b` and `--tags a --tags b` both give two items. Only for lists of names and ids: an
+// option value or a URL may hold a comma.
+const LIST_DELIMITER: char = ',';
+const DELIMITED_LISTS: [&str; 2] = ["tags", "profile_ids"];
+// Integer flags that take a point in time; events.list `since` is an event seq, not a time.
+const EPOCH_FIELDS: [(&str, &str); 4] = [
+    ("instance.list", "since"),
+    ("instance.list", "until"),
+    ("events.list", "from_ts"),
+    ("events.list", "to_ts"),
+];
+const EPOCH_HELP: &str = "expects epoch milliseconds, e.g. 1794864186771";
 
 enum Kind {
     Text,
@@ -87,7 +99,11 @@ pub fn add(mut command: clap::Command, spec: &OperationSpec) -> clap::Command {
                 .iter()
                 .filter(|field| !spec.cli_positional.contains(&field.name.as_str()))
             {
-                command = command.arg(arg(field, false, file_ins == 1));
+                let mut flag = arg(field, false, file_ins == 1);
+                if EPOCH_FIELDS.contains(&(spec.name, field.name.as_str())) {
+                    flag = flag.value_parser(parse_epoch_ms);
+                }
+                command = command.arg(flag);
                 if clearable(spec, &fields, field) {
                     command = command.arg(clear_arg(field));
                 }
@@ -282,6 +298,9 @@ fn arg(field: &Field, positional: bool, short_i: bool) -> Arg {
             .num_args(1..)
             .action(ArgAction::Append),
         Kind::Choice(choices) => arg.value_parser(PossibleValuesParser::new(choices.clone())),
+        Kind::List if DELIMITED_LISTS.contains(&field.name.as_str()) => arg
+            .action(ArgAction::Append)
+            .value_delimiter(LIST_DELIMITER),
         Kind::List => arg.action(ArgAction::Append),
         Kind::Json => arg.value_parser(parse_json),
         Kind::FileIn { .. } => {
@@ -322,6 +341,10 @@ fn clear_arg(field: &Field) -> Arg {
         .action(ArgAction::SetTrue)
         .conflicts_with(field.name.clone())
         .help(format!("Clear {}", field.name))
+}
+
+fn parse_epoch_ms(raw: &str) -> Result<i64, String> {
+    raw.parse().map_err(|_| EPOCH_HELP.to_string())
 }
 
 fn parse_json(raw: &str) -> Result<Value, String> {

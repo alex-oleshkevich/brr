@@ -2,6 +2,7 @@ import { goto } from '$app/navigation';
 import { ApiError, api, unwrap } from '$lib/api/client';
 import { ACTIVE_STATES } from '$lib/state';
 import { toast } from '$lib/ui/toast.svelte';
+import { settingsHref } from '$lib/settings/sections';
 
 export type LaunchBody = {
   priority: number;
@@ -38,7 +39,7 @@ async function failureToast(error: unknown, name: string) {
     const description = atMax
       ? `Max browsers (${limits.max_instances}) reached. Stop a running browser or raise the limit in Capacity.`
       : `${error.message} Check the limits in Capacity.`;
-    return toast.show({ tone: 'danger', title: `Couldn't launch ${name}`, description, action: { label: 'Open Capacity', onclick: () => void goto('/limits') } });
+    return toast.show({ tone: 'danger', title: `Couldn't launch ${name}`, description, action: { label: 'Open Capacity', onclick: () => void goto(settingsHref('capacity')) } });
   }
 
   if (error.code === 'Conflict' && reason === 'profile_locked') {
@@ -48,7 +49,7 @@ async function failureToast(error: unknown, name: string) {
       tone: 'danger',
       title: `${name} is already running`,
       description: 'A persistent profile can only run one browser at a time.',
-      action: target ? { label: 'Open running browser', onclick: () => void goto('/instances/' + target.id) } : undefined,
+      action: target ? { label: 'Open running browser', onclick: () => void goto('/browsers/' + target.id) } : undefined,
     });
   }
 
@@ -109,7 +110,7 @@ export function launchProfile(profile: { id: string; name: string }, body: Launc
         tone: 'success',
         title: `Started ${name}`,
         description: "You're in control of its first tab. Release it so agents can use this browser.",
-        action: { label: 'Open', onclick: () => void goto('/instances/' + result.instance.id) },
+        action: { label: 'Open', onclick: () => void goto('/browsers/' + result.instance.id) },
       });
     },
     async (error: unknown) => {

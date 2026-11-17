@@ -209,6 +209,24 @@ async fn balance() {
 }
 
 #[tokio::test(start_paused = true)]
+async fn balance_names_a_bad_key() {
+    let (provider, _) = provider(&[(
+        "getBalance",
+        json!({"errorId": 1, "errorCode": super::KEY_MISSING}),
+    )])
+    .await;
+
+    let error = provider.balance().await.unwrap_err();
+
+    let Error::InvalidArgument { field, message } = &error else {
+        panic!("expected InvalidArgument, got {error:?}");
+    };
+    assert_eq!(field, super::API_KEY_FIELD);
+    assert!(message.contains(super::KEY_MISSING), "{message}");
+    assert!(!format!("{error} {error:?}").contains(API_KEY));
+}
+
+#[tokio::test(start_paused = true)]
 async fn oversized_reply_fails() {
     let big = "x".repeat(super::MAX_BODY_BYTES);
     let (provider, _) = provider(&[(

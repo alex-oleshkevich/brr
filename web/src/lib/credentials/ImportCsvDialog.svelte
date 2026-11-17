@@ -12,8 +12,12 @@
   let fileInput = $state<HTMLInputElement | undefined>(undefined);
   let hasFile = $state(false);
 
+  const importSummary = (imported: number, skipped: number) =>
+    `Imported ${imported} ${imported === 1 ? 'login' : 'logins'}${skipped ? `, skipped ${skipped}` : ''}`;
+
   $effect(() => {
     if (open) {
+      format = 'chrome';
       hasFile = false;
       if (fileInput) fileInput.value = '';
     }
@@ -25,7 +29,11 @@
     importing = true;
     try {
       const out = await unwrap(api.POST('/v1/credentials/import', { body: { format, file: await file.text() } }));
-      toast.success(`Imported ${out.imported} credentials, skipped ${out.skipped}`);
+      if (out.imported === 0) {
+        toast.show({ tone: 'warning', title: `No logins imported; all ${out.skipped} rows were skipped (missing fields or already present)` });
+      } else {
+        toast.success(importSummary(out.imported, out.skipped));
+      }
       open = false;
       onsaved?.();
     } catch (e) {

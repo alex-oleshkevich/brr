@@ -26,12 +26,12 @@ fn write_script(path: &Path, body: &str) {
 #[tokio::test]
 async fn detect_dedupes_symlinks() {
     let dir = tempfile::tempdir().unwrap();
-    let target = dir.path().join("google-chrome-stable");
-    write_script(&target, &format!("echo 'Google Chrome {SCRIPT_VERSION}'"));
-    std::os::unix::fs::symlink(&target, dir.path().join("google-chrome")).unwrap();
+    let target = dir.path().join("chromium");
+    write_script(&target, &format!("echo 'Chromium {SCRIPT_VERSION}'"));
+    std::os::unix::fs::symlink(&target, dir.path().join("chromium-browser")).unwrap();
     let canonical = target.canonicalize().unwrap();
 
-    // The fixed /opt path may exist on the host; only this temp dir is asserted.
+    // Chrome's vendor install at /opt may exist on the host and hides the google-chrome wrappers.
     let detected = detect_system(dir.path().as_os_str()).await;
     let ours: Vec<_> = detected
         .iter()
@@ -39,7 +39,7 @@ async fn detect_dedupes_symlinks() {
         .collect();
 
     assert_eq!(ours.len(), 1);
-    assert_eq!(ours[0].name, "Google Chrome");
+    assert_eq!(ours[0].name, "Chromium");
     assert_eq!(ours[0].version, SCRIPT_VERSION);
     assert_eq!(ours[0].path, canonical);
 }

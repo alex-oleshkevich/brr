@@ -391,6 +391,72 @@ async fn lease_ops_validate_and_page() {
 }
 
 #[tokio::test]
+async fn lease_list_includes_released_leases_of_an_instance() {
+    let (_dir, app) = scratch_app().await;
+    let a = call_client("a");
+    let b = call_client("b");
+    let (instance_id, tab_id) = seed_tab(&app, InstanceState::Running, TabState::Ready).await;
+    let (other_instance, other_tab) = seed_tab(&app, InstanceState::Running, TabState::Ready).await;
+    for (client, tab) in [(&a, tab_id), (&b, tab_id)] {
+        let acquired = call(
+            &app,
+            client,
+            "lease.acquire",
+            json!({"instance_id": instance_id, "tab_id": tab}),
+        )
+        .await
+        .unwrap();
+        call(
+            &app,
+            client,
+            "lease.release",
+            json!({"lease_id": acquired["id"]}),
+        )
+        .await
+        .unwrap();
+    }
+    call(
+        &app,
+        &a,
+        "lease.acquire",
+        json!({"instance_id": other_instance, "tab_id": other_tab}),
+    )
+    .await
+    .unwrap();
+
+    let active = call(&app, &a, "lease.list", json!({"instance_id": instance_id}))
+        .await
+        .unwrap();
+    let first = call(
+        &app,
+        &a,
+        "lease.list",
+        json!({"instance_id": instance_id, "include_released": true, "limit": 1}),
+    )
+    .await
+    .unwrap();
+    let second = call(
+        &app,
+        &a,
+        "lease.list",
+        json!({"instance_id": instance_id, "include_released": true, "limit": 1, "cursor": first["next_cursor"]}),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(active["leases"], json!([]));
+    let mut labels: Vec<&str> = [&first, &second]
+        .into_iter()
+        .map(|page| page["leases"][0]["client_label"].as_str().unwrap())
+        .collect();
+    labels.sort_unstable();
+    assert_eq!(labels, [a.label.as_str(), b.label.as_str()]);
+    assert_eq!(first["leases"][0]["client_kind"], json!(ClientKind::Mcp));
+    assert!(first["leases"][0]["released_at"].is_i64());
+    assert_eq!(second["next_cursor"], Value::Null);
+}
+
+#[tokio::test]
 async fn client_ops_create_and_end() {
     let (_dir, app) = scratch_app().await;
     let caller = call_client("caller");

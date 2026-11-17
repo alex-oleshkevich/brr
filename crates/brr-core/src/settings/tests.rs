@@ -2,10 +2,12 @@ use std::{collections::BTreeMap, fs, net::SocketAddr, path::PathBuf};
 
 use serde_json::json;
 use tempfile::TempDir;
+use test_case::test_case;
 
-use super::{LimitMode, Source, load, patch};
+use super::{LimitMode, Source, URL_MESSAGE, load, patch};
 use crate::{
-    AdmissionMode, BackendKind, CaptchaPolicy, Error, LocalTime, Settings, Theme, UsdMicros,
+    AdmissionMode, BackendKind, CaptchaPolicy, Error, LocalTime, Settings, Theme, Toolset,
+    UsdMicros,
 };
 
 const CONFIG_FILE: &str = "config.toml";
@@ -27,6 +29,14 @@ fn config_in(dir: &TempDir, text: &str) -> PathBuf {
 
 fn changes(leaf: &str, value: serde_json::Value) -> BTreeMap<String, serde_json::Value> {
     BTreeMap::from([(leaf.to_string(), value)])
+}
+
+#[test]
+fn bitwarden_defaults() {
+    let settings = Settings::default();
+
+    assert_eq!(settings.bitwarden.server_url, "https://vault.bitwarden.com");
+    assert_eq!(settings.bitwarden.sync_interval_min, 15);
 }
 
 #[test]
@@ -65,6 +75,7 @@ fn defaults_match_the_spec_table() {
     assert_eq!(settings.storage.public_endpoint, None);
     assert_eq!(settings.client.rest_idle_min, 10);
     assert_eq!(settings.client.mcp_http_idle_min, 10);
+    assert_eq!(settings.mcp.default_toolsets, Toolset::ALL);
     assert_eq!(settings.oneshot.profile, "oneshot");
     assert_eq!(settings.oneshot.pool_size, 0);
     assert_eq!(settings.oneshot.linger_s, 60);
@@ -317,6 +328,33 @@ fn env_sets_captcha_default_policy() {
     assert_eq!(sources["content.adblock_lists"], Source::Default);
 }
 
+#[test]
+fn patch_validates_mcp_default_toolsets() {
+    let dir = TempDir::new().unwrap();
+    let path = config_in(&dir, THEMED_CONFIG);
+
+    for bad in [json!([]), json!(["nope"])] {
+        let error = patch(&path, &changes("mcp.default_toolsets", bad)).unwrap_err();
+
+        assert!(
+            matches!(error, Error::InvalidArgument { ref field, .. } if field == "mcp.default_toolsets")
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), THEMED_CONFIG);
+    }
+
+    patch(
+        &path,
+        &changes("mcp.default_toolsets", json!(["browser", "system"])),
+    )
+    .unwrap();
+    let (settings, _) = load(&path, &[]).unwrap();
+
+    assert_eq!(
+        settings.mcp.default_toolsets,
+        [Toolset::Browser, Toolset::System]
+    );
+}
+
 const ZERO_MINIMUMS: [(&str, &str); 6] = [
     ("limits", "max_instances"),
     ("limits", "max_tabs_per_instance"),
@@ -361,6 +399,125 @@ fn load_and_patch_reject_zero_minimums() {
     }
 }
 
+#[test_case("instance.start_timeout_s", json!(0), "must be at least 1"; "start timeout zero")]
+#[test_case("instance.start_timeout_s", json!(3_601), "must be at most 3600"; "start timeout too long")]
+#[test_case("instance.stop_timeout_s", json!(3_601), "must be at most 3600"; "stop timeout too long")]
+#[test_case("adaptive.min_free_ram_mb", json!(1_048_577), "must be at most 1048576"; "free ram too large")]
+#[test_case("tab.console_buffer", json!(0), "must be at least 1"; "console buffer zero")]
+#[test_case("tab.network_buffer", json!(100_001), "must be at most 100000"; "network buffer too large")]
+#[test_case("admission.queue_timeout_s", json!(86_401), "must be at most 86400"; "queue timeout too long")]
+#[test_case("lease.exclusive_wait_s", json!(86_401), "must be at most 86400"; "exclusive wait too long")]
+#[test_case("idle.tab_min", json!(5_000_000_000_u64), "must be at most 4294967295"; "past the integer type")]
+#[test_case("oneshot.profile", json!(" "), "name the Profile"; "blank oneshot profile")]
+#[test_case("server.socket", json!("brr.sock"), "absolute path"; "relative socket")]
+#[test_case("builds.github_api", json!("api.github.com"), URL_MESSAGE; "url without scheme")]
+#[test_case("extensions.cws_update_url", json!("ftp://example.com"), URL_MESSAGE; "ftp url")]
+#[test_case("extensions.amo_api", json!("https://"), URL_MESSAGE; "url without host")]
+#[test_case("proxy.check_url", json!(""), URL_MESSAGE; "empty url")]
+#[test_case("captcha.provider_url", json!("file:///etc/passwd"), URL_MESSAGE; "file url")]
+#[test_case("content.adblock_lists", json!(["https://example.com/a.txt", "list.txt"]), URL_MESSAGE; "one bad list")]
+fn patch_rejects_out_of_range_values(leaf: &str, value: serde_json::Value, expected: &str) {
+    let dir = TempDir::new().unwrap();
+    let path = config_in(&dir, THEMED_CONFIG);
+
+    let error = patch(&path, &changes(leaf, value)).unwrap_err();
+
+    let Error::InvalidArgument { field, message } = error else {
+        panic!("expected InvalidArgument, got {error:?}");
+    };
+    assert_eq!(field, leaf);
+    assert!(message.contains(expected), "{message}");
+    assert_eq!(fs::read_to_string(&path).unwrap(), THEMED_CONFIG);
+}
+
+#[test_case(|s| s.sandbox.memory_mb = 255, "sandbox.memory_mb"; "memory too small")]
+#[test_case(|s| s.sandbox.memory_mb = 65_537, "sandbox.memory_mb"; "memory too large")]
+#[test_case(|s| s.sandbox.cpus = 0.05, "sandbox.cpus"; "cpus too small")]
+#[test_case(|s| s.sandbox.cpus = 64.5, "sandbox.cpus"; "cpus too large")]
+#[test_case(|s| s.sandbox.pids = 63, "sandbox.pids"; "pids too small")]
+#[test_case(|s| s.sandbox.pids = 65_537, "sandbox.pids"; "pids too large")]
+#[test_case(|s| s.sandbox.shm_mb = 63, "sandbox.shm_mb"; "shm too small")]
+#[test_case(|s| s.sandbox.shm_mb = 16_385, "sandbox.shm_mb"; "shm too large")]
+#[test_case(|s| s.sandbox.image = Some("my image".to_string()), "sandbox.image"; "image with space")]
+#[test_case(|s| s.sandbox.image = Some("  ".to_string()), "sandbox.image"; "blank image")]
+#[test_case(|s| s.sandbox.image = Some("a\nb".to_string()), "sandbox.image"; "image with control char")]
+fn validate_rejects_bad_sandbox_values(change: fn(&mut Settings), expected_field: &str) {
+    let mut settings = Settings::default();
+    settings.validate().unwrap();
+    change(&mut settings);
+
+    let error = settings.validate().unwrap_err();
+
+    let Error::InvalidArgument { field, .. } = error else {
+        panic!("expected InvalidArgument, got {error:?}");
+    };
+    assert_eq!(field, expected_field);
+}
+
+#[test_case(|s| s.bitwarden.sync_interval_min = 0, "bitwarden.sync_interval_min"; "interval zero")]
+#[test_case(|s| s.bitwarden.sync_interval_min = 1441, "bitwarden.sync_interval_min"; "interval too large")]
+#[test_case(|s| s.bitwarden.server_url = "http://vault.example.com".to_string(), "bitwarden.server_url"; "plain http")]
+#[test_case(|s| s.bitwarden.server_url = "http://localhost.evil.com".to_string(), "bitwarden.server_url"; "localhost lookalike")]
+#[test_case(|s| s.bitwarden.server_url = "https://".to_string(), "bitwarden.server_url"; "empty host")]
+#[test_case(|s| s.bitwarden.server_url = "vault.example.com".to_string(), "bitwarden.server_url"; "no scheme")]
+fn validate_rejects_bad_bitwarden_values(change: fn(&mut Settings), expected_field: &str) {
+    let mut settings = Settings::default();
+    settings.validate().unwrap();
+    change(&mut settings);
+
+    let error = settings.validate().unwrap_err();
+
+    let Error::InvalidArgument { field, .. } = error else {
+        panic!("expected InvalidArgument, got {error:?}");
+    };
+    assert_eq!(field, expected_field);
+}
+
+#[test_case("https://vault.bitwarden.eu"; "eu")]
+#[test_case("https://vault.example.com/vw"; "self hosted")]
+#[test_case("http://localhost:8080"; "localhost")]
+#[test_case("http://127.0.0.1:8222"; "loopback")]
+fn validate_accepts_bitwarden_servers(url: &str) {
+    let mut settings = Settings::default();
+    settings.bitwarden.server_url = url.to_string();
+
+    settings.validate().unwrap();
+}
+
+#[test]
+fn patch_accepts_the_range_limits_and_http_urls() {
+    let dir = TempDir::new().unwrap();
+    let path = config_in(&dir, THEMED_CONFIG);
+
+    for (leaf, value) in [
+        ("instance.start_timeout_s", json!(3_600)),
+        ("tab.console_buffer", json!(100_000)),
+        ("admission.queue_timeout_s", json!(0)),
+        ("server.socket", json!("/run/user/1000/brr/brr.sock")),
+        ("proxy.check_url", json!("http://127.0.0.1:8080/trace")),
+    ] {
+        patch(&path, &changes(leaf, value)).unwrap();
+    }
+}
+
+#[test]
+fn patch_reads_comma_separated_text_for_a_list_setting() {
+    let dir = TempDir::new().unwrap();
+    let path = config_in(&dir, THEMED_CONFIG);
+
+    patch(
+        &path,
+        &changes("mcp.default_toolsets", json!("browser, instances")),
+    )
+    .unwrap();
+    let (settings, _) = load(&path, &[]).unwrap();
+
+    assert_eq!(
+        settings.mcp.default_toolsets,
+        [Toolset::Browser, Toolset::Instances]
+    );
+}
+
 #[test]
 fn patch_keeps_a_private_config_private() {
     use std::os::unix::fs::PermissionsExt;
@@ -375,4 +532,14 @@ fn patch_keeps_a_private_config_private() {
         fs::metadata(&path).unwrap().permissions().mode() & 0o777,
         0o600
     );
+}
+
+#[test]
+fn patch_sets_sandbox_memory_alone() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join(CONFIG_FILE);
+
+    patch(&path, &changes("sandbox.memory_mb", json!(4096))).unwrap();
+
+    assert_eq!(load(&path, &[]).unwrap().0.sandbox.memory_mb, 4096);
 }

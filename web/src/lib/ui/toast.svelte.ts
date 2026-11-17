@@ -43,7 +43,7 @@ class Toasts {
       tone: 'danger',
       title: err.offline ? "Can't reach the brr daemon" : title,
       description: err.offline ? 'Check that it is running, then try again.' : description,
-      action: err.code === 'BuildMissing' ? { label: 'Open Builds', onclick: () => void goto('/builds') } : undefined,
+      action: err.code === 'BuildMissing' ? { label: 'Open Browser versions', onclick: () => void goto('/versions') } : undefined,
     });
   }
 }

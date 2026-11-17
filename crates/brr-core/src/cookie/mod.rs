@@ -34,6 +34,28 @@ pub struct Cookie {
     pub same_site: SameSite,
 }
 
+/// A cookie to set: name, value and a `domain` or `url` are required, the rest default.
+#[derive(Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct CookieInput {
+    pub name: String,
+    pub value: String,
+    /// Defaults to the host of `url`.
+    pub domain: Option<String>,
+    /// Supplies the domain, and the secure flag when it is https and `secure` is not given.
+    pub url: Option<String>,
+    /// Defaults to "/".
+    pub path: Option<String>,
+    /// Unix seconds; defaults to a session cookie.
+    pub expires: Option<f64>,
+    #[serde(rename = "httpOnly")]
+    pub http_only: Option<bool>,
+    pub secure: Option<bool>,
+    /// Defaults to Lax.
+    #[serde(rename = "sameSite")]
+    pub same_site: Option<SameSite>,
+}
+
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum JsonCookies {

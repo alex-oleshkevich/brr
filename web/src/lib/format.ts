@@ -12,6 +12,16 @@ export function bytes(n: number | null): string {
   return `${text} ${UNITS[unit]}`;
 }
 
+type Traffic = { sent_bytes: number; received_bytes: number };
+
+export const trafficTotal = (t: Traffic): number => t.sent_bytes + t.received_bytes;
+
+// A run without a forwarder has no traffic record: it was not measured, which is not zero.
+export function trafficSummary(t: Traffic | null): string {
+  if (!t) return 'Not measured';
+  return `${bytes(trafficTotal(t))} (↑ ${bytes(t.sent_bytes)} ↓ ${bytes(t.received_bytes)})`;
+}
+
 export function duration(ms: number): string {
   const minutes = Math.floor(ms / 60_000);
   const hours = Math.floor(minutes / 60);

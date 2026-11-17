@@ -34,7 +34,7 @@
       const missing = out.missing_extensions.length;
       toast.show({
         tone: 'success',
-        title: 'Profile imported',
+        title: `Profile imported as ${out.profile.name}`,
         description: missing > 0 ? `${missing} ${missing === 1 ? 'extension was' : 'extensions were'} not installed here.` : undefined,
       });
       open = false;
@@ -77,5 +77,21 @@
     flex-direction: column;
     gap: var(--space-2);
     align-items: flex-start;
+  }
+
+  input[type='file'] {
+    width: 100%;
+    height: auto;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  input[type='file']::file-selector-button {
+    margin-right: var(--space-3);
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-md);
+    font: inherit;
+    cursor: pointer;
   }
 </style>

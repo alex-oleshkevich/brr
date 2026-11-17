@@ -4,6 +4,7 @@
   import CodeBlock from '$lib/ui/CodeBlock.svelte';
   import Dialog from '$lib/ui/Dialog.svelte';
   import { profileLabel } from './actions';
+  import { settingsHref } from '$lib/settings/sections';
 
   type Instance = components['schemas']['Instance'];
 
@@ -35,7 +36,7 @@
     </section>
   </div>
   {#snippet footer()}
-    <Button href="/connect">More ways to connect</Button>
+    <Button href={settingsHref('agents')}>More ways to connect</Button>
     <Button variant="primary" onclick={() => (open = false)}>Close</Button>
   {/snippet}
 </Dialog>

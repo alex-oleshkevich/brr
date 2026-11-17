@@ -1,20 +1,31 @@
 <script lang="ts">
-  type Option = { value: string; label: string; hint?: string };
+  type Option = { value: string; label: string; hint?: string; disabled?: boolean };
 
   let {
     value = $bindable(),
+    name,
     label,
     options,
     disabled = false,
-  }: { value?: string; label: string; options: Option[]; disabled?: boolean } = $props();
+  }: { value?: string; name?: string; label: string; options: Option[]; disabled?: boolean } = $props();
 
-  let group: HTMLDivElement;
+  let group: HTMLElement;
 
   const selected = $derived(options.find((o) => o.value === value));
+  const enabled = $derived(options.flatMap((o, i) => (o.disabled ? [] : [i])));
+  // A disabled option stays reachable by Tab when it is the saved value, so the group is never unfocusable.
+  const tabStop = $derived(selected ? options.indexOf(selected) : (enabled[0] ?? 0));
 
+  function choose(option: Option) {
+    if (!option.disabled) value = option.value;
+  }
+
+  // Arrow keys move among enabled options only, wrapping at either end.
   function onkeydown(e: KeyboardEvent, index: number) {
-    const last = options.length - 1;
-    const target = { ArrowRight: index === last ? 0 : index + 1, ArrowDown: index === last ? 0 : index + 1, ArrowLeft: index === 0 ? last : index - 1, ArrowUp: index === 0 ? last : index - 1, Home: 0, End: last }[e.key];
+    if (enabled.length === 0) return;
+    const after = enabled.find((i) => i > index) ?? enabled[0];
+    const before = enabled.findLast((i) => i < index) ?? enabled[enabled.length - 1];
+    const target = { ArrowRight: after, ArrowDown: after, ArrowLeft: before, ArrowUp: before, Home: enabled[0], End: enabled[enabled.length - 1] }[e.key];
     if (target === undefined) return;
 
     e.preventDefault();
@@ -24,22 +35,24 @@
 </script>
 
 <div class="segmented">
-  <div class="track" role="radiogroup" aria-label={label} bind:this={group}>
+  <fieldset class="track" role="radiogroup" {name} aria-label={label} bind:this={group}>
     {#each options as option, index (option.value)}
       <button
         type="button"
         role="radio"
         class="item"
         aria-checked={option.value === value}
-        tabindex={option.value === value || (value === undefined && index === 0) ? 0 : -1}
+        aria-disabled={option.disabled || undefined}
+        title={option.disabled ? option.hint : undefined}
+        tabindex={index === tabStop ? 0 : -1}
         {disabled}
-        onclick={() => (value = option.value)}
+        onclick={() => choose(option)}
         onkeydown={(e) => onkeydown(e, index)}
       >
         {option.label}
       </button>
     {/each}
-  </div>
+  </fieldset>
   {#if selected?.hint}<p class="field-hint">{selected.hint}</p>{/if}
 </div>
 
@@ -54,12 +67,17 @@
   .track {
     display: inline-flex;
     height: var(--control-h-md);
+    min-inline-size: 0;
+    margin: 0;
     padding: 2px;
     background: var(--bg-muted);
+    border: 0;
     border-radius: var(--radius-md);
   }
 
   .item {
+    /* A fieldset's flex items don't stretch to its fixed height, so each item takes it directly. */
+    height: calc(var(--control-h-md) - 4px);
     padding: 0 var(--space-3);
     background: transparent;
     border: 0;
@@ -72,12 +90,17 @@
       color var(--duration-fast) var(--ease-standard);
   }
 
-  .item:disabled {
+  .item:disabled,
+  .item[aria-disabled='true'] {
     cursor: not-allowed;
+  }
+
+  .item:disabled:not([aria-checked='true']),
+  .item[aria-disabled='true']:not([aria-checked='true']) {
     opacity: 0.5;
   }
 
-  .item:hover:not(:disabled) {
+  .item:hover:not(:disabled, [aria-disabled='true']) {
     color: var(--text);
   }
 

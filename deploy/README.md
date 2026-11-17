@@ -71,4 +71,4 @@ own containers.
 
 The image ships `/usr/share/doc/brr/`: `NOTICE`, `autoconsent/` (the vendored MPL-2.0 bundle, its LICENSE and version, which
 is the source offer) and `playwright/` (Playwright's LICENSE and NOTICE for the injected script). The companion
-extension is in `/usr/share/brr/extension`.
+extension is embedded in the brr binary (`GET /v1/extensions/companion`).

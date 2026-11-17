@@ -53,6 +53,11 @@
   --neutral-border: #e4e4e7;
   --neutral-solid: #71717a;
 
+  --chart-1: #4f46e5;
+  --chart-2: #0d9488;
+  --chart-3: #d97706;
+  --chart-4: #db2777;
+
   --danger: #dc2626;
   --danger-hover: #b91c1c;
   --overlay: rgba(9, 9, 11, 0.32);
@@ -105,6 +110,11 @@
   --neutral-border: #3f3f46;
   --neutral-solid: #71717a;
 
+  --chart-1: #818cf8;
+  --chart-2: #2dd4bf;
+  --chart-3: #fbbf24;
+  --chart-4: #f472b6;
+
   --danger: #dc2626;
   --danger-hover: #b91c1c;
   --overlay: rgba(0, 0, 0, 0.6);
@@ -153,6 +163,7 @@
   --control-h-md: 32px;
   --sidebar-w: 232px;
   --topbar-h: 48px;
+  --savebar-h: 48px;
   --content-max: 1200px;
   --row-h: 40px;
   --row-h-header: 32px;

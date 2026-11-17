@@ -11,6 +11,9 @@ pub struct NavigateResult {
     pub frame_id: String,
     pub loader_id: Option<String>,
     pub error_text: Option<String>,
+    // The response is saved as a file; the frame stays on its document.
+    #[serde(default)]
+    pub is_download: bool,
 }
 
 #[derive(Deserialize)]

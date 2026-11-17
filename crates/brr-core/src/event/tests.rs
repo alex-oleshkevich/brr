@@ -66,6 +66,8 @@ fn download() -> Download {
 #[test_case(EventData::LoginPerformed { tab_id: TabId::new(), instance_id: InstanceId::new(), credential_id: CredentialId::new(), ok: true, step: None }, "login.performed", false)]
 #[test_case(EventData::LoginCheckResult { profile_id: ProfileId::new(), site: "s".into(), status: LoginStatus::Ok }, "login.check_result", false)]
 #[test_case(EventData::LoginReloginSuspended { profile_id: ProfileId::new(), site: "s".into(), failures: 3 }, "login.relogin_suspended", false)]
+#[test_case(EventData::BitwardenSynced { items: 2 }, "bitwarden.synced", false)]
+#[test_case(EventData::BitwardenSyncFailed { error: "e".into() }, "bitwarden.sync_failed", false)]
 #[test_case(EventData::ProxyHealth { proxy_id: ProxyId::new(), healthy: true, exit_ip: None, country: None, latency_ms: None }, "proxy.health", false)]
 #[test_case(EventData::LimitsChanged { keys: vec![] }, "limits.changed", false)]
 #[test_case(EventData::SettingsChanged { keys: vec![] }, "settings.changed", false)]

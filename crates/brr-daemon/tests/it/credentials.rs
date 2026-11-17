@@ -73,8 +73,8 @@ async fn create_hides_secrets() {
         .run(move |c| credential::get(c, &id))
         .await
         .unwrap();
-    let mut bytes = row.username_enc.clone();
-    bytes.extend(&row.password_enc);
+    let mut bytes = row.username_enc.clone().unwrap();
+    bytes.extend(row.password_enc.unwrap());
     bytes.extend(row.totp_enc.unwrap());
     bytes.extend(row.notes_enc.unwrap());
     for secret in [PASSWORD, TOTP, NOTES] {

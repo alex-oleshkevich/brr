@@ -50,6 +50,7 @@ const KNOWN: [&str; 15] = [
 const BAR_ROOT: (&str, &str) = ("bookmark_bar", "Bookmarks bar");
 const OTHER_ROOT: (&str, &str) = ("other", "Other bookmarks");
 const SYNCED_ROOT: (&str, &str) = ("synced", "Mobile bookmarks");
+const FOLDER_TYPE: &str = "folder";
 
 fn now_micros() -> i64 {
     let since_epoch = SystemTime::now()
@@ -372,25 +373,19 @@ pub fn add_bookmarks(user_data_dir: &Path, roots: &[Bookmark]) -> Result<u32, Er
 
     let mut next_id = max_id(&file["roots"]) + 1;
     let now = now_micros() + WEBKIT_EPOCH_OFFSET_S * MICROS;
-    let appended: Vec<&Bookmark> = roots
-        .iter()
-        .flat_map(|root| match root.url {
-            Some(_) => std::slice::from_ref(root),
-            None => root.children.as_slice(),
-        })
-        .collect();
-    let nodes: Vec<Value> = appended
-        .iter()
-        .map(|bookmark| to_node(bookmark, &mut next_id, now))
-        .collect();
-
     let Some(children) = file
         .pointer_mut("/roots/bookmark_bar/children")
         .and_then(Value::as_array_mut)
     else {
         return Err(internal("the Bookmarks file has no bookmark_bar root"));
     };
-    children.extend(nodes);
+    let added = roots
+        .iter()
+        .map(|root| match root.url {
+            Some(_) => merge(children, std::slice::from_ref(root), &mut next_id, now),
+            None => merge(children, &root.children, &mut next_id, now),
+        })
+        .sum();
 
     // The checksum is removed, never verified on load; Chromium writes a fresh one on save.
     if let Some(top) = file.as_object_mut() {
@@ -399,10 +394,41 @@ pub fn add_bookmarks(user_data_dir: &Path, roots: &[Bookmark]) -> Result<u32, Er
     let bytes = serde_json::to_vec(&file).map_err(internal)?;
     write_atomic(&bookmarks_path(user_data_dir), &bytes)?;
 
-    Ok(appended
-        .into_iter()
-        .map(|bookmark| bookmark::count(std::slice::from_ref(bookmark)))
-        .sum())
+    Ok(added)
+}
+
+// A link with the same URL and title already in the folder is skipped, and a folder of the same
+// name takes the new items, so importing a file twice adds nothing. Returns the links added.
+fn merge(children: &mut Vec<Value>, bookmarks: &[Bookmark], next_id: &mut u64, now: i64) -> u32 {
+    let mut added = 0;
+
+    for bookmark in bookmarks {
+        let existing = children.iter().position(|node| {
+            node["name"].as_str() == Some(bookmark.title.as_str())
+                && match &bookmark.url {
+                    Some(url) => node["url"].as_str() == Some(url.as_str()),
+                    None => node["type"] == FOLDER_TYPE,
+                }
+        });
+
+        match (existing, &bookmark.url) {
+            (Some(_), Some(_)) => {}
+            (Some(index), None) => {
+                if let Some(nested) = children[index]
+                    .get_mut("children")
+                    .and_then(Value::as_array_mut)
+                {
+                    added += merge(nested, &bookmark.children, next_id, now);
+                }
+            }
+            (None, _) => {
+                added += bookmark::count(std::slice::from_ref(bookmark));
+                children.push(to_node(bookmark, next_id, now));
+            }
+        }
+    }
+
+    added
 }
 
 fn empty_bookmarks() -> Value {
@@ -415,7 +441,7 @@ fn empty_bookmarks() -> Value {
                 "date_added": "0",
                 "id": (index + 1).to_string(),
                 "name": title,
-                "type": "folder",
+                "type": FOLDER_TYPE,
             }),
         );
     }
@@ -452,7 +478,7 @@ fn to_node(bookmark: &Bookmark, next_id: &mut u64, now: i64) -> Value {
             node["url"] = json!(url);
         }
         None => {
-            node["type"] = json!("folder");
+            node["type"] = json!(FOLDER_TYPE);
             node["children"] = bookmark
                 .children
                 .iter()

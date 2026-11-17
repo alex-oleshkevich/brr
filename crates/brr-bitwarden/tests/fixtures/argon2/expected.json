@@ -1,0 +1,58 @@
+{
+  "master_password": "brr-throwaway-argon2-1",
+  "email": "argon2@brr.test",
+  "client_id": "user.7f029059-2115-4bff-b442-3aa10a481fc0",
+  "client_secret": "9cBrJOJt21kPJFQXp1dLdTACyB6aoz",
+  "items": [
+    {
+      "id": "cd08ce55-2031-47d6-a0a2-968087b78a50",
+      "name": "Example login",
+      "uris": [
+        "https://example.com/login"
+      ],
+      "username": "alice@example.com",
+      "password": "Ex4mple-pässwörd!argon2",
+      "totp": null
+    },
+    {
+      "id": "bea44996-a133-42cf-9f6b-47f5d7195a7a",
+      "name": "Two URIs TOTP",
+      "uris": [
+        "https://a.example.org",
+        "https://login.example.net/signin"
+      ],
+      "username": "bob",
+      "password": "two-uri-secret-argon2",
+      "totp": "JBSWY3DPEHPK3PXP"
+    },
+    {
+      "id": "25207ca2-eb59-40f6-9887-17e5b25994ff",
+      "name": "otpauth item",
+      "uris": [
+        "https://otp.example.com"
+      ],
+      "username": "carol@example.com",
+      "password": "otp-secret-argon2",
+      "totp": "otpauth://totp/Example:carol@example.com?secret=GEZDGNBVGY3TQOJQ&issuer=Example&algorithm=SHA1&digits=6&period=30"
+    },
+    {
+      "id": "af37bb5a-dc19-4828-b202-6fe0fc2928d6",
+      "name": "Org shared login",
+      "uris": [
+        "https://shared.example.org/login"
+      ],
+      "username": "team@example.org",
+      "password": "org-shared-secret-argon2",
+      "totp": "JBSWY3DPEHPK3PXQ"
+    }
+  ],
+  "organizations": [
+    {
+      "id": "9cfc83d6-0412-42e5-8c23-559978f16697",
+      "name": "Brr Test Org",
+      "item_ids": [
+        "af37bb5a-dc19-4828-b202-6fe0fc2928d6"
+      ]
+    }
+  ]
+}

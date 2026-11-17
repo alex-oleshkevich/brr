@@ -3,7 +3,7 @@ import { session } from '$lib/api/session';
 import { SOURCE_NAMES } from '$lib/builds/labels';
 import { clock } from '$lib/clock.svelte';
 import { bytes, usd } from '$lib/format';
-import { names } from './names.svelte';
+import { ATTACHED, names } from './names.svelte';
 
 const MAX_LENGTH = 160;
 
@@ -80,7 +80,8 @@ const HUMAN_NEEDS: Record<string, string> = {
 };
 
 // The daemon words a death by its signal; a person wants "killed".
-export const plainError = (error: string): string => error.replace(/killed by signal 9\b/, 'killed').replace(/ by signal (\d+)/, ' (signal $1)');
+export const plainError = (error: string): string =>
+  error.replace(/killed by signal 9\b/, 'killed').replace(/ by signal (\d+)/, ' (signal $1)').replaceAll('`', '');
 
 export const endReason = (reason: string): string => END_REASONS[reason] ?? sentence(words(reason));
 
@@ -101,10 +102,26 @@ function host(url: string): string {
   }
 }
 
+export const CAPTCHA_TYPES: Record<string, string> = {
+  recaptcha_v2: 'reCAPTCHA v2',
+  recaptcha_v3: 'reCAPTCHA v3',
+  hcaptcha: 'hCaptcha',
+  turnstile: 'Turnstile',
+  funcaptcha: 'FunCaptcha',
+  geetest: 'GeeTest',
+  image: 'Image',
+};
+export const captchaType = (type: unknown): string => CAPTCHA_TYPES[text(type)] ?? words(type);
+
 const build = (data: Data) => `${SOURCE_NAMES[data.source as keyof typeof SOURCE_NAMES] ?? text(data.source ?? '')} ${data.version ?? ''}`.trim();
 
 function describe(e: BrrEvent, data: Data): string | null {
   const instance = () => names.instance(text(data.instance_id));
+  // Mid-sentence, a generic fallback name is not a proper noun.
+  const instanceMid = () => {
+    const name = instance();
+    return name === 'A browser' ? 'a browser' : name === ATTACHED ? 'the attached browser' : name;
+  };
   const tab = () => names.tab(text(data.tab_id));
   const profile = () => names.profile(text(data.profile_id));
 
@@ -116,6 +133,8 @@ function describe(e: BrrEvent, data: Data): string | null {
       const cause = data.reason ? `: ${plainError(text(data.reason))}` : '';
       if (to === 'failed') return `${instance()} failed to start${cause}`;
       if (to === 'crashed') return `${instance()} crashed${cause}`;
+      if (to === 'attached') return `${instance()} is connected`;
+      if (to === 'detached') return `${instance()} was detached`;
       return `${instance()} ${to === 'running' ? 'is running' : to === 'queued' ? 'is waiting to start' : words(to)}${trigger ? ` (${trigger})` : ''}`;
     }
     case 'instance.queued':
@@ -123,15 +142,15 @@ function describe(e: BrrEvent, data: Data): string | null {
     case 'instance.reaping_warning':
       return `${instance()} will stop for inactivity (${countdown(Number(data.grace_ends_at))})`;
     case 'tab.opened':
-      return `Opened ${host(text(data.url))} in ${instance()}`;
+      return `Opened ${host(text(data.url))} in ${instanceMid()}`;
     case 'tab.closed':
-      return `${tab()} closed in ${instance()} (${data.reason === 'client' && byYou(e) ? 'closed by you' : (TAB_REASONS[text(data.reason)] ?? words(data.reason))})`;
+      return `${tab()} closed in ${instanceMid()} (${data.reason === 'client' && byYou(e) ? 'closed by you' : (TAB_REASONS[text(data.reason)] ?? words(data.reason))})`;
     case 'tab.crashed':
-      return `${tab()} crashed in ${instance()}`;
+      return `${tab()} crashed in ${instanceMid()}`;
     case 'tab.reaping_warning':
-      return `${tab()} in ${instance()} will close for inactivity (${countdown(Number(data.grace_ends_at))})`;
+      return `${tab()} in ${instanceMid()} will close for inactivity (${countdown(Number(data.grace_ends_at))})`;
     case 'tab.awaiting_human':
-      return `${tab()} in ${instance()} needs ${HUMAN_NEEDS[text(data.reason)] ?? 'you'}`;
+      return `${tab()} in ${instanceMid()} needs ${HUMAN_NEEDS[text(data.reason)] ?? 'you'}`;
     case 'tab.navigated':
       return `${tab()} went to ${host(text(data.url))}`;
     case 'client.created':
@@ -140,13 +159,13 @@ function describe(e: BrrEvent, data: Data): string | null {
       if (isYou(data.client_id)) return 'A web session ended';
       return `An agent ${text(data.reason) === 'idle' ? 'timed out' : text(data.reason) === 'daemon_restart' ? 'was dropped by a daemon restart' : 'disconnected'}`;
     case 'lease.acquired':
-      return `${byYou(e) ? 'You' : 'An agent'} took ${data.tab_id ? 'a tab' : 'control'} in ${instance()}${data.exclusive ? ' exclusively' : ''}`;
+      return `${byYou(e) ? 'You' : 'An agent'} took ${data.tab_id ? 'a tab' : 'control'} in ${instanceMid()}${data.exclusive ? ' exclusively' : ''}`;
     case 'lease.released':
-      return `${data.tab_id ? 'A tab' : 'Control'} in ${instance()} was given back (${RELEASE_REASONS[text(data.reason)] ?? words(data.reason)})`;
+      return `${data.tab_id ? 'A tab' : 'Control'} in ${instanceMid()} was given back (${RELEASE_REASONS[text(data.reason)] ?? words(data.reason)})`;
     case 'lease.transferred':
       return isYou(data.to_client_id)
-        ? `You took over a tab in ${instance()}`
-        : `A tab in ${instance()} was handed back to an agent`;
+        ? `You took over a tab in ${instanceMid()}`
+        : `A tab in ${instanceMid()} was handed back to an agent`;
     case 'admission.decided':
       return `${instance()} ${ADMISSIONS[text(data.outcome)] ?? words(data.outcome)}`;
     case 'system.memory_pressure':
@@ -182,15 +201,19 @@ function describe(e: BrrEvent, data: Data): string | null {
     case 'backup.skipped':
       return `Backup of ${profile()} skipped`;
     case 'captcha.detected':
-      return `${sentence(words(data.type))} captcha on ${text(data.site)}`;
+      return `${captchaType(data.type)} captcha on ${text(data.site)}`;
     case 'captcha.solved':
-      return `Solved a ${words(data.type)} captcha on ${text(data.site)} (${usd(Number(data.cost_usd))})`;
+      return `Solved a ${captchaType(data.type)} captcha on ${text(data.site)} (${usd(Number(data.cost_usd))})`;
     case 'captcha.failed':
-      return `Couldn't solve the ${words(data.type)} captcha on ${text(data.site)}`;
+      return `Couldn't solve the ${captchaType(data.type)} captcha on ${text(data.site)}`;
     case 'captcha.budget_exhausted':
       return `Spent ${usd(Number(data.spent_usd))} on ${data.solves} solves today`;
+    case 'bitwarden.synced':
+      return `Bitwarden synced — ${data.items} logins`;
+    case 'bitwarden.sync_failed':
+      return `Bitwarden sync failed: ${text(data.error)}`;
     case 'login.performed':
-      return `Login ${data.ok ? 'succeeded' : 'failed'} in ${instance()}`;
+      return `Login ${data.ok ? 'succeeded' : 'failed'} in ${instanceMid()}`;
     case 'login.check_result':
       return `${text(data.site)} · ${profile()}: ${text(data.status)}`;
     case 'login.relogin_suspended':

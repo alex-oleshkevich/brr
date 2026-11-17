@@ -1,4 +1,4 @@
-use brr_builds::{Available, Want, available as available_builds};
+use brr_builds::{Available, Want, available as available_builds, channels};
 use brr_core::{
     Build, BuildId, BuildSource, Empty, Error, Http, Method, OperationSpec, Page, Toolset, schema,
 };
@@ -13,8 +13,6 @@ use crate::{
     app::Ctx,
     services::builds::{self, BuildView, ensure_installable, source_urls},
 };
-
-const DEFAULT_CHANNEL: &str = "stable";
 
 static LIST: OperationSpec = OperationSpec {
     name: "build.list",
@@ -248,7 +246,16 @@ fn install(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
         let want = match (input.version, input.channel) {
             (Some(version), None) => Want::Version(version),
             (None, Some(channel)) => Want::Channel(channel),
-            (None, None) => Want::Channel(DEFAULT_CHANNEL.to_string()),
+            (None, None) => {
+                let channel =
+                    channels(input.source)
+                        .first()
+                        .ok_or_else(|| Error::InvalidArgument {
+                            field: "source".to_string(),
+                            message: "this source has no channel; give a version".to_string(),
+                        })?;
+                Want::Channel((*channel).to_string())
+            }
             (Some(_), Some(_)) => {
                 return Err(Error::InvalidArgument {
                     field: "channel".to_string(),

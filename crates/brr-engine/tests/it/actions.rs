@@ -70,6 +70,7 @@ fn spec(chrome: PathBuf, dir: &Path, args: Vec<String>) -> LaunchSpec {
         console_buffer: 1000,
         network_buffer: 1000,
         camoufox: None,
+        sandbox: None,
     }
 }
 

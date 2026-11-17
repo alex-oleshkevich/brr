@@ -15,7 +15,7 @@ use std::time::Duration;
 
 use brr_core::{ProxyScheme, Secret};
 
-pub use forward::Forwarder;
+pub use forward::{Forwarder, Listen, Meter, Route};
 pub use health::{Health, check};
 
 pub const HEAD_MAX_BYTES: usize = 64 * 1024;

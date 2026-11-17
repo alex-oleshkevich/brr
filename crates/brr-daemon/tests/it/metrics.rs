@@ -12,7 +12,7 @@ use common::{KillOnDrop, add_profile, chrome_app, ctx, listen, scratch_app};
 
 const MIN_BROWSER_RSS_BYTES: u64 = 20 * 1024 * 1024;
 const CONTENT_TYPE_PREFIX: &str = "text/plain; version=0.0.4";
-const DOCTOR_CHECKS: [&str; 12] = [
+const DOCTOR_CHECKS: [&str; 14] = [
     "data_dir",
     "config_dir",
     "listen",
@@ -25,6 +25,8 @@ const DOCTOR_CHECKS: [&str; 12] = [
     "disk_floor",
     "docker",
     "xz",
+    "sandbox",
+    "backups",
 ];
 
 async fn scrape(app: &Arc<App>) -> (reqwest::header::HeaderMap, String) {

@@ -14,6 +14,7 @@ const VERSION_OUTPUT_CAP_BYTES: u64 = 4096;
 const EXECUTABLE_BITS: u32 = 0o111;
 const CHROME_NAME: &str = "Google Chrome";
 const FIXED_CHROME_PATH: &str = "/opt/google/chrome/chrome";
+const CHROME_WRAPPERS: [&str; 2] = ["google-chrome-stable", "google-chrome"];
 
 const CANDIDATES: [(&str, &str); 9] = [
     ("google-chrome-stable", "Google Chrome"),
@@ -37,17 +38,21 @@ pub struct Detected {
 pub async fn detect_system(path_env: &OsStr) -> Vec<Detected> {
     let mut found = Vec::<Detected>::new();
 
+    // The vendor binary first: distro wrappers such as Arch's /usr/bin/google-chrome-stable are
+    // scripts that a docker sandbox, which mounts only the browser's own folder, cannot run.
+    register(
+        &mut found,
+        canonical_executable(Path::new(FIXED_CHROME_PATH)),
+        CHROME_NAME,
+    )
+    .await;
+    let vendor_found = !found.is_empty();
+
     for (file, name) in CANDIDATES {
+        if vendor_found && CHROME_WRAPPERS.contains(&file) {
+            continue;
+        }
         register(&mut found, find_in_path(file, path_env), name).await;
-    }
-    // The vendor install is a fallback; a PATH entry usually symlinks to it.
-    if !found.iter().any(|detected| detected.name == CHROME_NAME) {
-        register(
-            &mut found,
-            canonical_executable(Path::new(FIXED_CHROME_PATH)),
-            CHROME_NAME,
-        )
-        .await;
     }
 
     found

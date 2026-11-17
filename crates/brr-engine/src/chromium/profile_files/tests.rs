@@ -251,3 +251,46 @@ fn bookmarks_add_keeps_top_level_links() {
     let roots = read_bookmarks(dir.path()).unwrap();
     assert_eq!(bookmark::count(&roots[0..1]), 3);
 }
+
+#[test]
+fn bookmarks_reimport_skips_what_is_already_there() {
+    let dir = profile();
+    let folder = |title: &str, children: Vec<Bookmark>| Bookmark {
+        title: title.to_owned(),
+        url: None,
+        add_date: None,
+        children,
+    };
+    let first = [folder(
+        "Bookmarks bar",
+        vec![
+            link("A", "https://a.test/"),
+            folder("Reading", vec![link("B", "https://b.test/")]),
+        ],
+    )];
+    let second = [folder(
+        "Bookmarks bar",
+        vec![
+            link("A", "https://a.test/"),
+            link("A renamed", "https://a.test/"),
+            folder(
+                "Reading",
+                vec![link("B", "https://b.test/"), link("C", "https://c.test/")],
+            ),
+        ],
+    )];
+
+    let added_first = add_bookmarks(dir.path(), &first).unwrap();
+    let added_again = add_bookmarks(dir.path(), &first).unwrap();
+    let added_second = add_bookmarks(dir.path(), &second).unwrap();
+
+    assert_eq!((added_first, added_again, added_second), (2, 0, 2));
+    let roots = read_bookmarks(dir.path()).unwrap();
+    assert_eq!(bookmark::count(&roots[0..1]), 4);
+    let folders = roots[0]
+        .children
+        .iter()
+        .filter(|child| child.url.is_none())
+        .count();
+    assert_eq!(folders, 1);
+}

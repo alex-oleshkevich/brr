@@ -4,17 +4,23 @@ use brr_core::{
     AdmissionMode, Build, BuildChoice, BuildId, BuildSource, BuildState, Capability, Client,
     ClientId, ClientKind, ConflictReason, Display, Engine, Error, Event, Instance, InstanceId,
     InstanceKind, InstanceState, Lease, LeaseId, Order, Page, Profile, ProfileId, ProfileKind,
-    ProfileSettings, ReleaseReason, Subject, SubjectType, TabId, Template, TemplateId,
+    ProfileSettings, ProxyId, ReleaseReason, SandboxMode, Subject, SubjectType, TabId, Template,
+    TemplateId, Traffic,
 };
-use brr_store::{Store, build, client, event, instance, lease, profile, secret, template};
+use brr_store::{
+    Store, build, client, event,
+    instance::{self, TrafficGroup},
+    lease, profile, secret, template,
+};
 use serde_json::json;
 use tempfile::TempDir;
 use test_case::test_case;
 
-const TABLES: [&str; 24] = [
+const TABLES: [&str; 26] = [
     "build",
     "asset",
     "template",
+    "template_extension",
     "profile",
     "profile_tag",
     "extension",
@@ -27,6 +33,7 @@ const TABLES: [&str; 24] = [
     "proxy_pool",
     "pool_member",
     "pool_sticky",
+    "host",
     "instance",
     "tab",
     "client",
@@ -72,6 +79,7 @@ fn profile_named(name: &str) -> Profile {
         name: name.to_string(),
         kind: ProfileKind::Persistent,
         template_id: None,
+        template_name: None,
         settings: ProfileSettings::default(),
         pinned: false,
         notes: String::new(),
@@ -112,6 +120,14 @@ fn instance_for(profile_id: Option<ProfileId>, state: InstanceState) -> Instance
         end_reason: None,
         error: None,
         profile_name: None,
+        settings: None,
+        template_id: None,
+        template_name: None,
+        extensions: None,
+        proxy_id: None,
+        sandbox: None,
+        traffic: None,
+        host_id: None,
         build: None,
         tab_count: 0,
         lease_count: 0,
@@ -247,6 +263,7 @@ async fn template_name_unique() {
         builtin: false,
         description: None,
         settings: ProfileSettings::default(),
+        extensions: Vec::new(),
         created_at: NOW,
         updated_at: NOW,
     };
@@ -520,6 +537,124 @@ async fn active_for_profile() {
     assert_eq!(after_stop, None);
 }
 
+#[test_case(Some(SandboxMode::Docker); "docker")]
+#[test_case(None; "none")]
+#[tokio::test]
+async fn instance_sandbox_round_trips(sandbox: Option<SandboxMode>) -> Result<(), Error> {
+    let (_dir, _db_file, store) = open();
+    let mut saved = instance_for(None, InstanceState::Running);
+    saved.sandbox = sandbox;
+    let id = saved.id;
+
+    let loaded = store
+        .run(move |c| {
+            instance::insert(c, &saved)?;
+            instance::get(c, &id)
+        })
+        .await?;
+
+    assert_eq!(loaded.sandbox, sandbox);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn instance_traffic_round_trips_and_stays_null_when_unmeasured() -> Result<(), Error> {
+    let (_dir, _db_file, store) = open();
+    let mut measured = instance_for(None, InstanceState::Running);
+    measured.traffic = Some(Traffic {
+        sent_bytes: 10,
+        received_bytes: 2_000,
+    });
+    let unmeasured = instance_for(None, InstanceState::Running);
+    let (measured_id, unmeasured_id) = (measured.id, unmeasured.id);
+
+    let (first, second) = store
+        .run(move |c| {
+            instance::insert(c, &measured)?;
+            instance::insert(c, &unmeasured)?;
+            Ok((
+                instance::get(c, &measured_id)?,
+                instance::get(c, &unmeasured_id)?,
+            ))
+        })
+        .await?;
+
+    assert_eq!(
+        first.traffic.map(|t| (t.sent_bytes, t.received_bytes)),
+        Some((10, 2_000))
+    );
+    assert_eq!(second.traffic, None);
+
+    let set = store
+        .run(move |c| {
+            let totals = Traffic {
+                sent_bytes: 5,
+                received_bytes: 7,
+            };
+            instance::set_traffic(c, &unmeasured_id, &totals)?;
+            instance::get(c, &unmeasured_id)
+        })
+        .await?;
+
+    assert_eq!(
+        set.traffic.map(|t| (t.sent_bytes, t.received_bytes)),
+        Some((5, 7))
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn traffic_totals_sum_ended_measured_runs_per_proxy_within_the_window() -> Result<(), Error> {
+    let (_dir, _db_file, store) = open();
+    let proxy_a = ProxyId::new();
+    let proxy_b = ProxyId::new();
+    let ended = |proxy: ProxyId, at: i64, bytes: Option<(u64, u64)>| {
+        let mut row = instance_for(None, InstanceState::Stopped);
+        row.proxy_id = Some(proxy);
+        row.ended_at = Some(at);
+        row.traffic = bytes.map(|(sent_bytes, received_bytes)| Traffic {
+            sent_bytes,
+            received_bytes,
+        });
+        row
+    };
+    let rows = [
+        ended(proxy_a, 100, Some((1, 10))),
+        ended(proxy_a, 200, Some((2, 20))),
+        ended(proxy_b, 300, Some((4, 40))),
+        ended(proxy_b, 50, Some((8, 80))),
+        ended(proxy_b, 300, None),
+    ];
+
+    let (totals, mut ends) = store
+        .run(move |c| {
+            rows.iter().try_for_each(|row| instance::insert(c, row))?;
+            Ok((
+                instance::traffic_totals(c, TrafficGroup::Proxy, 100)?,
+                instance::traffic_ends(c, 100, 250)?,
+            ))
+        })
+        .await?;
+
+    let summary: Vec<_> = totals
+        .iter()
+        .map(|t| (t.id.clone(), t.sent_bytes, t.received_bytes, t.runs))
+        .collect();
+    assert_eq!(
+        summary,
+        vec![
+            (proxy_b.to_string(), 4, 40, 1),
+            (proxy_a.to_string(), 3, 30, 2)
+        ]
+    );
+    ends.sort_unstable();
+    assert_eq!(ends, vec![(100, 11), (200, 22)]);
+
+    Ok(())
+}
+
 #[tokio::test]
 async fn non_final_matches_state_machine() {
     let (_dir, _db_file, store) = open();
@@ -568,15 +703,15 @@ async fn instance_list_is_newest_first_and_filters() {
                 c,
                 &instance::Filter {
                     states: vec![InstanceState::Running],
-                    profile_id: None,
+                    ..instance::Filter::default()
                 },
                 &Page::new(None, None),
             )?;
             let (mine, _) = instance::list(
                 c,
                 &instance::Filter {
-                    states: Vec::new(),
                     profile_id: Some(profile_id),
+                    ..instance::Filter::default()
                 },
                 &Page::new(None, None),
             )?;

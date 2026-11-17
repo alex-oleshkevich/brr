@@ -40,7 +40,11 @@
       const out = await unwrap(api.POST('/v1/backups/{backup_id}/restore', { params: { path: { backup_id: backup.id } }, body: { name: name.trim() } }));
       open = false;
       onrestored();
-      toast.show({ tone: 'success', title: `Restored as ${out.profile.name}`, action: { label: 'Open', onclick: () => goto(`/profiles/${out.profile.id}`) } });
+      toast.show({
+        tone: 'success',
+        title: out.profile.name !== name.trim() ? `Restored as ${out.profile.name} because ${name.trim()} is taken` : `Restored as ${out.profile.name}`,
+        action: { label: 'Open', onclick: () => goto(`/profiles/${out.profile.id}`) },
+      });
     } catch (e) {
       if (e instanceof ApiError && (e.code === 'Conflict' || (e.code === 'InvalidArgument' && e.details?.field === 'name'))) serverError = e.message;
       else toast.apiError(e, "Couldn't restore the backup");

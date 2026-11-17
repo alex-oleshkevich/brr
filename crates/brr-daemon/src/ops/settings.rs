@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use brr_core::{
-    Empty, Error, Http, Method, OperationSpec, Secret, SecretStatus, Settings, Source, Sources,
-    Toolset, schema,
+    Empty, Error, Http, Method, OperationSpec, SandboxMode, Secret, SecretStatus, Settings, Source,
+    Sources, Toolset, schema,
 };
 use futures::{FutureExt, future::BoxFuture};
 use schemars::JsonSchema;
@@ -10,10 +10,14 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::{OpRegistration, invalid, output, parse};
-use crate::{app::Ctx, services::backups::PASSPHRASE_SECRET};
+use crate::{
+    app::Ctx,
+    services::{backups::PASSPHRASE_SECRET, sandbox},
+};
 
 // The listener and the socket are bound once at start.
 const RESTART_REQUIRED: [&str; 2] = ["server.bind", "server.socket"];
+const SANDBOX_MODE: &str = "sandbox.mode";
 
 static GET: OperationSpec = OperationSpec {
     name: "settings.get",
@@ -125,6 +129,15 @@ fn set(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
                 .iter()
                 .any(|section| key.starts_with(section))
         });
+
+        // A sandbox that cannot start would fail every launch after it.
+        let to_docker = changes
+            .get(SANDBOX_MODE)
+            .and_then(|value| serde_json::from_value::<SandboxMode>(value.clone()).ok())
+            == Some(SandboxMode::Docker);
+        if to_docker && let Err(message) = sandbox::probe().await {
+            return Err(invalid(SANDBOX_MODE, &message));
+        }
 
         if !changes.is_empty() {
             ctx.app.set_settings(changes).await?;

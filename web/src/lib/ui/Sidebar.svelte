@@ -1,19 +1,22 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { page } from '$app/state';
+  import { goto } from '$app/navigation';
   import { events } from '$lib/api/events.svelte';
   import type { NavItem } from '$lib/nav';
+  import { settingsHref } from '$lib/settings/sections';
+  import Icon from './Icon.svelte';
   import StatusDot from './StatusDot.svelte';
 
   let { items, version, footer }: { items: NavItem[]; version?: string; footer?: Snippet } = $props();
 
-  const sections = ['Run', 'Set up', 'System'] as const;
+  const sections = ['Work', 'Library'] as const;
   const groups = $derived(
     sections.map((section) => ({ section, items: items.filter((item) => item.section === section) })).filter((g) => g.items.length > 0),
   );
 
   const active = (item: NavItem) =>
-    item.href === '/' ? page.url.pathname === '/' : [item.href, ...(item.also ?? [])].some((prefix) => page.url.pathname.startsWith(prefix));
+    item.href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(item.href);
   const live = $derived(events.status === 'open');
 </script>
 
@@ -34,6 +37,7 @@
 
   <div class="footer">
     {@render footer?.()}
+    <button type="button" class="nav-item settings" onclick={() => goto(settingsHref('general'), { noScroll: true, keepFocus: true })}><Icon name="settings" />Settings</button>
     <StatusDot tone={live ? 'success' : 'warning'} label={live ? 'Live' : 'Reconnecting…'} />
   </div>
 </aside>
@@ -107,6 +111,23 @@
   }
 
   .footer {
-    padding: var(--space-3) var(--space-2) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-top: var(--space-3);
+  }
+
+  .settings {
+    gap: var(--space-2);
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .footer > :global(:not(.nav-item)) {
+    margin-left: var(--space-2);
   }
 </style>

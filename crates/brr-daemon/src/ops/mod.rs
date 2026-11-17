@@ -1,6 +1,6 @@
 use std::{future::Future, panic::AssertUnwindSafe, time::Instant};
 
-use brr_core::{ClientId, Error, InstanceId, OperationSpec};
+use brr_core::{ClientId, Error, InstanceId, OperationSpec, range_message};
 use brr_store::instance;
 use futures::{FutureExt, future::BoxFuture};
 use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
@@ -14,6 +14,7 @@ use crate::{
 mod artifacts;
 mod backups;
 mod batch;
+mod bitwarden;
 mod bookmarks;
 mod builds;
 mod captcha;
@@ -23,6 +24,7 @@ mod cookies;
 mod credentials;
 mod events;
 mod extensions;
+mod hosts;
 mod instances;
 mod leases;
 mod limits;
@@ -44,6 +46,7 @@ mod tab_state;
 mod tabs;
 mod templates;
 mod tool;
+mod usage;
 
 pub(crate) use tool::TabCall;
 
@@ -134,6 +137,8 @@ pub fn parse<T: DeserializeOwned>(input: Value) -> Result<T, Error> {
             (parent, Some(name)) => format!("{parent}.{name}"),
             (_, None) => path,
         };
+
+        let message = range_message(&message).unwrap_or(message);
 
         Error::InvalidArgument { field, message }
     })

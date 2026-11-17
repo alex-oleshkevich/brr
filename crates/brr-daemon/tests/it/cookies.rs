@@ -70,6 +70,7 @@ async fn persistent_profile(app: &Arc<App>, name: &str) -> Profile {
         name: name.to_owned(),
         kind: ProfileKind::Persistent,
         template_id: None,
+        template_name: None,
         settings: ProfileSettings::default(),
         pinned: false,
         notes: String::new(),
@@ -153,6 +154,51 @@ async fn offline_roundtrip() {
     assert_eq!(after["count"], 3);
     let text = after["data"].as_str().unwrap();
     assert!(text.contains("\"a\"") && text.contains("\"b\""));
+}
+
+#[tokio::test]
+async fn bookmark_import_skips_present_and_refuses_empty_files() {
+    let (_dir, app) = scratch_app().await;
+    let profile = persistent_profile(&app, "marks").await;
+    fixture_cookies(profile.data_dir.as_ref().unwrap());
+    let exported = call(
+        &app,
+        "profile.bookmarks_export",
+        json!({"profile": "marks"}),
+    )
+    .await
+    .unwrap();
+    let import = |data: Value| {
+        call(
+            &app,
+            "profile.bookmarks_import",
+            json!({"profile": "marks", "data": data}),
+        )
+    };
+    let extra = format!(
+        "<DL><DT><A HREF=\"{BOOKMARK_URL}\">Fixture</A><DT><A HREF=\"https://new.example/\">New</A></DL>"
+    );
+
+    let reimported = import(exported["data"].clone()).await.unwrap();
+    let first = import(json!(extra)).await.unwrap();
+    let again = import(json!(extra)).await.unwrap();
+    let empty = import(json!("<p>not bookmarks</p>")).await;
+    let after = call(
+        &app,
+        "profile.bookmarks_export",
+        json!({"profile": "marks"}),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(reimported, json!({"imported": 0}));
+    assert_eq!(first, json!({"imported": 1}));
+    assert_eq!(again, json!({"imported": 0}));
+    assert!(matches!(
+        empty,
+        Err(Error::InvalidArgument { field, message }) if field == "data" && message.contains("no bookmarks found")
+    ));
+    assert_eq!(after["count"], 2);
 }
 
 #[tokio::test]

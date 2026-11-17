@@ -25,7 +25,7 @@
 
 <Dialog bind:open size="sm" title={shown?.title ?? ''} description={shown?.description} onclose={() => settle(false)}>
   {#snippet footer()}
-    <Button autofocus={shown?.tone === 'danger'} onclick={() => settle(false)}>Cancel</Button>
+    {#if !shown?.info}<Button autofocus={shown?.tone === 'danger'} onclick={() => settle(false)}>Cancel</Button>{/if}
     <Button variant={shown?.tone === 'danger' ? 'danger' : 'primary'} onclick={() => settle(true)}>
       {shown?.confirmLabel}
     </Button>

@@ -7,7 +7,8 @@ use std::{
 
 use brr_core::{
     AdmissionInputs, AdmissionMode, AdmissionOutcome, Display, EndReason, Engine, Error, EventData,
-    InstanceId, InstanceKind, InstanceState, Settings, TabState, settings::LimitMode,
+    Host, HostId, InstanceId, InstanceKind, InstanceState, SandboxMode, Settings, TabState,
+    settings::LimitMode,
 };
 use schemars::JsonSchema;
 use serde::Serialize;
@@ -23,9 +24,10 @@ use crate::{
     services::{
         MIN_CHECK_S,
         host::{self, BYTES_PER_MB},
+        hosts,
     },
 };
-use decide::{Class, Snapshot, Verdict, class, decide};
+use decide::{Class, HostLoad, Place, Snapshot, Verdict, class, decide, place};
 
 mod decide;
 
@@ -40,6 +42,8 @@ pub const RESERVATION_HOLD: Duration = Duration::from_secs(30);
 pub const EWMA_ALPHA: f64 = 0.3;
 
 pub struct AdmitRequest {
+    // The launch's sandbox, fixed before it asked: only a docker launch may go to a Host.
+    pub sandbox: SandboxMode,
     pub instance_id: InstanceId,
     pub profile_name: String,
     pub engine: Engine,
@@ -91,12 +95,14 @@ struct Admitted {
     engine: Engine,
     tags: Vec<String>,
     class: Class,
+    // None: brr's own machine.
+    host: Option<HostId>,
 }
 
 struct Waiter {
     request: AdmitRequest,
     seq: u64,
-    done: oneshot::Sender<Result<(), Error>>,
+    done: oneshot::Sender<Result<Option<Host>, Error>>,
 }
 
 // Memory one new Instance of each class is expected to need, in MB.
@@ -106,7 +112,8 @@ struct Estimates {
     camoufox: u64,
 }
 
-struct Host {
+// brr's own machine now.
+struct Local {
     free_ram_mb: u64,
     load_per_core: f64,
     // What each reapable Instance's process tree uses now: removing it frees that much, though
@@ -154,14 +161,16 @@ impl Admission {
         }
     }
 
+    // Ok(None): admitted on brr's own machine; Ok(Some(host)): admitted on that Host.
     pub async fn admit(
         &self,
         app: &Arc<App>,
         request: AdmitRequest,
         cancel: &mut Cancel,
-    ) -> Result<(), Error> {
+    ) -> Result<Option<Host>, Error> {
         let instance_id = request.instance_id;
         let settings = app.settings();
+        let hosts = candidate_hosts(app, &settings, true).await;
         let mut waiting = {
             let mut state = self.state.lock().await;
             if cancel.borrow().is_some() {
@@ -169,19 +178,20 @@ impl Admission {
             }
             // Waiters were here first: room that appeared since the last pump is theirs.
             if !state.queue.is_empty() {
-                self.pump_locked(app, &mut state).await;
+                self.pump_locked(app, &mut state, &hosts).await;
             }
-            let mut host = read_host()?;
+            let mut local = read_local()?;
             let (verdict, inputs) =
-                evaluate(&state, &settings, &host, &request, &HashSet::new(), &[]);
+                evaluate(&state, &settings, &local, &request, &HashSet::new(), &[]);
 
-            if let Verdict::Full { reason } = &verdict {
-                debug!(%instance_id, reason, "admission is full");
-            } else {
-                commit(&mut state, &request);
+            if let Some(place) = placement(&state, &request, &verdict, &inputs, &hosts) {
+                commit(&mut state, &request, place);
                 decided(app, instance_id, AdmissionOutcome::Admitted, inputs).await;
 
-                return Ok(());
+                return Ok(placed_on(&hosts, instance_id, place));
+            }
+            if let Verdict::Full { reason } = &verdict {
+                debug!(%instance_id, reason, "admission is full");
             }
 
             match request.mode {
@@ -191,9 +201,11 @@ impl Admission {
                     return Err(cap_exceeded(Some(RETRY_AFTER_S)));
                 }
                 AdmissionMode::Evict => {
-                    // No candidate: the request just queues (A2a).
-                    host.tree_mb = tree_memory(app).await;
-                    if let Some(victim) = evict_candidate(app, &state, &settings, &host, &request) {
+                    // No candidate: the request just queues (A2a). Only local runs are evicted:
+                    // the local limits are what is full.
+                    local.tree_mb = tree_memory(app).await;
+                    if let Some(victim) = evict_candidate(app, &state, &settings, &local, &request)
+                    {
                         decided(app, instance_id, AdmissionOutcome::Evicted, inputs.clone()).await;
                         state.evicting.insert(victim);
                         evict(app, victim);
@@ -255,19 +267,32 @@ impl Admission {
     }
 
     pub async fn finished(&self, app: &Arc<App>, instance_id: &InstanceId) {
+        let hosts = candidate_hosts(app, &app.settings(), false).await;
         let mut state = self.state.lock().await;
         state.reservations.remove(instance_id);
         state.evicting.remove(instance_id);
 
         if state.admitted.remove(instance_id).is_some() {
-            self.pump_locked(app, &mut state).await;
+            self.pump_locked(app, &mut state, &hosts).await;
         }
     }
 
     pub async fn pump(&self, app: &Arc<App>) {
+        let hosts = candidate_hosts(app, &app.settings(), false).await;
         let mut state = self.state.lock().await;
 
-        self.pump_locked(app, &mut state).await;
+        self.pump_locked(app, &mut state, &hosts).await;
+    }
+
+    // Admitted runs per place: None is brr's own machine.
+    pub async fn placed(&self) -> HashMap<Option<HostId>, u32> {
+        let state = self.state.lock().await;
+        let mut placed = HashMap::new();
+        for admitted in state.admitted.values() {
+            *placed.entry(admitted.host).or_default() += 1;
+        }
+
+        placed
     }
 
     pub async fn queue(&self) -> Vec<QueueEntry> {
@@ -321,9 +346,9 @@ impl Admission {
     async fn leave_queue(
         &self,
         instance_id: &InstanceId,
-        mut waiting: oneshot::Receiver<Result<(), Error>>,
+        mut waiting: oneshot::Receiver<Result<Option<Host>, Error>>,
         error: Error,
-    ) -> Result<(), Error> {
+    ) -> Result<Option<Host>, Error> {
         let mut state = self.state.lock().await;
         let queued = state
             .queue
@@ -347,43 +372,52 @@ impl Admission {
         let class = {
             let state = self.state.lock().await;
             match state.admitted.get(instance_id) {
-                Some(admitted) => admitted.class,
+                // A Host's browser is not in this machine's process tree: nothing to measure.
+                Some(admitted) if admitted.host.is_none() => Some(admitted.class),
+                Some(_) => None,
                 None => return,
             }
         };
 
-        let browsers: Vec<_> = app
-            .instances
-            .view(instance_id)
-            .and_then(|view| view.instance.pid)
-            .map(|pid| (*instance_id, pid))
-            .into_iter()
-            .collect();
-        let measured = host::pss_by_instance(browsers)
-            .await
-            .get(instance_id)
-            .copied();
+        let measured = match class {
+            Some(_) => {
+                let browsers: Vec<_> = app
+                    .instances
+                    .view(instance_id)
+                    .and_then(|view| view.instance.pid)
+                    .map(|pid| (*instance_id, pid))
+                    .into_iter()
+                    .collect();
 
+                host::pss_by_instance(browsers)
+                    .await
+                    .get(instance_id)
+                    .copied()
+            }
+            None => None,
+        };
+
+        let hosts = candidate_hosts(app, &app.settings(), false).await;
         let mut state = self.state.lock().await;
         if !state.admitted.contains_key(instance_id) {
             return;
         }
-        if let Some(bytes) = measured.filter(|bytes| *bytes > 0) {
+        if let (Some(class), Some(bytes)) = (class, measured.filter(|bytes| *bytes > 0)) {
             let estimate = state.estimates.slot(class);
             *estimate = ewma(*estimate, bytes / BYTES_PER_MB);
         }
         state.reservations.remove(instance_id);
 
-        self.pump_locked(app, &mut state).await;
+        self.pump_locked(app, &mut state, &hosts).await;
     }
 
     // Highest priority first, FIFO within a priority; a waiter the formula rejects does not
     // block the ones behind it.
-    async fn pump_locked(&self, app: &Arc<App>, state: &mut State) {
+    async fn pump_locked(&self, app: &Arc<App>, state: &mut State, hosts: &[Host]) {
         while !state.queue.is_empty() {
             let settings = app.settings();
-            let host = match read_host() {
-                Ok(host) => host,
+            let local = match read_local() {
+                Ok(local) => local,
                 Err(error) => {
                     warn!(%error, "queued instances not admitted: host not readable");
 
@@ -397,16 +431,17 @@ impl Admission {
                     let (verdict, inputs) = evaluate(
                         state,
                         &settings,
-                        &host,
+                        &local,
                         &waiter.request,
                         &HashSet::new(),
                         &[],
                     );
+                    let place = placement(state, &waiter.request, &verdict, &inputs, hosts)?;
 
-                    (verdict == Verdict::Admit).then_some((waiter.request.instance_id, inputs))
+                    Some((waiter.request.instance_id, place, inputs))
                 })
             };
-            let Some((instance_id, inputs)) = next else {
+            let Some((instance_id, place, inputs)) = next else {
                 break;
             };
 
@@ -418,10 +453,14 @@ impl Admission {
                 break;
             };
             let waiter = state.queue.remove(pos);
-            commit(state, &waiter.request);
+            commit(state, &waiter.request, place);
             decided(app, instance_id, AdmissionOutcome::Admitted, inputs).await;
 
-            if waiter.done.send(Ok(())).is_err() {
+            if waiter
+                .done
+                .send(Ok(placed_on(hosts, instance_id, place)))
+                .is_err()
+            {
                 // The caller is gone: its slot must not stay taken.
                 state.admitted.remove(&instance_id);
                 state.reservations.remove(&instance_id);
@@ -458,8 +497,9 @@ async fn timer_loop(app: Weak<App>) {
             return;
         };
         let admission = &strong.admission;
+        let hosts = candidate_hosts(&strong, &strong.settings(), false).await;
         let mut state = admission.state.lock().await;
-        admission.pump_locked(&strong, &mut state).await;
+        admission.pump_locked(&strong, &mut state, &hosts).await;
         if state.queue.is_empty() || strong.settings().limits.mode != LimitMode::Adaptive {
             state.timer_running = false;
 
@@ -489,12 +529,87 @@ fn cap_exceeded(retry_after: Option<u64>) -> Error {
     }
 }
 
-fn read_host() -> Result<Host, Error> {
-    Ok(Host {
+fn read_local() -> Result<Local, Error> {
+    Ok(Local {
         free_ram_mb: host::memory()?.available_mb,
         load_per_core: host::load_per_core()?,
         tree_mb: HashMap::new(),
     })
+}
+
+// Hosts only take browsers in the docker sandbox. `refresh` probes stale ones first, so it is
+// never set under the state lock, where a probe over SSH would stall every decision.
+async fn candidate_hosts(app: &App, settings: &Settings, refresh: bool) -> Vec<Host> {
+    if settings.sandbox.mode != SandboxMode::Docker {
+        return Vec::new();
+    }
+    let found = if refresh {
+        hosts::for_placement(app).await
+    } else {
+        hosts::cached(app).await
+    };
+
+    found.unwrap_or_else(|error| {
+        warn!(%error, "hosts not read; only this machine takes launches");
+
+        Vec::new()
+    })
+}
+
+// The local limits describe brr's own machine; each Host adds its own max_instances on top, so
+// the total is the local limits plus every Host's max. A request that fits nowhere waits,
+// fails or evicts exactly as without Hosts.
+fn placement(
+    state: &State,
+    request: &AdmitRequest,
+    verdict: &Verdict,
+    inputs: &AdmissionInputs,
+    hosts: &[Host],
+) -> Option<Place> {
+    let local_mb =
+        (*verdict == Verdict::Admit).then(|| inputs.free_ram_mb.saturating_sub(inputs.reserved_mb));
+    let estimate_mb = state.estimates.get(class(request.engine, request.display));
+
+    place(request.sandbox, local_mb, hosts, |host_id| {
+        host_load(state, host_id, estimate_mb)
+    })
+}
+
+fn host_load(state: &State, host_id: &HostId, estimate_mb: u64) -> HostLoad {
+    let on_host: Vec<&InstanceId> = state
+        .admitted
+        .iter()
+        .filter(|(_, admitted)| admitted.host.as_ref() == Some(host_id))
+        .map(|(id, _)| id)
+        .collect();
+    let reserved_mb: u64 = on_host
+        .iter()
+        .filter_map(|id| state.reservations.get(*id))
+        .sum();
+
+    HostLoad {
+        placed: count(on_host.len()),
+        reserved_mb: reserved_mb + estimate_mb,
+    }
+}
+
+fn placed_on(hosts: &[Host], instance_id: InstanceId, place: Place) -> Option<Host> {
+    let Place::Host(host_id) = place else {
+        return None;
+    };
+    let found = hosts.iter().find(|host| host.id == host_id).cloned();
+    if let Some(found) = &found {
+        info!(%instance_id, host = %found.name, "instance placed on host");
+    }
+
+    found
+}
+
+fn is_local(state: &State, instance_id: &InstanceId) -> bool {
+    state
+        .admitted
+        .get(instance_id)
+        .is_none_or(|admitted| admitted.host.is_none())
 }
 
 async fn tree_memory(app: &Arc<App>) -> HashMap<InstanceId, u64> {
@@ -528,10 +643,11 @@ fn position(queue: &[Waiter], instance_id: &InstanceId) -> u32 {
     u32::try_from(pos).unwrap_or(u32::MAX)
 }
 
+// The local limits and memory against this machine's own runs; Hosts are placement's.
 fn evaluate(
     state: &State,
     settings: &Settings,
-    host: &Host,
+    local: &Local,
     request: &AdmitRequest,
     removed: &HashSet<InstanceId>,
     ahead: &[&AdmitRequest],
@@ -545,30 +661,31 @@ fn evaluate(
     let reserved_mb: u64 = state
         .reservations
         .iter()
-        .filter(|(id, _)| !removed.contains(id))
+        .filter(|(id, _)| !removed.contains(id) && is_local(state, id))
         .map(|(_, mb)| mb)
         .sum::<u64>()
         + ahead_mb;
     // A removed Instance without a reservation has its memory counted as used in MemAvailable.
     let freed_mb: u64 = removed
         .iter()
-        .filter(|id| !state.reservations.contains_key(id))
+        .filter(|id| !state.reservations.contains_key(id) && is_local(state, id))
         .filter_map(|id| {
             let admitted = state.admitted.get(id)?;
 
             Some(
-                host.tree_mb
+                local
+                    .tree_mb
                     .get(id)
                     .copied()
                     .unwrap_or_else(|| state.estimates.get(admitted.class)),
             )
         })
         .sum();
-    let free_ram_mb = host.free_ram_mb + freed_mb;
+    let free_ram_mb = local.free_ram_mb + freed_mb;
     let admitted: Vec<(Engine, Vec<String>)> = state
         .admitted
         .iter()
-        .filter(|(id, _)| !removed.contains(id))
+        .filter(|(id, admitted)| !removed.contains(id) && admitted.host.is_none())
         .map(|(_, admitted)| (admitted.engine, admitted.tags.clone()))
         .chain(
             ahead
@@ -583,7 +700,7 @@ fn evaluate(
             admitted: &admitted,
             free_ram_mb,
             reserved_mb,
-            load_per_core: host.load_per_core,
+            load_per_core: local.load_per_core,
             estimate_mb,
         },
         request.engine,
@@ -605,10 +722,10 @@ fn evaluate(
     }
 
     let inputs = AdmissionInputs {
-        free_ram_mb: host.free_ram_mb,
+        free_ram_mb: local.free_ram_mb,
         // The candidate's own estimate is included, so the event alone proves the formula.
         reserved_mb: reserved_mb + estimate_mb,
-        load_per_core: host.load_per_core,
+        load_per_core: local.load_per_core,
         counts,
     };
 
@@ -619,7 +736,7 @@ fn count(n: usize) -> u32 {
     u32::try_from(n).unwrap_or(u32::MAX)
 }
 
-fn commit(state: &mut State, request: &AdmitRequest) {
+fn commit(state: &mut State, request: &AdmitRequest, place: Place) {
     let class = class(request.engine, request.display);
 
     state
@@ -631,6 +748,10 @@ fn commit(state: &mut State, request: &AdmitRequest) {
             engine: request.engine,
             tags: request.tags.clone(),
             class,
+            host: match place {
+                Place::Local => None,
+                Place::Host(host_id) => Some(host_id),
+            },
         },
     );
 }
@@ -642,12 +763,12 @@ fn evict_candidate(
     app: &Arc<App>,
     state: &State,
     settings: &Settings,
-    host: &Host,
+    local: &Local,
     request: &AdmitRequest,
 ) -> Option<InstanceId> {
     let ahead: Vec<&AdmitRequest> = state.queue.iter().map(|waiter| &waiter.request).collect();
     let admits = |removed: &HashSet<InstanceId>| {
-        evaluate(state, settings, host, request, removed, &ahead).0 == Verdict::Admit
+        evaluate(state, settings, local, request, removed, &ahead).0 == Verdict::Admit
     };
     if admits(&state.evicting) {
         return None;
@@ -663,6 +784,7 @@ fn evict_candidate(
                 view.instance.state,
                 InstanceState::Idle | InstanceState::Reaping
             ) && view.instance.kind == InstanceKind::Managed
+                && view.instance.host_id.is_none()
                 && !view.pinned
                 && !state.evicting.contains(&view.instance.id)
         })

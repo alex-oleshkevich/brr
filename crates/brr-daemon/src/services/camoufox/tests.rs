@@ -144,6 +144,7 @@ fn profile(kind: ProfileKind, settings: ProfileSettings) -> Profile {
         name: "geo".to_owned(),
         kind,
         template_id: None,
+        template_name: None,
         settings,
         pinned: false,
         notes: String::new(),
@@ -206,7 +207,7 @@ async fn geo_applied() {
         },
     );
     let instance_id = InstanceId::new();
-    proxies::for_launch(&app, &instance_id, &located)
+    proxies::for_launch(&app, &instance_id, &located, false)
         .await
         .unwrap()
         .unwrap();

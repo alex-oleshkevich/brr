@@ -9,7 +9,7 @@ use std::{
 use brr_core::{ProxyScheme, Secret};
 use brr_netproxy::Upstream;
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt, copy_bidirectional},
+    io::{AsyncRead, AsyncReadExt, AsyncWriteExt, copy_bidirectional},
     net::{TcpListener, TcpStream},
 };
 
@@ -29,7 +29,7 @@ pub fn upstream(scheme: ProxyScheme, addr: SocketAddr, password: &str) -> Arc<Up
     })
 }
 
-pub async fn read_head(stream: &mut TcpStream) -> String {
+pub async fn read_head<S: AsyncRead + Unpin>(stream: &mut S) -> String {
     let mut head = Vec::new();
 
     while !head.ends_with(b"\r\n\r\n") {

@@ -5,6 +5,7 @@
   let {
     value = $bindable(),
     label,
+    name,
     hideLabel = false,
     id,
     type = 'text',
@@ -23,6 +24,7 @@
     badge,
   }: {
     value?: string | number | null;
+    name?: string;
     label: string;
     hideLabel?: boolean;
     id?: string;
@@ -61,6 +63,7 @@
   <input
     class="control"
     id={inputId}
+    {name}
     {type}
     bind:value
     {placeholder}

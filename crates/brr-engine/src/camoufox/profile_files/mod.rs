@@ -380,6 +380,21 @@ fn place_id(connection: &Connection, url: &str, title: &str) -> Result<i64, Erro
     Ok(connection.last_insert_rowid())
 }
 
+fn child_folder(
+    connection: &Connection,
+    parent_id: i64,
+    title: &str,
+) -> Result<Option<i64>, Error> {
+    connection
+        .query_row(
+            "SELECT id FROM moz_bookmarks WHERE parent = ?1 AND type = ?2 AND title = ?3",
+            params![parent_id, TYPE_FOLDER, title],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(internal)
+}
+
 fn imported_folder(connection: &Connection, now: i64) -> Result<i64, Error> {
     let root_id: i64 = connection
         .query_row(
@@ -391,15 +406,7 @@ fn imported_folder(connection: &Connection, now: i64) -> Result<i64, Error> {
             field: PROFILE_FIELD.to_owned(),
             message: "this profile has no bookmarks menu yet; launch it once".to_owned(),
         })?;
-    let existing: Option<i64> = connection
-        .query_row(
-            "SELECT id FROM moz_bookmarks WHERE parent = ?1 AND type = ?2 AND title = ?3",
-            params![root_id, TYPE_FOLDER, IMPORT_FOLDER],
-            |row| row.get(0),
-        )
-        .optional()
-        .map_err(internal)?;
-    if let Some(id) = existing {
+    if let Some(id) = child_folder(connection, root_id, IMPORT_FOLDER)? {
         return Ok(id);
     }
 
@@ -414,27 +421,60 @@ fn imported_folder(connection: &Connection, now: i64) -> Result<i64, Error> {
     Ok(connection.last_insert_rowid())
 }
 
+// A link with the same URL and title already in the folder is skipped, and a folder of the same
+// name takes the new items, so importing a file twice adds nothing. Returns the links added.
+fn merge(
+    connection: &Connection,
+    parent_id: i64,
+    bookmarks: &[Bookmark],
+    now: i64,
+) -> Result<u32, Error> {
+    let mut added = 0;
+
+    for bookmark in bookmarks {
+        match &bookmark.url {
+            Some(url) => {
+                let present: bool = connection
+                    .query_row(
+                        "SELECT EXISTS (SELECT 1 FROM moz_bookmarks b JOIN moz_places p ON p.id = b.fk \
+                         WHERE b.parent = ?1 AND b.type = ?2 AND b.title = ?3 AND p.url = ?4)",
+                        params![parent_id, TYPE_BOOKMARK, bookmark.title, url],
+                        |row| row.get(0),
+                    )
+                    .map_err(internal)?;
+                if !present {
+                    insert(connection, parent_id, bookmark, now)?;
+                    added += 1;
+                }
+            }
+            None => match child_folder(connection, parent_id, &bookmark.title)? {
+                Some(folder_id) => added += merge(connection, folder_id, &bookmark.children, now)?,
+                None => {
+                    insert(connection, parent_id, bookmark, now)?;
+                    added += bookmark::count(std::slice::from_ref(bookmark));
+                }
+            },
+        }
+    }
+
+    Ok(added)
+}
+
 pub fn import_bookmarks_offline(profile_dir: &Path, html: &str) -> Result<u32, Error> {
     let roots = bookmark::from_html(html)?;
-    let imported: Vec<&Bookmark> = roots
-        .iter()
-        .flat_map(|root| match root.url {
-            Some(_) => std::slice::from_ref(root),
-            None => root.children.as_slice(),
-        })
-        .collect();
 
     let mut connection = open(profile_dir, PLACES_FILE, OpenFlags::SQLITE_OPEN_READ_WRITE)?;
     let now = now_micros();
     let transaction = connection.transaction().map_err(internal)?;
     let folder_id = imported_folder(&transaction, now)?;
-    for bookmark in &imported {
-        insert(&transaction, folder_id, bookmark, now)?;
+    let mut added = 0;
+    for root in &roots {
+        added += match root.url {
+            Some(_) => merge(&transaction, folder_id, std::slice::from_ref(root), now)?,
+            None => merge(&transaction, folder_id, &root.children, now)?,
+        };
     }
     transaction.commit().map_err(internal)?;
 
-    Ok(imported
-        .into_iter()
-        .map(|bookmark| bookmark::count(std::slice::from_ref(bookmark)))
-        .sum())
+    Ok(added)
 }

@@ -1,14 +1,35 @@
 use brr_core::{
-    Client, ClientEndReason, ClientId, ClientKind, Error, Http, Method, OperationSpec, Toolset,
-    schema,
+    Client, ClientEndReason, ClientId, ClientKind, Empty, Error, Http, Method, OperationSpec,
+    Toolset, schema,
 };
+use brr_store::{client, lease};
 use futures::{FutureExt, future::BoxFuture};
 use schemars::JsonSchema;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{OpRegistration, output, parse};
 use crate::app::Ctx;
+
+const CLIENTS_PATH: &str = "/v1/clients";
+
+static LIST: OperationSpec = OperationSpec {
+    name: "client.list",
+    group: "client",
+    toolset: Toolset::Instances,
+    summary: "List the Clients that have not ended, with how many Leases each holds",
+    http: Http {
+        method: Method::Get,
+        path: CLIENTS_PATH,
+    },
+    cli: &["client", "list"],
+    cli_positional: &[],
+    mcp_tool: Some("client_list"),
+    read_only: true,
+    capability: None,
+    input_schema: schema::<Empty>,
+    output_schema: schema::<ListOutput>,
+};
 
 static CREATE: OperationSpec = OperationSpec {
     name: "client.create",
@@ -17,7 +38,7 @@ static CREATE: OperationSpec = OperationSpec {
     summary: "Start a Client that owns Leases; it ends when its connection drops or it idles",
     http: Http {
         method: Method::Post,
-        path: "/v1/clients",
+        path: CLIENTS_PATH,
     },
     cli: &["client", "create"],
     cli_positional: &[],
@@ -47,6 +68,10 @@ static END: OperationSpec = OperationSpec {
 };
 
 inventory::submit!(OpRegistration {
+    spec: &LIST,
+    handler: list
+});
+inventory::submit!(OpRegistration {
     spec: &CREATE,
     handler: create
 });
@@ -66,6 +91,43 @@ struct CreateInput {
 #[serde(deny_unknown_fields)]
 struct EndInput {
     client_id: ClientId,
+}
+
+#[derive(Serialize, JsonSchema)]
+struct ListOutput {
+    clients: Vec<ClientView>,
+}
+
+#[derive(Serialize, JsonSchema)]
+struct ClientView {
+    #[serde(flatten)]
+    client: Client,
+    lease_count: u32,
+}
+
+fn list(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
+    async move {
+        parse::<Empty>(input)?;
+
+        let (clients, leases) = ctx
+            .app
+            .store
+            .run(|c| Ok((client::active(c)?, lease::active(c)?)))
+            .await?;
+        let clients = clients
+            .into_iter()
+            .map(|client| ClientView {
+                lease_count: leases
+                    .iter()
+                    .filter(|lease| lease.client_id == client.id)
+                    .count() as u32,
+                client,
+            })
+            .collect();
+
+        output(&ListOutput { clients })
+    }
+    .boxed()
 }
 
 fn create(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {

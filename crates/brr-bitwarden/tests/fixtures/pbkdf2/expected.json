@@ -1,0 +1,42 @@
+{
+  "master_password": "brr-throwaway-pbkdf2-1",
+  "email": "pbkdf2@brr.test",
+  "client_id": "user.0da27b32-21a4-4050-8608-ba7f845a8d47",
+  "client_secret": "cURS322eVZ9Vlsa7yMSk9MPfXn47Zp",
+  "items": [
+    {
+      "id": "fea505e5-1d51-4916-a6d4-43741da59e5f",
+      "name": "Example login",
+      "uris": [
+        "https://example.com/login"
+      ],
+      "username": "alice@example.com",
+      "password": "Ex4mple-pässwörd!pbkdf2",
+      "totp": null
+    },
+    {
+      "id": "3da215a4-b842-4445-8d18-195368c508bf",
+      "name": "Two URIs TOTP",
+      "uris": [
+        "https://a.example.org",
+        "https://login.example.net/signin"
+      ],
+      "username": "bob",
+      "password": "two-uri-secret-pbkdf2",
+      "totp": "JBSWY3DPEHPK3PXP"
+    },
+    {
+      "id": "d40f5536-3d52-443c-93af-aa444a97249d",
+      "name": "otpauth item",
+      "uris": [
+        "https://otp.example.com"
+      ],
+      "username": "carol@example.com",
+      "password": "otp-secret-pbkdf2",
+      "totp": "otpauth://totp/Example:carol@example.com?secret=GEZDGNBVGY3TQOJQ&issuer=Example&algorithm=SHA1&digits=6&period=30"
+    }
+  ],
+  "trashed_ids": [
+    "465c41b3-82c5-4b46-9653-11b275764fe5"
+  ]
+}

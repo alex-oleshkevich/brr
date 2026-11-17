@@ -1,4 +1,4 @@
-use brr_core::{Error, Lease, LeaseId, ReleaseReason};
+use brr_core::{ClientId, Error, InstanceId, Lease, LeaseId, ReleaseReason};
 use rusqlite::{Connection, Row, params};
 
 use crate::{Text, col, internal, opt_col, query};
@@ -65,6 +65,37 @@ pub fn active(c: &Connection) -> Result<Vec<Lease>, Error> {
         TABLE,
         &format!("SELECT {COLUMNS} FROM lease WHERE released_at IS NULL ORDER BY acquired_at, id"),
         [],
+        decode,
+    )
+}
+
+// Active and released Leases, keyset-paginated on (acquired_at, id) after `after`.
+pub fn history(
+    c: &Connection,
+    instance_id: Option<&InstanceId>,
+    client_id: Option<&ClientId>,
+    after: Option<(i64, LeaseId)>,
+    limit: u32,
+) -> Result<Vec<Lease>, Error> {
+    let (after_at, after_id) =
+        after.map_or((i64::MIN, String::new()), |(at, id)| (at, id.to_string()));
+
+    query(
+        c,
+        TABLE,
+        &format!(
+            "SELECT {COLUMNS} FROM lease
+             WHERE (?1 IS NULL OR instance_id = ?1) AND (?2 IS NULL OR client_id = ?2)
+               AND (acquired_at, id) > (?3, ?4)
+             ORDER BY acquired_at, id LIMIT ?5"
+        ),
+        params![
+            instance_id.map(Text),
+            client_id.map(Text),
+            after_at,
+            after_id,
+            limit
+        ],
         decode,
     )
 }

@@ -107,6 +107,10 @@ build-release-arm64:
 docker-build *ARGS:
     scripts/docker-build.sh "$@"
 
+[doc("deploy deploy/compose.yaml with uncloud and delete unused brr images on the machine (BRR_DEPLOY_SSH, BRR_DEPLOY_CONTEXT)")]
+deploy *ARGS:
+    scripts/deploy.sh "$@"
+
 [doc("regenerate deploy/seccomp-chrome.json from moby's default profile (needs network and jq)")]
 docker-seccomp:
     scripts/docker-seccomp.sh

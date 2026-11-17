@@ -70,4 +70,5 @@ fn storage_and_downloads_live_under_data() {
 
     assert_eq!(paths.storage_dir(), PathBuf::from("/d/brr/storage"));
     assert_eq!(paths.downloads_dir(), PathBuf::from("/d/brr/downloads"));
+    assert_eq!(paths.runs_dir(), PathBuf::from("/d/brr/runs"));
 }

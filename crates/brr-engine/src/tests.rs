@@ -8,9 +8,8 @@ use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, DuplexStream, ReadHalf, WriteHalf};
 use tokio::sync::mpsc;
 
-use crate::{Driver, INSTALL_HELP, LaunchSpec};
+use crate::{Driver, LaunchSpec, VISIBLE_DISPLAY, VISIBLE_DISPLAY_HELP};
 
-const DISPLAY_VAR: &str = "DISPLAY";
 const SPEC_START_TIMEOUT: Duration = Duration::from_secs(1);
 
 pub(crate) fn spec(display: Display, settings: ProfileSettings) -> LaunchSpec {
@@ -30,6 +29,7 @@ pub(crate) fn spec(display: Display, settings: ProfileSettings) -> LaunchSpec {
         console_buffer: 1000,
         network_buffer: 1000,
         camoufox: None,
+        sandbox: None,
     }
 }
 
@@ -42,8 +42,8 @@ async fn visible_needs_a_display() {
     assert_eq!(
         error,
         Some(Error::DependencyMissing {
-            name: DISPLAY_VAR.to_owned(),
-            help: INSTALL_HELP.to_owned(),
+            name: VISIBLE_DISPLAY.to_owned(),
+            help: VISIBLE_DISPLAY_HELP.to_owned(),
         })
     );
 }

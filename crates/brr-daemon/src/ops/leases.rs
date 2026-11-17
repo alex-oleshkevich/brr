@@ -2,7 +2,7 @@ use brr_core::{
     ClientId, Error, Http, InstanceId, Lease, LeaseId, Method, OperationSpec, Page, TabId,
     TabState, Toolset, schema,
 };
-use brr_store::tab;
+use brr_store::{lease, tab};
 use futures::{FutureExt, future::BoxFuture};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -17,7 +17,7 @@ static LIST: OperationSpec = OperationSpec {
     name: "lease.list",
     group: "lease",
     toolset: Toolset::Instances,
-    summary: "List active Leases, oldest first",
+    summary: "List active Leases, oldest first; include_released adds the released ones, for example to see who used a finished Instance",
     http: Http {
         method: Method::Get,
         path: "/v1/leases",
@@ -85,6 +85,8 @@ inventory::submit!(OpRegistration {
 struct ListInput {
     instance_id: Option<InstanceId>,
     client_id: Option<ClientId>,
+    #[serde(default)]
+    include_released: bool,
     limit: Option<u32>,
     cursor: Option<String>,
 }
@@ -115,13 +117,31 @@ fn list(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> {
         let page = Page::new(input.limit, input.cursor);
         let after = page.cursor.as_deref().map(parse_cursor).transpose()?;
 
-        let mut leases = ctx
-            .app
-            .leases
-            .list(input.instance_id.as_ref(), input.client_id.as_ref())
-            .await;
-        leases.sort_by_key(|l| (l.acquired_at, l.id));
-        leases.retain(|l| after.is_none_or(|after| (l.acquired_at, l.id) > after));
+        let mut leases = if input.include_released {
+            let limit = page.limit + 1;
+            ctx.app
+                .store
+                .run(move |c| {
+                    lease::history(
+                        c,
+                        input.instance_id.as_ref(),
+                        input.client_id.as_ref(),
+                        after,
+                        limit,
+                    )
+                })
+                .await?
+        } else {
+            let mut leases = ctx
+                .app
+                .leases
+                .list(input.instance_id.as_ref(), input.client_id.as_ref())
+                .await;
+            leases.sort_by_key(|l| (l.acquired_at, l.id));
+            leases.retain(|l| after.is_none_or(|after| (l.acquired_at, l.id) > after));
+
+            leases
+        };
 
         let limit = page.limit as usize;
         let has_more = leases.len() > limit;
@@ -231,7 +251,7 @@ fn parse_cursor(cursor: &str) -> Result<(i64, LeaseId), Error> {
     parsed.ok_or_else(|| {
         invalid(
             "cursor",
-            "not a cursor from a previous page; start again without one",
+            "not a cursor from a previous page; pass next_cursor from the previous page, or omit cursor for the first page",
         )
     })
 }

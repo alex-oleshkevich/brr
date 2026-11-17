@@ -3,7 +3,7 @@ use std::{net::IpAddr, sync::Arc, time::Instant};
 use reqwest::{Client, Proxy};
 use tracing::debug;
 
-use crate::{CHECK_TIMEOUT, Forwarder, Upstream};
+use crate::{CHECK_TIMEOUT, Forwarder, Listen, Meter, Route, Upstream};
 
 #[cfg(test)]
 mod tests;
@@ -32,9 +32,13 @@ pub struct Health {
 
 // The Err is one plain sentence for the person looking at the proxy list.
 pub async fn check(upstream: Arc<Upstream>, check_url: &str) -> Result<Health, String> {
-    let forwarder = Forwarder::start(upstream)
-        .await
-        .map_err(|error| format!("could not start the local forwarder: {error}"))?;
+    let forwarder = Forwarder::start(
+        Route::Upstream(upstream),
+        Listen::Loopback,
+        Arc::new(Meter::default()),
+    )
+    .await
+    .map_err(|error| format!("could not start the local forwarder: {error}"))?;
     let unhealthy = |error: reqwest::Error| {
         let reason = failure_reason(&error);
         debug!(
@@ -45,7 +49,7 @@ pub async fn check(upstream: Arc<Upstream>, check_url: &str) -> Result<Health, S
         reason
     };
     let client = Client::builder()
-        .proxy(Proxy::all(forwarder.url()).map_err(unhealthy)?)
+        .proxy(Proxy::all(forwarder.url().unwrap_or_default()).map_err(unhealthy)?)
         .timeout(CHECK_TIMEOUT)
         .build()
         .map_err(unhealthy)?;

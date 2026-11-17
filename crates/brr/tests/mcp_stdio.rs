@@ -192,6 +192,12 @@ fn tools_list_system() {
         [
             "events_list",
             "events_watch",
+            "host_check",
+            "host_create",
+            "host_delete",
+            "host_get",
+            "host_list",
+            "host_update",
             "settings_get",
             "settings_set",
             "system_doctor",

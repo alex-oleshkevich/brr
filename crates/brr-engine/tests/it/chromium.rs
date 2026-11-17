@@ -1,5 +1,7 @@
 #![allow(clippy::unwrap_used, clippy::disallowed_macros)]
 
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -7,7 +9,7 @@ use brr_core::{
     Cookie, Display, DisplayEnv, Engine, Error, InstanceId, ProfileSettings, SameSite, TargetId,
     WaitUntil,
 };
-use brr_engine::{Driver, DriverEvent, LaunchSpec, Launched, profile_files};
+use brr_engine::{Driver, DriverEvent, LaunchSpec, Launched, Navigated, profile_files};
 use tempfile::TempDir;
 use tokio::sync::mpsc::Receiver;
 
@@ -18,6 +20,7 @@ const NAVIGATE_TIMEOUT: Duration = Duration::from_secs(10);
 const PAGE_URL: &str = "data:text/html,<title>t</title>hi";
 const BLANK: &str = "about:blank";
 const UNRESOLVABLE_URL: &str = "http://nonexistent.invalid/";
+const ATTACHMENT_BODY: &str = "saved, not shown";
 
 pub fn chrome() -> Option<PathBuf> {
     let chrome = std::env::var_os(CHROME_ENV).map(PathBuf::from);
@@ -45,6 +48,7 @@ pub fn spec(chrome: PathBuf, dir: &Path, instance_id: InstanceId) -> LaunchSpec 
         console_buffer: 1000,
         network_buffer: 1000,
         camoufox: None,
+        sandbox: None,
     }
 }
 
@@ -147,6 +151,60 @@ async fn navigate_waits_for_load_and_reports_errors() {
     assert!(
         matches!(error, Error::NavigationFailed { net_error } if net_error.contains("ERR_NAME_NOT_RESOLVED"))
     );
+
+    stop(&launched.driver, &mut launched.events).await;
+}
+
+// Answers every request with a file to save.
+fn serve_attachment() -> String {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    std::thread::spawn(move || {
+        for mut stream in listener.incoming().flatten() {
+            let mut request = [0_u8; 4096];
+            let _ = stream.read(&mut request);
+            let _ = write!(
+                stream,
+                "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Disposition: attachment; filename=f.bin\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{ATTACHMENT_BODY}",
+                ATTACHMENT_BODY.len()
+            );
+        }
+    });
+
+    format!("http://{address}/file")
+}
+
+#[tokio::test]
+async fn navigating_to_a_download_succeeds_and_keeps_the_page() {
+    let Some(chrome) = chrome() else { return };
+    let dir = TempDir::new().unwrap();
+    let mut launched = Driver::launch(spec(chrome, dir.path(), InstanceId::new()))
+        .await
+        .unwrap();
+    let target_id = open_attached(&mut launched).await;
+    let file = serve_attachment();
+    let loaded = launched
+        .driver
+        .navigate(&target_id, PAGE_URL, WaitUntil::Load, NAVIGATE_TIMEOUT)
+        .await
+        .unwrap();
+
+    let navigated = launched
+        .driver
+        .navigate(&target_id, &file, WaitUntil::Load, NAVIGATE_TIMEOUT)
+        .await
+        .unwrap();
+
+    assert_eq!(loaded, Navigated::Page);
+    assert_eq!(navigated, Navigated::Download);
+    wait_for(
+        &mut launched.events,
+        |event| matches!(event, DriverEvent::DownloadStarted { url, .. } if *url == file),
+    )
+    .await;
+    let page = launched.driver.page(&target_id).unwrap();
+    let title = page.evaluate("document.title", NAVIGATE_TIMEOUT).await;
+    assert_eq!(title.unwrap().as_str(), Some("t"));
 
     stop(&launched.driver, &mut launched.events).await;
 }

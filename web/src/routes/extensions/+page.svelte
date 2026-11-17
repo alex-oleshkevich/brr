@@ -2,10 +2,11 @@
   import { api, unwrap } from '$lib/api/client';
   import { liveQuery } from '$lib/api/live.svelte';
   import AddExtensionDialog from '$lib/extensions/AddExtensionDialog.svelte';
-  import { clock } from '$lib/clock.svelte';
-  import { relative } from '$lib/format';
-  import Badge from '$lib/ui/Badge.svelte';
+  import AddToTemplatesDialog from '$lib/extensions/AddToTemplatesDialog.svelte';
+  import { templateTitle } from '$lib/config/templates';
+
   import Button from '$lib/ui/Button.svelte';
+  import Dialog from '$lib/ui/Dialog.svelte';
   import Menu from '$lib/ui/Menu.svelte';
   import PageHeader from '$lib/ui/PageHeader.svelte';
   import Table from '$lib/ui/Table.svelte';
@@ -23,13 +24,17 @@
 
   let adding = $state(false);
   let updating = $state<string | null>(null);
+  let addingToTemplates = $state<ExtensionView | null>(null);
+  let addToTemplatesOpen = $state(false);
 
   const list = liveQuery(async () => (await unwrap(api.GET('/v1/extensions'))).extensions, { kinds: ['extension.*'] });
+  const templates = liveQuery(async () => (await unwrap(api.GET('/v1/templates'))).templates, { kinds: [] });
+  const templateName = (id: string) => {
+    const found = (templates.data ?? []).find((t) => t.id === id);
+    return found ? templateTitle(found) : id;
+  };
 
-  function updatedAt(ext: ExtensionView): number | null {
-    if (ext.versions.length === 0) return null;
-    return Math.max(...ext.versions.map((v) => v.fetched_at));
-  }
+
 
   async function checkUpdate(ext: ExtensionView) {
     if (updating) return;
@@ -44,11 +49,25 @@
     }
   }
 
+  function openAddToTemplates(ext: ExtensionView) {
+    addingToTemplates = ext;
+    addToTemplatesOpen = true;
+  }
+
+  let refusing = $state<ExtensionView | null>(null);
+  let refusalOpen = $state(false);
+
   async function remove(ext: ExtensionView) {
-    const using = ext.profiles.map((p) => p.name).join(', ');
+    // The daemon refuses while a Profile enables it; say so up front instead of confirming first.
+    if (ext.profiles.length > 0) {
+      refusing = ext;
+      refusalOpen = true;
+      return;
+    }
+    const templateNames = (ext.template_ids ?? []).map(templateName);
     const ok = await confirm({
       title: `Remove ${ext.name}?`,
-      description: using ? `It's turned on for ${using}. Removing it turns it off there.` : "It's removed from your extensions.",
+      description: templateNames.length > 0 ? `It is removed from these templates, and they lose it: ${templateNames.join(', ')}.` : "It's removed from your extensions.",
       confirmLabel: 'Remove extension',
       tone: 'danger',
     });
@@ -63,22 +82,38 @@
   }
 </script>
 
-<PageHeader title="Extensions" description="Add-ons your profiles can use. Add one here, then turn it on in a profile's settings.">
+<PageHeader title="Extensions" description="Add-ons your templates and profiles can use. Add one here, then turn it on in a template or profile.">
   {#snippet actions()}
     <Button variant="primary" icon="plus" onclick={() => (adding = true)}>Add extension</Button>
   {/snippet}
 </PageHeader>
 
 <AddExtensionDialog bind:open={adding} onadded={() => list.reload()} />
+<AddToTemplatesDialog bind:open={addToTemplatesOpen} extension={addingToTemplates} onsaved={() => { templates.reload(); list.reload(); }} />
+
+{#if refusalOpen && refusing}
+  <Dialog bind:open={refusalOpen} title="Can't remove {refusing.name} yet">
+    <p>These profiles have it turned on. Turn it off in each profile first, then remove it:</p>
+    <ul class="profiles">
+      {#each refusing.profiles as p (p.id)}
+        <li><a href="/profiles/{p.id}?tab=settings">{p.name}</a></li>
+      {/each}
+    </ul>
+    {#snippet footer()}
+      <Button variant="primary" onclick={() => (refusalOpen = false)}>Close</Button>
+    {/snippet}
+  </Dialog>
+{/if}
 
 <Table
   caption="Extensions"
   columns={[
-    { key: 'name', label: 'Extension', width: '28%' },
-    { key: 'engine', label: 'Works in', width: '14%' },
-    { key: 'version', label: 'Version', width: '14%' },
-    { key: 'profiles', label: 'Used by', width: '14%' },
-    { key: 'updated', label: 'Updated', width: '14%' },
+    { key: 'name', label: 'Name', width: '24%' },
+    { key: 'engine', label: 'Engine', width: '14%' },
+    { key: 'source', label: 'Source', width: '14%' },
+    { key: 'version', label: 'Version', width: '10%' },
+    { key: 'templates', label: 'Templates using it', width: '17%' },
+    { key: 'profiles', label: 'Profiles using it', width: '17%' },
     { key: 'actions', label: 'Actions', width: '48px', srOnly: true },
   ]}
   rows={list.data}
@@ -90,20 +125,27 @@
 >
   {#snippet row(ext: ExtensionView)}
     <td>
-      <span class="name">
-        <span class="truncate">{ext.name}</span>
-        <Badge>{SOURCE_LABELS[ext.source]}</Badge>
-      </span>
+      <span class="truncate">{ext.name}</span>
     </td>
-    <td>{ext.engine === 'camoufox' ? 'Camoufox' : 'Chrome-based browsers'}</td>
+    <td>{ext.engine === 'camoufox' ? 'Camoufox' : 'Chromium'}</td>
+    <td>{SOURCE_LABELS[ext.source]}</td>
     <td class="num">{ext.latest_version ?? '—'}</td>
-    <td class="truncate" title={ext.profiles.map((p) => p.name).join(', ') || undefined}>{ext.profiles.length === 0 ? 'No profile yet' : ext.profiles.map((p) => p.name).join(', ')}</td>
-    <td>{updatedAt(ext) ? relative(updatedAt(ext) as number, clock.now) : '—'}</td>
+    <td class="truncate" title={(ext.template_ids ?? []).map(templateName).join(', ') || undefined}>
+      {(ext.template_ids ?? []).length === 0 ? 'None' : (ext.template_ids ?? []).map(templateName).join(', ')}
+    </td>
+    <td class="truncate" title={ext.profiles.map((p) => p.name).join(', ') || undefined}>{ext.profiles.length === 0 ? 'None' : ext.profiles.map((p) => p.name).join(', ')}</td>
+
     <td>
       <Menu
         label="Actions for {ext.name}"
         items={[
-          { label: 'Check for updates', onselect: () => checkUpdate(ext) },
+          {
+            label: updating === ext.id ? 'Updating…' : 'Update',
+            disabled: updating === ext.id || ext.source === 'local',
+            hint: ext.source === 'local' ? "Local-file extensions can't be checked for updates." : undefined,
+            onselect: () => checkUpdate(ext),
+          },
+          { label: 'Add to templates…', onselect: () => openAddToTemplates(ext) },
           { label: 'Remove…', onselect: () => remove(ext) },
         ]}
       />
@@ -112,10 +154,10 @@
 </Table>
 
 <style>
-  .name {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-width: 0;
+  .profiles {
+    margin: var(--space-3) 0 0;
+    padding-left: var(--space-5);
   }
 </style>
+
+

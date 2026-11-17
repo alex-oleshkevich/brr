@@ -19,17 +19,17 @@ pub fn command() -> Command {
     Command::new(NAME)
         .about("Serve MCP over stdio, forwarding to the daemon")
         .arg(
-            Arg::new(TOOLSETS)
-                .long(TOOLSETS)
-                .help("Comma-separated toolsets to expose; default all"),
+            Arg::new(TOOLSETS).long(TOOLSETS).help(
+                "Comma-separated toolsets to expose; default: the mcp.default_toolsets setting",
+            ),
         )
 }
 
 pub async fn run(boot: &Boot, matches: &ArgMatches) -> anyhow::Result<()> {
-    let toolsets = matches
-        .get_one::<String>(TOOLSETS)
-        .map(|list| Toolset::parse_list(list))
-        .transpose()?;
+    let toolsets = match matches.get_one::<String>(TOOLSETS) {
+        Some(list) => Toolset::parse_list(list)?,
+        None => boot.settings.mcp.default_toolsets.clone(),
+    };
 
     let mut terminate = signal(SignalKind::terminate())?;
 
@@ -57,7 +57,7 @@ pub async fn run(boot: &Boot, matches: &ArgMatches) -> anyhow::Result<()> {
     // socket closes and the daemon releases its Leases.
     forwarder.client_id().await?;
 
-    let server = McpServer::new(Backend::Forward(forwarder), toolsets);
+    let server = McpServer::new(Backend::Forward(forwarder), Some(toolsets));
     let running = server
         .serve(stdio())
         .await

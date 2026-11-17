@@ -52,7 +52,8 @@ async fn a_failing_step_stops_the_batch() {
         .unwrap();
 
     assert_eq!(output["total"], 3);
-    assert_eq!(output["completed"], 0);
+    assert_eq!(output["completed"], 1);
+    assert_eq!(output["failed"], 1);
     assert_eq!(output["stopped"], "error");
     assert_eq!(output["results"].as_array().unwrap().len(), 1);
     assert_eq!(output["results"][0]["ok"], false);
@@ -66,7 +67,8 @@ async fn continue_on_error_runs_every_step() {
         .await
         .unwrap();
 
-    assert_eq!(output["completed"], 0);
+    assert_eq!(output["completed"], 3);
+    assert_eq!(output["failed"], 3);
     assert_eq!(output["stopped"], Value::Null);
     assert_eq!(output["results"].as_array().unwrap().len(), 3);
 }

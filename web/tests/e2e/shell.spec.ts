@@ -5,62 +5,48 @@ const AGENT_LABEL = 'e2e-shell-agent';
 const address = (page: Page) => page.getByRole('textbox', { name: 'Address', exact: true });
 const NEEDS_YOU_TITLE = '(1) Needs you · ';
 
-test('navigation uses the UI words and groups', async ({ page, pageErrors }) => {
+test('navigation has the eight items in two groups, and Settings opens the dialog', async ({ page, pageErrors }) => {
   await page.goto('/');
   await ready(page);
 
   const nav = page.getByRole('navigation', { name: 'Main' });
-  for (const label of ['Dashboard', 'Browsers', 'Activity', 'Files', 'Connect an agent', 'Profiles', 'Proxies', 'Logins', 'Extensions', 'Browser versions', 'Captcha', 'Capacity', 'Storage', 'Settings']) {
-    await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
-  }
-  for (const old of ['Instances', 'Events', 'Builds', 'Credentials', 'Limits', 'Templates']) {
+  const items = ['Overview', 'Browsers', 'History', 'Profiles', 'Templates', 'Extensions', 'Logins', 'Browser versions'];
+  await expect(nav.getByRole('link')).toHaveText(items);
+  for (const old of ['Dashboard', 'Instances', 'Events', 'Activity', 'Files', 'Connect an agent', 'Builds', 'Credentials', 'Limits', 'Proxies', 'Captcha', 'Capacity', 'Storage', 'Settings']) {
     await expect(nav.getByRole('link', { name: old, exact: true })).toHaveCount(0);
   }
-  for (const group of ['Run', 'Set up', 'System']) await expect(nav.getByText(group, { exact: true })).toBeVisible();
+  for (const group of ['Work', 'Library']) await expect(nav.getByText(group, { exact: true })).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute('aria-current', 'page');
+
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page).toHaveURL(/[?&]settings=general$/);
   expect(pageErrors).toEqual([]);
 });
 
-test('the capacity pill states the limit and links to Capacity', async ({ page, pageErrors }) => {
+test('the capacity pill states the limit and opens Settings at Capacity', async ({ page, pageErrors }) => {
   await page.goto('/');
   await ready(page);
 
   const pill = page.getByRole('link', { name: /^Capacity: / });
   await expect(pill).toContainText(/\d+\/\d+ browsers/);
-  await expect(pill).toHaveAttribute('href', '/limits');
+  await expect(pill).toHaveAttribute('href', /[?&]settings=capacity$/);
   await expect(page.getByRole('button', { name: /^Theme: / })).toBeVisible();
+
+  await pill.click();
+  await expect(page).toHaveURL(/[?&]settings=capacity$/);
+  await expect(page.getByRole('dialog', { name: 'Capacity' })).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
 
-test('dashboard answers what is running and what needs you', async ({ page, pageErrors }) => {
+test('overview answers what is running and what needs you', async ({ page, pageErrors }) => {
+  const { instanceId } = seed();
   await page.goto('/');
   await ready(page);
 
-  await expect(page.getByRole('heading', { name: 'Running now' })).toBeVisible();
-  await expect(page.getByRole('table', { name: 'Running browsers' }).getByRole('columnheader', { name: 'In use by' })).toBeVisible();
-  await expect(page.getByRole('table', { name: 'Running browsers' }).getByRole('link', { name: /^Open / }).first()).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Needs attention' })).toBeVisible();
-  for (const meter of ['Browsers running', 'Tabs open', 'Memory used', 'CPU busy']) {
-    await expect(page.getByRole('progressbar', { name: meter })).toBeVisible();
-  }
-
-  await page.getByRole('button', { name: 'Launch browser' }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  expect(pageErrors).toEqual([]);
-});
-
-test('connect page gives copyable config and a working test', async ({ page, pageErrors }) => {
-  await page.goto('/connect');
-  await ready(page);
-
-  await expect(page.getByRole('heading', { level: 1, name: 'Connect an agent' })).toBeVisible();
-  await expect(page.getByLabel('MCP server entry', { exact: true })).toHaveText('{"command":"brr","args":["mcp"]}');
-  await expect(page.getByLabel('HTTP MCP URL', { exact: true })).toHaveText(/\/mcp$/);
-  await expect(page.getByLabel('REST base URL', { exact: true })).toHaveText(/\/v1$/);
-  await expect(page.getByLabel('Client header name', { exact: true })).toHaveText('Brr-Client');
-  await expect(page.getByLabel('CDP URL', { exact: true })).toHaveText(/^ws:\/\/.+\/cdp$/);
-
-  await page.getByRole('button', { name: 'Test', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'brr answered' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Running now', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Recent runs', exact: true })).toBeVisible();
+  await expect(page.locator(`main a[href="/browsers/${instanceId}"]`).first()).toBeVisible();
   expect(pageErrors).toEqual([]);
 });
 
@@ -84,9 +70,9 @@ test('a tab that needs a human raises the bar, the title and an amber bell, and 
   const bar = page.getByRole('status').filter({ hasText: 'needs you to log in on' });
   await expect(bar).toContainText(`${AGENT_LABEL} needs you to log in on`);
   await expect(bar).toContainText('left');
-  await expect(bar.getByRole('link', { name: 'Step in' })).toHaveAttribute('href', new RegExp(`/instances/${instanceId}\\?tab=${tabId}`));
+  await expect(bar.getByRole('link', { name: 'Step in' })).toHaveAttribute('href', new RegExp(`/browsers/${instanceId}\\?tab=${tabId}`));
   await expect.poll(() => page.title()).toContain(NEEDS_YOU_TITLE);
-  await page.getByRole('link', { name: 'Browsers', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Browsers', exact: true }).click();
   await expect.poll(() => page.title()).toBe(`${NEEDS_YOU_TITLE}Browsers · brr`);
 
   await page.getByRole('button', { name: /^Notifications, \d+ unread/ }).click();
@@ -116,7 +102,7 @@ test('while a tab waits for you, the browser bar works and the status says it is
   const lease = await request.post('/v1/leases', { headers, data: { instance_id: instanceId, tab_id: tabId, exclusive: false } });
   expect(lease.ok(), await lease.text()).toBe(true);
 
-  await page.goto(`/instances/${instanceId}?tab=${tabId}`);
+  await page.goto(`/browsers/${instanceId}?tab=${tabId}`);
   await ready(page);
   await expect(address(page)).toBeDisabled();
 
@@ -148,15 +134,16 @@ test('while a tab waits for you, the browser bar works and the status says it is
   await request.delete(`/v1/clients/${agentId}`);
 });
 
-test('activity groups kinds, filters by clicking a subject, and says "by you"', async ({ page, pageErrors }) => {
+test('history activity groups kinds, filters by clicking a subject, and says "by you"', async ({ page, pageErrors }) => {
   const { instanceId } = seed();
-  await page.goto('/events');
+  await page.goto('/history?tab=activity');
   await ready(page);
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Activity' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'History' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Activity' })).toHaveAttribute('aria-selected', 'true');
   const type = page.getByLabel('Type', { exact: true });
   await expect(type.locator('option')).toHaveCount(8);
-  await expect(page.getByLabel('Profile or browser')).toBeVisible();
+  await expect(page.getByLabel('Profile', { exact: true })).toBeVisible();
   // The raw kind lives only in the expanded JSON.
   await expect(page.getByRole('table', { name: 'Activity' }).getByText('instance.state_changed')).toHaveCount(0);
 
@@ -166,7 +153,7 @@ test('activity groups kinds, filters by clicking a subject, and says "by you"', 
   await page.getByRole('button', { name: 'Show event details' }).first().click();
   await expect(page.getByLabel('Event data').first()).toContainText('"kind"');
 
-  await page.goto(`/events?instance=${instanceId}`);
+  await page.goto(`/history?tab=activity&instance=${instanceId}`);
   await ready(page);
   await expect(page).toHaveURL(new RegExp(`subject=instance%3A${instanceId}`));
   expect(pageErrors).toEqual([]);

@@ -12,29 +12,36 @@
   import EmptyState from '$lib/ui/EmptyState.svelte';
   import Icon from '$lib/ui/Icon.svelte';
   import Menu from '$lib/ui/Menu.svelte';
-  import PageHeader from '$lib/ui/PageHeader.svelte';
+  import DetailLayout from '$lib/ui/DetailLayout.svelte';
+  import Card from '$lib/ui/Card.svelte';
+  import KeyValue from '$lib/ui/KeyValue.svelte';
+  import RunTable from '$lib/runs/RunTable.svelte';
+  import { absolute, bytes, trafficSummary } from '$lib/format';
   import SaveBar from '$lib/ui/SaveBar.svelte';
   import Skeleton from '$lib/ui/Skeleton.svelte';
-  import Tabs from '$lib/ui/Tabs.svelte';
   import { guardUnsaved } from '$lib/ui/unsaved';
   import { toast } from '$lib/ui/toast.svelte';
   import type { components } from '$lib/api/schema';
-  import SettingsForm from '$lib/profiles/SettingsForm.svelte';
-  import GeneralCard from '$lib/profiles/GeneralCard.svelte';
+  import SettingsForm from '$lib/config/SettingsForm.svelte';
+  import GeneralCard from '$lib/config/GeneralCard.svelte';
   import { scrollToHash } from '$lib/scroll';
   import ExportProfileDialog from '$lib/profiles/ExportProfileDialog.svelte';
   import DeleteProfileDialog from '$lib/profiles/DeleteProfileDialog.svelte';
-  import Backups from '$lib/profiles/sections/Backups.svelte';
-  import Logins from '$lib/profiles/sections/Logins.svelte';
-  import { isUnhealthy, proxyName, unhealthyReason } from '$lib/profiles/proxy';
+  import Backups from '$lib/config/sections/Backups.svelte';
+  import Logins from '$lib/config/sections/Logins.svelte';
+  import { isUnhealthy, proxyName, unhealthyReason } from '$lib/config/proxy';
+  import { templateNameLabel } from '$lib/config/templates';
   import SaveAsTemplateDialog from '$lib/profiles/SaveAsTemplateDialog.svelte';
+  import ReapplyTemplateDialog from '$lib/profiles/ReapplyTemplateDialog.svelte';
   import CookiesDialog from '$lib/profiles/CookiesDialog.svelte';
   import BookmarksDialog from '$lib/profiles/BookmarksDialog.svelte';
-  import { canonical, engineOf, type GlobalSettings, type ProfileExtension, type Settings } from '$lib/profiles/form';
+  import { canonical, engineOf, type GlobalSettings, type ProfileExtension, type Settings } from '$lib/config/form';
+  import { settingsHref } from '$lib/settings/sections';
 
   type Profile = components['schemas']['Profile'];
   type PatchBody = Partial<components['schemas']['ProfileUpdateInput']>;
 
+  const TRAFFIC_DAYS = 30;
   const profileId = $derived(page.params.id ?? '');
 
   let profile = $state<Profile | null>(null);
@@ -61,10 +68,11 @@
   let pools = $state<components['schemas']['Pool'][]>([]);
   let library = $state<components['schemas']['ExtensionView'][]>([]);
   let tplOpen = $state(false);
+  let reapplyOpen = $state(false);
   let deleteOpen = $state(false);
   let launchOpen = $state(false);
   let restarting = $state(false);
-  let tab = $state('settings');
+  let tab = $state('overview');
   let exportOpen = $state(false);
   let cookiesExportOpen = $state(false);
   let cookiesImportOpen = $state(false);
@@ -79,6 +87,19 @@
   const active = $derived((instances.data ?? []).find((i) => !ENDED_STATES.includes(i.state)));
   const running = $derived(active !== undefined);
   const queued = $derived(active?.state === 'queued');
+  const recentRuns = liveQuery(
+    async () => (await unwrap(api.GET('/v1/instances', { params: { query: { profile: profileId, limit: 5 } } }))).instances,
+    { kinds: ['instance.*'] },
+  );
+  const usageQuery = liveQuery(async () => (await unwrap(api.GET('/v1/storage/usage'))).profiles, {
+    kinds: ['profile.*', 'artifact.*', 'retention.sweep_completed'],
+  });
+  const usedBytes = $derived((usageQuery.data ?? []).find((u) => u.profile_id === profileId)?.bytes ?? null);
+  const trafficQuery = liveQuery(
+    async () => (await unwrap(api.GET('/v1/usage/traffic', { params: { query: { group: 'profile', days: TRAFFIC_DAYS } } }))).items,
+    { kinds: ['instance.state_changed'] },
+  );
+  const traffic = $derived((trafficQuery.data ?? []).find((item) => item.id === profileId));
 
   // Restart now: once the browser the user stopped has ended, offer the Launch dialog.
   $effect(() => {
@@ -130,10 +151,10 @@
       loadError = null;
       if (!anchored) {
         anchored = true;
-        // Notification links point at #logins or #backups.
+        // Older notification links point at #logins or #backups.
         const hashTab = location.hash.slice(1);
         if (hashTab === 'logins' || hashTab === 'backups') tab = hashTab;
-        void scrollToHash();
+        else void scrollToHash();
       }
     } catch (e) {
       loadError = e instanceof ApiError ? e : new ApiError(0, 'Unreachable', String(e), {});
@@ -186,7 +207,7 @@
       tone: 'warning',
       title: `${proxyName(proxy)} is unhealthy`,
       description: `${unhealthyReason(proxy)}. Launches with this proxy fail until it is fixed.`,
-      action: { label: 'Open Proxies', onclick: () => void goto('/proxies') },
+      action: { label: 'Open Proxies', onclick: () => void goto(settingsHref('proxies')) },
     });
   }
 
@@ -277,21 +298,50 @@
   </EmptyState>
 {:else if profile && settings}
   {@const current = profile}
-  <PageHeader title={current.name} breadcrumb={[{ label: 'Profiles', href: '/profiles' }, { label: current.name, href: `/profiles/${current.id}` }]}>
-    {#snippet badge()}
-      <Badge>{current.kind === 'persistent' ? 'Persistent' : 'Ephemeral'}</Badge>
-      <Badge>{engine === 'camoufox' ? 'Camoufox' : 'Chromium'}</Badge>
-    {/snippet}
+  <DetailLayout
+    title={current.name}
+    description="{current.kind === 'persistent' ? 'Keeps data' : 'Fresh each time'} · {engine === 'camoufox' ? 'Camoufox' : 'Chromium'}"
+    back={{ href: '/profiles', label: 'Profiles' }}
+    tabs={[
+      { id: 'overview', label: 'Overview' },
+      { id: 'settings', label: 'Settings' },
+      { id: 'logins', label: 'Logins & checks' },
+      { id: 'cookies', label: 'Cookies & bookmarks' },
+      { id: 'backups', label: 'Backups' },
+    ]}
+    bind:tab
+  >
     {#snippet actions()}
       <Menu
         label="More actions"
         items={[
+          {
+            label: 'Re-apply template…',
+            disabled: current.template_id == null,
+            hint:
+              current.template_id != null
+                ? undefined
+                : current.template_name
+                  ? `The template ${templateNameLabel(current.template_name)} was deleted`
+                  : 'This profile did not come from a template',
+            onselect: () => (reapplyOpen = true),
+          },
           { label: 'Save as template…', onselect: () => (tplOpen = true) },
-          { label: 'Export profile…', disabled: running || current.kind !== 'persistent', hint: running ? 'Stop the profile first' : 'Only persistent profiles', onselect: () => (exportOpen = true) },
-          { label: 'Export cookies…', onselect: () => (cookiesExportOpen = true) },
-          { label: 'Import cookies…', onselect: () => (cookiesImportOpen = true) },
-          { label: 'Export bookmarks…', disabled: running, hint: 'Stop the profile first', onselect: () => (bookmarksExportOpen = true) },
-          { label: 'Import bookmarks…', disabled: running, hint: 'Stop the profile first', onselect: () => (bookmarksImportOpen = true) },
+          { label: 'Export profile…', disabled: running || current.kind !== 'persistent', hint: running ? 'Stop the profile first' : 'Only profiles that keep data can be exported', onselect: () => (exportOpen = true) },
+          {
+            label: 'Export cookies…',
+            disabled: current.kind === 'ephemeral' && !running,
+            hint: current.kind === 'ephemeral' && !running ? 'Fresh-each-time profiles keep no data while stopped; launch it to import or export cookies' : undefined,
+            onselect: () => (cookiesExportOpen = true),
+          },
+          {
+            label: 'Import cookies…',
+            disabled: current.kind === 'ephemeral' && !running,
+            hint: current.kind === 'ephemeral' && !running ? 'Fresh-each-time profiles keep no data while stopped; launch it to import or export cookies' : undefined,
+            onselect: () => (cookiesImportOpen = true),
+          },
+          { label: 'Export bookmarks…', disabled: running || (current.kind === 'ephemeral' && !running), hint: running ? 'Stop the profile first' : current.kind === 'ephemeral' ? 'Fresh-each-time profiles keep no data while stopped; launch it to import or export cookies' : undefined, onselect: () => (bookmarksExportOpen = true) },
+          { label: 'Import bookmarks…', disabled: running || (current.kind === 'ephemeral' && !running), hint: running ? 'Stop the profile first' : current.kind === 'ephemeral' ? 'Fresh-each-time profiles keep no data while stopped; launch it to import or export cookies' : undefined, onselect: () => (bookmarksImportOpen = true) },
           ...(current.name === (defaults?.oneshot.profile ?? 'oneshot')
             ? []
             : [
@@ -313,12 +363,12 @@
       {#if active?.state === 'queued'}
         <Badge tone="warning">Waiting to start</Badge>
       {:else if active}
-        <Button variant="primary" href="/instances/{active.id}">{queued ? 'Waiting to start' : 'Running'} · Open browser →</Button>
+        <Button variant="primary" href="/browsers/{active.id}">{queued ? 'Waiting to start' : 'Running'} · Open browser →</Button>
       {:else}
         <Button variant="primary" onclick={() => (launchOpen = true)}>Launch</Button>
       {/if}
     {/snippet}
-  </PageHeader>
+
 
   {#if running}
     <p class="banner">
@@ -333,25 +383,62 @@
     </p>
   {/if}
 
-  <div class="tabs">
-    <Tabs
-      label="Profile sections"
-      idPrefix="profile"
-      bind:value={tab}
-      items={[
-        { id: 'settings', label: 'Settings' },
-        { id: 'logins', label: 'Logins' },
-        { id: 'backups', label: 'Backups' },
-      ]}
-    />
-  </div>
-
-  <div role="tabpanel" id="profile-panel-{tab}" aria-labelledby="profile-tab-{tab}">
-    {#if tab === 'logins'}
-      <Logins profileId={current.id} />
-    {:else if tab === 'backups'}
-      <Backups profile={current} onsaved={(next) => (profile = next)} />
-    {:else}
+  {#if tab === 'overview'}
+    <div class="stack">
+      <Card title="Overview">
+        <KeyValue
+          grid
+          items={[
+            { label: 'Kind', value: current.kind === 'persistent' ? 'Keeps data' : 'Fresh each time' },
+            { label: 'Data folder', value: current.data_dir ?? null, mono: true, copy: Boolean(current.data_dir) },
+            { label: 'Disk use', value: usedBytes === null ? null : bytes(usedBytes) },
+            { label: 'Traffic (30 days)', value: traffic ? `${trafficSummary(traffic)} · ${traffic.runs} ${traffic.runs === 1 ? 'run' : 'runs'}` : trafficQuery.data ? 'None measured' : null },
+            { label: 'Disk quota', value: current.disk_quota_bytes ? bytes(current.disk_quota_bytes) : 'No limit' },
+            {
+              label: 'Template',
+              value: current.template_name
+                ? current.template_id
+                  ? templateNameLabel(current.template_name)
+                  : `${templateNameLabel(current.template_name)} (deleted)`
+                : null,
+              href: current.template_id ? `/templates/${current.template_id}` : undefined,
+            },
+            { label: 'Created', value: absolute(current.created_at) },
+          ]}
+        />
+        {#if current.disk_quota_bytes != null && usedBytes !== null && usedBytes > current.disk_quota_bytes}
+          <p class="quota"><Badge tone="danger">Over quota</Badge> Launches are refused until usage drops below {bytes(current.disk_quota_bytes)}.</p>
+        {/if}
+      </Card>
+      <Card title="Recent runs">
+        <RunTable runs={recentRuns.data ?? []} loading={recentRuns.loading} error={recentRuns.error} compact hideProfile onretry={() => recentRuns.reload()} />
+      </Card>
+    </div>
+  {:else if tab === 'logins'}
+    <Logins profileId={current.id} />
+  {:else if tab === 'backups'}
+    <Backups profile={current} onsaved={(next) => (profile = next)} />
+  {:else if tab === 'cookies'}
+    <Card title="Cookies & bookmarks" description="Move cookies and bookmarks in or out of this profile.">
+      <div class="actions-row">
+        <Button disabled={current.kind === 'ephemeral' && !running} onclick={() => (cookiesExportOpen = true)}>Export cookies…</Button>
+        <Button disabled={current.kind === 'ephemeral' && !running} onclick={() => (cookiesImportOpen = true)}>Import cookies…</Button>
+        <Button disabled={running || (current.kind === 'ephemeral' && !running)} onclick={() => (bookmarksExportOpen = true)}>Export bookmarks…</Button>
+        <Button disabled={running || (current.kind === 'ephemeral' && !running)} onclick={() => (bookmarksImportOpen = true)}>Import bookmarks…</Button>
+      </div>
+      {#if current.kind === 'ephemeral' && !running}
+        <p class="field-hint">Fresh-each-time profiles keep no data while stopped; launch it to import or export cookies.</p>
+      {:else if running}
+        <p class="field-hint">Bookmarks can't move while the profile is running. Stop the profile first.</p>
+      {/if}
+    </Card>
+  {:else}
+    {#if current.template_name}
+      <p class="banner">
+        <Icon name="info" />
+        Copied from Template {templateNameLabel(current.template_name)}{current.template_id ? '' : ' (since deleted)'} on {absolute(current.created_at)}. Changing the Template does not change this Profile.
+      </p>
+    {/if}
   {#key revision}
     <SettingsForm
       bind:settings
@@ -375,8 +462,8 @@
       {/snippet}
     </SettingsForm>
   {/key}
-    {/if}
-  </div>
+  {/if}
+  </DetailLayout>
 
   <SaveBar dirty={dirty} {saving} disabled={formInvalid} onsave={save} ondiscard={load} />
 
@@ -391,6 +478,7 @@
   {#if launchOpen}<LaunchDialog bind:open={launchOpen} profileId={current.id} />{/if}
   <ExportProfileDialog bind:open={exportOpen} profileId={current.id} profileName={current.name} />
   <SaveAsTemplateDialog bind:open={tplOpen} profileId={current.id} profileName={current.name} />
+  <ReapplyTemplateDialog bind:open={reapplyOpen} profileId={current.id} onapplied={load} />
   <CookiesDialog bind:open={cookiesExportOpen} mode="export" profileId={current.id} profileName={current.name} />
   <CookiesDialog bind:open={cookiesImportOpen} mode="import" profileId={current.id} profileName={current.name} />
   <BookmarksDialog bind:open={bookmarksExportOpen} mode="export" profileId={current.id} profileName={current.name} />
@@ -404,8 +492,18 @@
     gap: var(--space-4);
   }
 
-  .tabs {
-    margin-bottom: var(--space-4);
+  .quota {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    color: var(--text-secondary);
+  }
+
+  .actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
   }
 
   .banner {

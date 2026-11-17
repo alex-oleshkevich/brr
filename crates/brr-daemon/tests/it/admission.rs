@@ -5,8 +5,8 @@ use crate::common;
 use std::{sync::Arc, time::Duration};
 
 use brr_core::{
-    AdmissionMode, ClientId, ClientKind, Display, EndReason, Engine, Error, IdleOverrides,
-    InstanceId, InstanceState, Order, Page, now_ms,
+    AdmissionMode, ClientId, ClientKind, Display, EndReason, Engine, Error, Host, IdleOverrides,
+    InstanceId, InstanceState, Order, Page, SandboxMode, now_ms,
 };
 use brr_daemon::{
     App, CallClient, ops,
@@ -37,6 +37,7 @@ const HIGH_PRIORITY: u8 = 9;
 
 fn request(priority: u8, mode: AdmissionMode) -> AdmitRequest {
     AdmitRequest {
+        sandbox: SandboxMode::None,
         instance_id: InstanceId::new(),
         profile_name: "queued".to_owned(),
         engine: Engine::Chromium,
@@ -77,7 +78,7 @@ async fn queued_ids(app: &Arc<App>) -> Vec<InstanceId> {
 async fn enqueue(
     app: &Arc<App>,
     request: AdmitRequest,
-) -> (InstanceId, JoinHandle<Result<(), Error>>) {
+) -> (InstanceId, JoinHandle<Result<Option<Host>, Error>>) {
     let instance_id = request.instance_id;
     let waiting = queued_ids(app).await.len();
     let admit = {

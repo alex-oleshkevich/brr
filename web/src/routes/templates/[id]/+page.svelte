@@ -14,12 +14,14 @@
   import { confirm } from '$lib/ui/confirm.svelte';
   import { toast } from '$lib/ui/toast.svelte';
   import type { components } from '$lib/api/schema';
-  import SettingsForm from '$lib/profiles/SettingsForm.svelte';
-  import GeneralCard from '$lib/profiles/GeneralCard.svelte';
-  import { templatePurpose, templateTitle, type Template } from '$lib/profiles/templates';
-  import { canonical, engineOf, type GlobalSettings, type Settings } from '$lib/profiles/form';
+  import SettingsForm from '$lib/config/SettingsForm.svelte';
+  import GeneralCard from '$lib/config/GeneralCard.svelte';
+  import { templatePurpose, templateSlug, templateTitle, uniqueCopyName, type Template } from '$lib/config/templates';
+  import { canonical, engineOf, type GlobalSettings, type ProfileExtension, type Settings } from '$lib/config/form';
+  import { profileNameError } from '$lib/profiles/restore';
 
-  type PatchBody = components['schemas']['TemplateUpdateInput'];
+  // Omitting description keeps it; the generated type marks it required because the API defaults it.
+  type PatchBody = Omit<components['schemas']['TemplateUpdateInput'], 'description'> & { description?: string | null };
 
   const templateId = $derived(page.params.id ?? '');
 
@@ -39,14 +41,21 @@
   let proxies = $state<components['schemas']['Proxy'][]>([]);
   let pools = $state<components['schemas']['Pool'][]>([]);
   let library = $state<components['schemas']['ExtensionView'][]>([]);
+  let templateExtensions = $state<ProfileExtension[]>([]);
+  let extSnapshot = $state('');
 
-  const dirty = $derived(snapshot !== '' && canonical({ name, settings }) !== snapshot);
+  const dirty = $derived(
+    snapshot !== '' && (canonical({ name, settings }) !== snapshot || canonical(templateExtensions) !== extSnapshot),
+  );
+  const nameLiveError = $derived(name.trim() === '' ? null : profileNameError(name.trim()));
 
   function applyTemplate(next: Template) {
     template = next;
     settings = JSON.parse(JSON.stringify(next.settings)) as Settings;
     name = next.name;
+    templateExtensions = JSON.parse(JSON.stringify(next.extensions ?? [])) as ProfileExtension[];
     snapshot = canonical({ name, settings: next.settings });
+    extSnapshot = canonical(next.extensions ?? []);
     errors = {};
     revision += 1;
   }
@@ -87,6 +96,7 @@
       const body: PatchBody = { template: templateId };
       if (name !== before.name) body.name = name;
       if (canonical(settings) !== canonical(before.settings)) body.settings = settings;
+      if (canonical(templateExtensions) !== extSnapshot) body.extensions = templateExtensions;
       if (Object.keys(body).length > 1) {
         applyTemplate(await unwrap(api.PATCH('/v1/templates/{template}', { params: { path: { template: templateId } }, body })));
       }
@@ -109,7 +119,12 @@
     if (!template || duplicating) return;
     duplicating = true;
     try {
-      const created = await unwrap(api.POST('/v1/templates', { body: { name: `${template.name}-copy`, settings: template.settings } }));
+      const all = await unwrap(api.GET('/v1/templates'));
+      const base = template.builtin ? templateSlug(templateTitle(template)) : template.name;
+      const name = uniqueCopyName(base, new Set(all.templates.map((t) => t.name)));
+      const created = await unwrap(
+        api.POST('/v1/templates', { body: { name, settings: template.settings, extensions: template.extensions ?? [], description: template.description } }),
+      );
       toast.success('Template duplicated');
       await goto(`/templates/${created.id}`);
     } catch (e) {
@@ -130,7 +145,7 @@
   </div>
 {:else if loadError?.code === 'NotFound' && !template}
   <EmptyState level={1} title="Template not found" description="It may have been deleted.">
-    {#snippet action()}<Button href="/profiles?tab=templates">Back to templates</Button>{/snippet}
+    {#snippet action()}<Button href="/templates">Back to templates</Button>{/snippet}
   </EmptyState>
 {:else if loadError && !template}
   <EmptyState tone="danger" title="Couldn't load this template" description={loadError.message}>
@@ -142,8 +157,7 @@
     title={templateTitle(current)}
     description={templatePurpose(current)}
     breadcrumb={[
-      { label: 'Profiles', href: '/profiles' },
-      { label: 'Templates', href: '/profiles?tab=templates' },
+      { label: 'Templates', href: '/templates' },
       { label: templateTitle(current), href: `/templates/${current.id}` },
     ]}
   >
@@ -152,8 +166,8 @@
       <Badge>{engine === 'camoufox' ? 'Camoufox' : 'Chromium'}</Badge>
     {/snippet}
     {#snippet actions()}
-      {#if !current.builtin}
-        <Button variant="primary" onclick={save} loading={saving} disabled={!dirty || formInvalid}>Save</Button>
+      {#if !current.builtin && !dirty}
+        <Button variant="secondary" onclick={save} loading={saving} disabled={!dirty || formInvalid || nameLiveError !== null}>Save</Button>
       {/if}
     {/snippet}
   </PageHeader>
@@ -161,19 +175,19 @@
   {#if current.builtin}
     <p class="banner">
       <Icon name="info" /> Built-in templates are read-only. Duplicate it to make changes.
-      <Button size="sm" loading={duplicating} onclick={duplicate}>Duplicate</Button>
+      <Button size="sm" loading={duplicating} onclick={duplicate}>Duplicate to edit</Button>
     </p>
   {/if}
 
   {#key revision}
-    <SettingsForm bind:settings {errors} {builds} {proxies} {pools} {library} {defaults} isTemplate readonly={current.builtin} oninvalidchange={(invalid) => (formInvalid = invalid)}>
+    <SettingsForm bind:settings {errors} {builds} {proxies} {pools} {library} {defaults} isTemplate readonly={current.builtin} profileExtensions={templateExtensions} onExtensions={(next) => (templateExtensions = next)} oninvalidchange={(invalid) => (formInvalid = invalid)}>
       {#snippet general()}
-        <GeneralCard bind:name showMeta={false} readonly={current.builtin} nameError={errors['name'] ?? null} />
+        <GeneralCard bind:name showMeta={false} readonly={current.builtin} nameError={errors['name'] ?? nameLiveError} />
       {/snippet}
     </SettingsForm>
   {/key}
 
-  <SaveBar dirty={dirty && !current.builtin} {saving} disabled={formInvalid} onsave={save} ondiscard={load} />
+  <SaveBar dirty={dirty && !current.builtin} {saving} disabled={formInvalid || nameLiveError !== null} onsave={save} ondiscard={load} />
 {/if}
 
 <style>

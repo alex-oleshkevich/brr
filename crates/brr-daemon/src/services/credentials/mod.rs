@@ -1,13 +1,17 @@
 use std::{collections::HashSet, fmt, sync::Arc};
 
 use brr_core::{
-    ConflictReason, Credential, CredentialId, CredentialSelectors, Error, LastLogin,
-    PasswordCsvFormat, ProfileId, Secret, now_ms,
+    ConflictReason, Credential, CredentialId, CredentialSelectors, CredentialSource, Error,
+    LastLogin, PasswordCsvFormat, ProfileId, Secret, now_ms, site_origin,
 };
 use brr_store::{Connection, credential, profile};
 use brr_vault::csv::parse_password_csv;
 
-use crate::{app::App, internal, services::secrets::Secrets};
+use crate::{
+    app::App,
+    internal,
+    services::{bitwarden, secrets::Secrets},
+};
 
 #[cfg(test)]
 mod tests;
@@ -67,9 +71,14 @@ fn open_field(
 }
 
 pub fn open_username(secrets: &Secrets, row: &credential::CredentialRow) -> Result<String, Error> {
-    Ok(open_field(secrets, &row.id, USERNAME, &row.username_enc)?
-        .expose()
-        .to_owned())
+    row.username_enc.as_ref().map_or_else(
+        || Ok(String::new()),
+        |sealed| {
+            Ok(open_field(secrets, &row.id, USERNAME, sealed)?
+                .expose()
+                .to_owned())
+        },
+    )
 }
 
 pub fn new_row(
@@ -83,8 +92,18 @@ pub fn new_row(
         id: credential_id,
         site: new.site.clone(),
         login_url: new.login_url.clone(),
-        username_enc: seal_field(secrets, &credential_id, USERNAME, &new.username)?,
-        password_enc: seal_field(secrets, &credential_id, PASSWORD, new.password.expose())?,
+        username_enc: Some(seal_field(
+            secrets,
+            &credential_id,
+            USERNAME,
+            &new.username,
+        )?),
+        password_enc: Some(seal_field(
+            secrets,
+            &credential_id,
+            PASSWORD,
+            new.password.expose(),
+        )?),
         totp_enc: new
             .totp
             .as_ref()
@@ -98,22 +117,33 @@ pub fn new_row(
         selectors: new.selectors.clone(),
         created_at: now,
         updated_at: now,
+        source: CredentialSource::Local,
+        bitwarden_item_id: None,
     })
 }
 
 pub fn view(
-    secrets: &Secrets,
+    app: &App,
     row: &credential::CredentialRow,
     profile_ids: Vec<ProfileId>,
     last_login: Option<LastLogin>,
 ) -> Result<Credential, Error> {
+    let (username, totp_set) = match &row.bitwarden_item_id {
+        Some(item_id) if row.source == CredentialSource::Bitwarden => {
+            app.bitwarden.summary(item_id)
+        }
+        _ => (open_username(&app.secrets, row)?, row.totp_enc.is_some()),
+    };
+
     Ok(Credential {
         id: row.id,
         site: row.site.clone(),
         login_url: row.login_url.clone(),
-        username: open_username(secrets, row)?,
+        username,
         selectors: row.selectors.clone(),
-        totp_set: row.totp_enc.is_some(),
+        totp_set,
+        source: row.source,
+        bitwarden_item_id: row.bitwarden_item_id.clone(),
         profile_ids,
         last_login,
         created_at: row.created_at,
@@ -145,7 +175,7 @@ pub async fn load(app: &Arc<App>, credential_id: &CredentialId) -> Result<Creden
         })
         .await?;
 
-    view(&app.secrets, &row, profile_ids, last_logins.remove(&id))
+    view(app, &row, profile_ids, last_logins.remove(&id))
 }
 
 pub async fn unseal(app: &Arc<App>, credential_id: &CredentialId) -> Result<Unsealed, Error> {
@@ -153,15 +183,61 @@ pub async fn unseal(app: &Arc<App>, credential_id: &CredentialId) -> Result<Unse
     let row = app.store.run(move |c| credential::get(c, &id)).await?;
     let secrets = &app.secrets;
 
+    if row.source == CredentialSource::Bitwarden {
+        return unseal_bitwarden(app, row);
+    }
+    let (Some(username_enc), Some(password_enc)) = (&row.username_enc, &row.password_enc) else {
+        return Err(internal(format!("credential {id} has no sealed login")));
+    };
+
     Ok(Unsealed {
         login_url: row.login_url.unwrap_or_else(|| row.site.clone()),
-        username: open_field(secrets, &id, USERNAME, &row.username_enc)?,
-        password: open_field(secrets, &id, PASSWORD, &row.password_enc)?,
+        username: open_field(secrets, &id, USERNAME, username_enc)?,
+        password: open_field(secrets, &id, PASSWORD, password_enc)?,
         totp: row
             .totp_enc
             .map(|sealed| open_field(secrets, &id, TOTP, &sealed))
             .transpose()?,
         site: row.site,
+        selectors: row.selectors,
+    })
+}
+
+// The item's URIs are the source of truth: a page the item does not list never gets its secrets,
+// even when the item changed after it was linked.
+fn unseal_bitwarden(app: &App, row: credential::CredentialRow) -> Result<Unsealed, Error> {
+    let Some(item_id) = row.bitwarden_item_id else {
+        return Err(internal(format!(
+            "credential {} has no Bitwarden item",
+            row.id
+        )));
+    };
+    let login = bitwarden::login(app, &item_id)?;
+    let login_url = row.login_url.unwrap_or_else(|| row.site.clone());
+    let listed = |url: &str| {
+        site_origin(url).is_some_and(|origin| {
+            login
+                .uris
+                .iter()
+                .any(|uri| site_origin(uri).as_ref() == Some(&origin))
+        })
+    };
+    if !listed(&row.site) || !listed(&login_url) {
+        return Err(Error::InvalidArgument {
+            field: "credential_id".to_owned(),
+            message: format!(
+                "Bitwarden item {item_id} does not list {} or the login URL among its URIs; fix the item or link it again",
+                row.site
+            ),
+        });
+    }
+
+    Ok(Unsealed {
+        site: row.site,
+        login_url,
+        username: login.username,
+        password: login.password,
+        totp: login.totp,
         selectors: row.selectors,
     })
 }
@@ -181,7 +257,7 @@ pub fn ensure_unique(
         .iter()
         .filter(|row| row.site == site && Some(&row.id) != except)
     {
-        if open_field(secrets, &row.id, USERNAME, &row.username_enc)?.expose() == username {
+        if open_username(secrets, row)? == username {
             return Err(Error::Conflict {
                 reason: ConflictReason::CredentialExists,
                 detail: None,
@@ -210,9 +286,8 @@ pub async fn import(
 
             let mut known: HashSet<(String, String)> = HashSet::new();
             for row in credential::all(c)? {
-                let username =
-                    open_field(&secrets_app.secrets, &row.id, USERNAME, &row.username_enc)?;
-                known.insert((row.site, username.expose().to_owned()));
+                let username = open_username(&secrets_app.secrets, &row)?;
+                known.insert((row.site, username));
             }
 
             let mut skipped = skipped;

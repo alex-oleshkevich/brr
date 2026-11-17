@@ -4,6 +4,7 @@ use brr_core::{
     Error, Http, InstanceId, Lease, Method, OperationSpec, Tab, TabCloseReason, TabId, TabState,
     Toolset, WaitUntil, schema,
 };
+use brr_engine::Navigated;
 use brr_store::{instance, tab};
 use futures::{FutureExt, future::BoxFuture};
 use schemars::JsonSchema;
@@ -126,7 +127,7 @@ static NAVIGATE: OperationSpec = OperationSpec {
     read_only: false,
     capability: None,
     input_schema: schema::<NavigateInput>,
-    output_schema: schema::<Tab>,
+    output_schema: schema::<NavigateOutput>,
 };
 
 static PIN: OperationSpec = OperationSpec {
@@ -242,6 +243,17 @@ struct NavigateInput {
     url: String,
     wait_until: Option<WaitUntil>,
     timeout: Option<u64>,
+}
+
+#[derive(Serialize, JsonSchema)]
+struct NavigateOutput {
+    #[serde(flatten)]
+    tab: Tab,
+    #[schemars(
+        description = "Present and true when the URL answered with a file: the file is saved as a Download and the Tab stays on its page."
+    )]
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    download: bool,
 }
 
 // Live state (url, title, state) of an open Tab comes from its owner; the Lease is always current.
@@ -489,7 +501,7 @@ fn navigate(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> 
         let stored = guarded_tab(&ctx, input.tab_id, NAVIGATE.read_only).await?;
 
         let timeout = timeout(input.timeout)?;
-        let navigated = ctx
+        let (navigated, outcome) = ctx
             .app
             .instances
             .navigate(
@@ -508,7 +520,10 @@ fn navigate(ctx: Ctx, input: Value) -> BoxFuture<'static, Result<Value, Error>> 
         let mut tab = tab_view(&ctx.app, navigated).await;
         refresh_info(&ctx.app, &mut tab).await;
 
-        output(&tab)
+        output(&NavigateOutput {
+            tab,
+            download: outcome == Navigated::Download,
+        })
     }
     .boxed()
 }

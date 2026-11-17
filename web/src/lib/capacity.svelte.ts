@@ -16,8 +16,6 @@ type Usage = { instances: Instance[]; leases: Lease[] };
 const REFRESH_MS = 5000;
 const PRESSURE_WINDOW_MS = 60_000;
 const PAGE = 500;
-// max_instances caps admitted managed launches only.
-const COUNTED_STATES = ['starting', 'running', 'idle', 'reaping'];
 
 // The top-bar pill: `full` means a count limit is reached, `pressure` means memory or load.
 export type Pressure = { state: 'ok' | 'full' | 'pressure'; text: string };
@@ -64,6 +62,11 @@ class Capacity {
     return this.infoQuery?.data;
   }
 
+  // Display modes that can't start on this host, mapped to the reason.
+  get displayUnavailable(): Map<string, string> {
+    return new Map(this.info?.display_unavailable.map((u) => [u.display, u.reason] as const));
+  }
+
   get limits() {
     return this.limitsQuery?.data;
   }
@@ -77,7 +80,23 @@ class Capacity {
   }
 
   get browsers(): number {
-    return this.usage?.instances.filter((i) => i.kind === 'managed' && COUNTED_STATES.includes(i.state)).length ?? 0;
+    return this.info?.browsers_running ?? 0;
+  }
+
+  // Browsers running on Hosts and the Hosts' combined limit; 0 when there are no Hosts.
+  get hostBrowsers(): number {
+    return this.info?.hosts_running ?? 0;
+  }
+
+  get hostMax(): number {
+    return this.info?.hosts_max ?? 0;
+  }
+
+  // "1/1 · Hosts 2/2" detail behind the pill's total.
+  get breakdown(): string | null {
+    const { limits } = this;
+    if (!limits || this.hostMax === 0) return null;
+    return `This machine ${this.browsers}/${limits.max_instances} · Hosts ${this.hostBrowsers}/${this.hostMax}`;
   }
 
   get tabs(): number {
@@ -108,15 +127,17 @@ class Capacity {
     if (memory) return { state: 'pressure', text: 'Low memory · new browsers wait' };
     if (adaptive && info && info.load_per_core > limits.adaptive.max_load_per_core) return { state: 'pressure', text: 'High load · new browsers wait' };
 
-    const { browsers, tabs } = this;
+    const { tabs } = this;
+    const browsers = this.browsers + this.hostBrowsers;
+    const max = (limits?.max_instances ?? 0) + this.hostMax;
     const waiting = this.queue?.length ?? 0;
-    if (limits && browsers >= limits.max_instances) {
-      return { state: 'full', text: `At capacity · ${browsers}/${limits.max_instances} browsers${waiting > 0 ? ` · ${waiting} waiting` : ''}` };
+    if (limits && info?.at_capacity) {
+      return { state: 'full', text: `At capacity · ${browsers}/${max} browsers${waiting > 0 ? ` · ${waiting} waiting` : ''}` };
     }
-    if (limits && waiting > 0) return { state: 'full', text: `${waiting} waiting to start · ${browsers}/${limits.max_instances} browsers` };
+    if (limits && waiting > 0) return { state: 'full', text: `${waiting} waiting to start · ${browsers}/${max} browsers` };
     if (limits && tabs >= limits.max_tabs_total) return { state: 'full', text: `At capacity · ${tabs}/${limits.max_tabs_total} tabs` };
 
-    return { state: 'ok', text: limits ? `${browsers}/${limits.max_instances} browsers` : 'Capacity OK' };
+    return { state: 'ok', text: limits ? `${browsers}/${max} browsers` : 'Capacity OK' };
   }
 }
 

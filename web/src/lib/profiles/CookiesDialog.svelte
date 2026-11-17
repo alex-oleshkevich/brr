@@ -100,4 +100,20 @@
     gap: var(--space-2);
     align-items: flex-start;
   }
+
+  input[type='file'] {
+    width: 100%;
+    height: auto;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  input[type='file']::file-selector-button {
+    margin-right: var(--space-3);
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-md);
+    font: inherit;
+    cursor: pointer;
+  }
 </style>

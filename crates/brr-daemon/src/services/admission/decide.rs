@@ -1,4 +1,4 @@
-use brr_core::{Display, Engine, Settings, settings::LimitMode};
+use brr_core::{Display, Engine, Host, HostId, SandboxMode, Settings, settings::LimitMode};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Class {
@@ -87,4 +87,57 @@ pub fn decide(s: &Snapshot<'_>, engine: Engine, tags: &[String]) -> Verdict {
 
 fn full(reason: String) -> Verdict {
     Verdict::Full { reason }
+}
+
+// Where an admitted Instance runs: brr's own machine or a Host.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Place {
+    Local,
+    Host(HostId),
+}
+
+// What this daemon's admissions already put on one Host.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct HostLoad {
+    pub placed: u32,
+    // The reservations of its recent runs plus the candidate's own estimate.
+    pub reserved_mb: u64,
+}
+
+// Local (when its limits admit, `local_mb` is its free memory after reservations) and every
+// enabled, reachable Host below its max compete on free memory; the first of equals wins, so
+// local wins ties. Without the docker sandbox only local runs browsers.
+pub fn place(
+    mode: SandboxMode,
+    local_mb: Option<u64>,
+    hosts: &[Host],
+    load: impl Fn(&HostId) -> HostLoad,
+) -> Option<Place> {
+    let local = local_mb.map(|mb| (Place::Local, mb));
+    if mode == SandboxMode::None {
+        return local.map(|(place, _)| place);
+    }
+
+    let remote = hosts
+        .iter()
+        .filter(|host| host.enabled && host.status.reachable)
+        .filter_map(|host| {
+            let load = load(&host.id);
+            let available_mb = host
+                .status
+                .mem_available_mb
+                .unwrap_or(0)
+                .saturating_sub(load.reserved_mb);
+
+            (load.placed < host.max_instances).then_some((Place::Host(host.id), available_mb))
+        });
+
+    local
+        .into_iter()
+        .chain(remote)
+        .fold(None, |best: Option<(Place, u64)>, candidate| match best {
+            Some(best) if best.1 >= candidate.1 => Some(best),
+            _ => Some(candidate),
+        })
+        .map(|(place, _)| place)
 }

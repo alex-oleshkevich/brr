@@ -1,7 +1,7 @@
 use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
 use brr_core::{Build, BuildSource, BuildState, ConflictReason, Error, ExtensionId, MS_PER_DAY};
-use brr_store::{build, extension, profile_extension};
+use brr_store::{build, extension, profile_extension, template_extension};
 use tokio::task;
 use tracing::warn;
 
@@ -38,7 +38,7 @@ fn build_dir(app: &App, build: &Build) -> PathBuf {
         .join(&build.version)
 }
 
-// The versions Profiles use: the pinned one, else the newest.
+// The versions Profiles and Templates use: the pinned one, else the newest.
 fn referenced_versions(
     c: &brr_store::Connection,
     library: &[brr_core::Extension],
@@ -55,7 +55,10 @@ fn referenced_versions(
         })
         .collect();
 
-    for (_, entry) in profile_extension::all(c)? {
+    let profiles = profile_extension::all(c)?
+        .into_iter()
+        .map(|(_, entry)| entry);
+    for entry in profiles.chain(template_extension::all(c)?) {
         let version = entry.pinned_version.or_else(|| {
             library
                 .iter()

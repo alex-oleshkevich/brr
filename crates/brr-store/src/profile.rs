@@ -7,7 +7,7 @@ use crate::{
 };
 
 const TABLE: &str = "profile";
-const COLUMNS: &str = "id, name, kind, template_id, build_id, channel, settings, pinned, notes, data_dir, disk_quota_bytes, backup_schedule, backup_keep, created_at, updated_at";
+const COLUMNS: &str = "id, name, kind, template_id, build_id, channel, settings, pinned, notes, data_dir, disk_quota_bytes, backup_schedule, backup_keep, created_at, updated_at, template_name";
 const TAGS: &str = "(SELECT json_group_array(tag) FROM (SELECT tag FROM profile_tag WHERE profile_id = profile.id ORDER BY tag)) AS tags";
 
 fn decode(row: &Row) -> rusqlite::Result<Profile> {
@@ -16,6 +16,7 @@ fn decode(row: &Row) -> rusqlite::Result<Profile> {
         name: row.get("name")?,
         kind: col(row, "kind")?,
         template_id: opt_col(row, "template_id")?,
+        template_name: row.get("template_name")?,
         settings: json_col(row, "settings")?,
         pinned: row.get("pinned")?,
         notes: row.get("notes")?,
@@ -64,7 +65,7 @@ pub fn insert(c: &Connection, p: &Profile) -> Result<(), Error> {
     let (build_id, channel) = build_columns(p);
 
     c.execute(
-        &format!("INSERT INTO profile ({COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)"),
+        &format!("INSERT INTO profile ({COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)"),
         params![
             Text(&p.id),
             p.name,
@@ -81,6 +82,7 @@ pub fn insert(c: &Connection, p: &Profile) -> Result<(), Error> {
             p.backup_keep,
             p.created_at,
             p.updated_at,
+            p.template_name,
         ],
     )
     .map_err(name_conflict)?;
@@ -95,7 +97,7 @@ pub fn update(c: &Connection, p: &Profile) -> Result<(), Error> {
         .execute(
             "UPDATE profile SET name = ?2, kind = ?3, template_id = ?4, build_id = ?5, channel = ?6, settings = ?7,
                  pinned = ?8, notes = ?9, data_dir = ?10, disk_quota_bytes = ?11, backup_schedule = ?12,
-                 backup_keep = ?13, created_at = ?14, updated_at = ?15
+                 backup_keep = ?13, created_at = ?14, updated_at = ?15, template_name = ?16
              WHERE id = ?1",
             params![
                 Text(&p.id),
@@ -113,6 +115,7 @@ pub fn update(c: &Connection, p: &Profile) -> Result<(), Error> {
                 p.backup_keep,
                 p.created_at,
                 p.updated_at,
+                p.template_name,
             ],
         )
         .map_err(name_conflict)?;

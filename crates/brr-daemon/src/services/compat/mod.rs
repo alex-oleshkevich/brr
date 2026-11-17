@@ -61,6 +61,7 @@ pub async fn gate(app: &Arc<App>, build: &Build, assets: &Assets) -> Result<Gate
             seed: None,
             addons: Vec::new(),
         }),
+        sandbox: None,
     };
 
     let report = run_compat(spec).await;

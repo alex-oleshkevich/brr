@@ -12,17 +12,23 @@ use std::{
 };
 
 use brr_core::{
-    Build, Capability, ConflictReason, Engine, Error, EventData, Extension, ExtensionId,
-    ExtensionSource, ExtensionVersion, Page, Profile, ProfileExtension, ProfileSettings,
-    compare_versions, now_ms, sha256_hex,
+    Build, BuildChoice, Capability, ConflictReason, Engine, Error, EventData, Extension,
+    ExtensionId, ExtensionSource, ExtensionVersion, InstanceExtension, Page, Profile,
+    ProfileExtension, ProfileSettings, compare_versions, now_ms, sha256_hex,
 };
 use brr_store::{Connection, build, extension, profile_extension};
 use futures::future::join_all;
+use reqwest::StatusCode;
 use tokio::{task, time};
 use tracing::warn;
 
 use self::unpack::{Archive, is_gecko, unpack};
-use crate::{app::App, internal, ops::invalid, services::profiles::resolve_build};
+use crate::{
+    app::App,
+    internal,
+    ops::invalid,
+    services::{builds::engine_of, profiles::resolve_build},
+};
 
 pub const UPDATE_BUDGET: Duration = Duration::from_secs(5);
 pub const MAX_EXTENSION_BYTES: u64 = 64 * 1024 * 1024;
@@ -44,11 +50,23 @@ const STAGING_SUFFIX: &str = ".tmp";
 const FETCH_STALL_TIMEOUT: Duration = Duration::from_secs(30);
 const LOADED_BY_INSTANCE: &str = "a running instance has it loaded";
 const REFERENCE_SEPARATOR: &str = ", ";
+const CWS_SITE: &str = "the Chrome Web Store";
+const AMO_SITE: &str = "Firefox Add-ons";
+const UNREACHABLE_HELP: &str = "check the network connection, then retry";
+// Present in every add-on addons.mozilla.org signed.
+const MOZILLA_SIGNATURE: &str = "META-INF/mozilla.rsa";
 
 pub enum AddSource {
-    Cws { reference: String },
-    Amo { reference: String },
-    File { bytes: Vec<u8> },
+    Cws {
+        reference: String,
+    },
+    Amo {
+        reference: String,
+    },
+    File {
+        bytes: Vec<u8>,
+        engine: Option<Engine>,
+    },
 }
 
 #[derive(Clone, Copy)]
@@ -70,8 +88,8 @@ pub fn root(app: &App) -> PathBuf {
 
 fn engine_name(engine: Engine) -> &'static str {
     match engine {
-        Engine::Chromium => "chromium",
-        Engine::Camoufox => "camoufox",
+        Engine::Chromium => "Chromium",
+        Engine::Camoufox => "Camoufox",
     }
 }
 
@@ -122,15 +140,32 @@ pub fn parse_amo_ref(reference: &str, url_only: bool) -> Option<String> {
     (!url_only && slug_ok(reference)).then(|| reference.to_string())
 }
 
-async fn fetch(app: &App, url: &str, cap: u64) -> Result<Vec<u8>, Error> {
-    let fetching =
-        |e: reqwest::Error| internal(format!("fetching {url} failed: {}", e.without_url()));
+// Upstream answers are mapped to what the caller can act on; the raw URL stays in the log.
+async fn fetch(app: &App, url: &str, cap: u64, site: &str, item: &str) -> Result<Vec<u8>, Error> {
+    let unreachable = |detail: String| {
+        warn!(url, site, %detail, "extension source unreachable");
+
+        Error::DependencyMissing {
+            name: site.to_string(),
+            help: UNREACHABLE_HELP.to_string(),
+        }
+    };
+    let not_found = || Error::NotFound {
+        what: format!("{item} on {site}"),
+    };
+
     let mut response = time::timeout(FETCH_STALL_TIMEOUT, app.http.get(url).send())
         .await
-        .map_err(|_| internal(format!("{url} did not answer")))?
-        .and_then(|r| r.error_for_status())
-        .map_err(fetching)?;
-    let too_big = || internal(format!("{url} is larger than {cap} bytes"));
+        .map_err(|_| unreachable("no answer".to_string()))?
+        .map_err(|e| unreachable(e.without_url().to_string()))?;
+    let status = response.status();
+    if matches!(status, StatusCode::NOT_FOUND | StatusCode::GONE) {
+        return Err(not_found());
+    }
+    if !status.is_success() {
+        return Err(unreachable(format!("HTTP {status}")));
+    }
+    let too_big = || internal(format!("{site} sent more than {cap} bytes for {item}"));
     if response.content_length().is_some_and(|len| len > cap) {
         return Err(too_big());
     }
@@ -139,8 +174,8 @@ async fn fetch(app: &App, url: &str, cap: u64) -> Result<Vec<u8>, Error> {
     loop {
         let chunk = time::timeout(FETCH_STALL_TIMEOUT, response.chunk())
             .await
-            .map_err(|_| internal(format!("{url} stopped sending data")))?
-            .map_err(fetching)?;
+            .map_err(|_| unreachable("stopped sending data".to_string()))?
+            .map_err(|e| unreachable(e.without_url().to_string()))?;
         let Some(chunk) = chunk else {
             break;
         };
@@ -148,6 +183,10 @@ async fn fetch(app: &App, url: &str, cap: u64) -> Result<Vec<u8>, Error> {
             return Err(too_big());
         }
         body.extend_from_slice(&chunk);
+    }
+    // The Web Store answers an unknown id with an empty body.
+    if body.is_empty() {
+        return Err(not_found());
     }
 
     Ok(body)
@@ -173,15 +212,16 @@ async fn amo_meta(app: &App, slug: &str) -> Result<AmoMeta, Error> {
         "{}/addons/addon/{slug}/",
         app.settings().extensions.amo_api.trim_end_matches('/')
     );
-    let body = fetch(app, &url, AMO_META_MAX_BYTES).await?;
+    let item = format!("add-on {slug}");
+    let body = fetch(app, &url, AMO_META_MAX_BYTES, AMO_SITE, &item).await?;
     let meta: serde_json::Value = serde_json::from_slice(&body)
-        .map_err(|e| internal(format!("addons.mozilla.org answered with bad JSON: {e}")))?;
+        .map_err(|e| internal(format!("{AMO_SITE} answered with bad JSON: {e}")))?;
     let current = &meta["current_version"];
     let text = |value: &serde_json::Value| value.as_str().map(str::to_string);
     let missing = || {
         invalid(
             "ref",
-            &format!("addons.mozilla.org has no downloadable version of {slug}"),
+            &format!("{AMO_SITE} has no downloadable version of {slug}"),
         )
     };
 
@@ -191,12 +231,13 @@ async fn amo_meta(app: &App, slug: &str) -> Result<AmoMeta, Error> {
         // Verification must not be skippable: a missing or other-algorithm hash is an error.
         sha256: text(&current["file"]["hash"])
             .and_then(|hash| hash.strip_prefix(SHA256_PREFIX).map(str::to_string))
-            .ok_or_else(|| internal(format!("addons.mozilla.org gave no sha256 for {slug}")))?,
+            .ok_or_else(|| internal(format!("{AMO_SITE} gave no sha256 for {slug}")))?,
     })
 }
 
-async fn fetch_xpi(app: &App, meta: &AmoMeta) -> Result<Vec<u8>, Error> {
-    let bytes = fetch(app, &meta.url, MAX_EXTENSION_BYTES).await?;
+async fn fetch_xpi(app: &App, meta: &AmoMeta, slug: &str) -> Result<Vec<u8>, Error> {
+    let item = format!("add-on {slug}");
+    let bytes = fetch(app, &meta.url, MAX_EXTENSION_BYTES, AMO_SITE, &item).await?;
     if !meta.sha256.eq_ignore_ascii_case(&sha256_hex(&bytes)) {
         return Err(internal("checksum mismatch for the downloaded add-on"));
     }
@@ -220,9 +261,10 @@ pub async fn add(app: &Arc<App>, source: AddSource) -> Result<Extension, Error> 
                     "response=redirect&prodversion={prodversion}&acceptformat=crx2,crx3&x=id%3D{id}%26uc"
                 ),
             );
-            let bytes = fetch(app, &url, MAX_EXTENSION_BYTES).await?;
+            let item = format!("extension {id}");
+            let bytes = fetch(app, &url, MAX_EXTENSION_BYTES, CWS_SITE, &item).await?;
 
-            install(app, ExtensionSource::Cws, id, bytes).await
+            install(app, ExtensionSource::Cws, id, bytes, None).await
         }
         AddSource::Amo { reference } => {
             let slug = parse_amo_ref(&reference, false).ok_or_else(|| {
@@ -232,11 +274,11 @@ pub async fn add(app: &Arc<App>, source: AddSource) -> Result<Extension, Error> 
                 )
             })?;
             let meta = amo_meta(app, &slug).await?;
-            let bytes = fetch_xpi(app, &meta).await?;
+            let bytes = fetch_xpi(app, &meta, &slug).await?;
 
-            install(app, ExtensionSource::Amo, slug, bytes).await
+            install(app, ExtensionSource::Amo, slug, bytes, None).await
         }
-        AddSource::File { bytes } => {
+        AddSource::File { bytes, engine } => {
             let digest = sha256_hex(&bytes);
             let known = digest.clone();
             if let Some(existing) = app
@@ -247,7 +289,7 @@ pub async fn add(app: &Arc<App>, source: AddSource) -> Result<Extension, Error> 
                 return Ok(existing);
             }
 
-            install(app, ExtensionSource::Local, digest, bytes).await
+            install(app, ExtensionSource::Local, digest, bytes, engine).await
         }
     }
 }
@@ -272,6 +314,7 @@ async fn install(
     source: ExtensionSource,
     source_ref: String,
     bytes: Vec<u8>,
+    engine: Option<Engine>,
 ) -> Result<Extension, Error> {
     if bytes.len() as u64 > MAX_EXTENSION_BYTES {
         return Err(invalid(
@@ -290,7 +333,7 @@ async fn install(
     let staging = root.join(format!("{}{STAGING_SUFFIX}", ExtensionId::new()));
     let version_parent = root.join(extension_id.to_string());
 
-    let (unpacked, dir) = task::spawn_blocking(move || {
+    let (unpacked, dir, mozilla_signed) = task::spawn_blocking(move || {
         let result = (|| {
             let (archive, key) = match kind {
                 Kind::Crx => {
@@ -312,7 +355,9 @@ async fn install(
                 fs::rename(&staging, &dir).map_err(internal)?;
             }
 
-            Ok((unpacked, dir))
+            let mozilla_signed = dir.join(MOZILLA_SIGNATURE).exists();
+
+            Ok((unpacked, dir, mozilla_signed))
         })();
         if result.is_err() {
             fs::remove_dir_all(&staging).ok();
@@ -323,11 +368,16 @@ async fn install(
     .await
     .map_err(internal)??;
 
-    let engine = match (source, kind) {
-        (ExtensionSource::Amo, _) | (_, Kind::Zip) => Engine::Camoufox,
-        (_, Kind::Tar) if is_gecko(&unpacked.manifest) => Engine::Camoufox,
-        _ => Engine::Chromium,
-    };
+    // The package decides, not how it was uploaded: a Firefox add-on names gecko in its manifest
+    // or carries Mozilla's signature.
+    let engine = engine.unwrap_or(match source {
+        ExtensionSource::Amo => Engine::Camoufox,
+        ExtensionSource::Cws => Engine::Chromium,
+        ExtensionSource::Local if is_gecko(&unpacked.manifest) || mozilla_signed => {
+            Engine::Camoufox
+        }
+        ExtensionSource::Local => Engine::Chromium,
+    });
     let row = Extension {
         id: extension_id,
         engine,
@@ -386,7 +436,8 @@ pub async fn update(
                     found.source_ref
                 ),
             );
-            let xml = fetch(app, &url, UPDATECHECK_MAX_BYTES).await?;
+            let item = format!("extension {}", found.source_ref);
+            let xml = fetch(app, &url, UPDATECHECK_MAX_BYTES, CWS_SITE, &item).await?;
             let Some((version, codebase)) = crx::scan_updatecheck(&String::from_utf8_lossy(&xml))
             else {
                 return Ok((from, current));
@@ -395,7 +446,9 @@ pub async fn update(
                 return Ok((from, current));
             }
 
-            (version, fetch(app, &codebase, MAX_EXTENSION_BYTES).await?)
+            let bytes = fetch(app, &codebase, MAX_EXTENSION_BYTES, CWS_SITE, &item).await?;
+
+            (version, bytes)
         }
         ExtensionSource::Amo => {
             let meta = amo_meta(app, &found.source_ref).await?;
@@ -403,11 +456,20 @@ pub async fn update(
                 return Ok((from, current));
             }
 
-            (meta.version.clone(), fetch_xpi(app, &meta).await?)
+            let bytes = fetch_xpi(app, &meta, &found.source_ref).await?;
+
+            (meta.version.clone(), bytes)
         }
     };
 
-    let updated = install(app, found.source, found.source_ref, bytes).await?;
+    let updated = install(
+        app,
+        found.source,
+        found.source_ref,
+        bytes,
+        Some(found.engine),
+    )
+    .await?;
     let to = newest(&updated).map_or(latest, |v| v.version.clone());
     app.events
         .publish(EventData::ExtensionUpdated {
@@ -422,6 +484,7 @@ pub async fn update(
 
 // Refused while a running browser has its files loaded or a Profile has it enabled, as a Build is:
 // removing it would pull the files from under the browser, or drop it from Profiles unannounced.
+// A Template only hands it to Profiles it creates, so its link goes with the extension (cascade).
 pub async fn remove(app: &Arc<App>, extension_id: &ExtensionId) -> Result<Extension, Error> {
     let id = *extension_id;
     let root = root(app);
@@ -510,20 +573,26 @@ pub fn clear_staging(data_dir: &Path) -> usize {
         .count()
 }
 
-pub fn check_enable(extensions: &[Extension], build: Option<&Build>) -> Result<(), Error> {
-    let Some(build) = build else {
-        return Ok(());
-    };
+fn check_engine(extensions: &[Extension], engine: Engine) -> Result<(), Error> {
+    match extensions.iter().find(|e| e.engine != engine) {
+        Some(other) => Err(invalid(
+            "extensions",
+            &format!(
+                "{} is a {engine} extension; remove it or choose a {engine} browser version",
+                other.name,
+                engine = engine_name(other.engine),
+            ),
+        )),
+        None => Ok(()),
+    }
+}
+
+pub fn check_enable(extensions: &[Extension], build: &Build) -> Result<(), Error> {
     if extensions.is_empty() {
         return Ok(());
     }
 
-    if let Some(other) = extensions.iter().find(|e| e.engine != build.engine) {
-        return Err(invalid(
-            "extensions",
-            &format!("{} is for {}", other.name, engine_name(other.engine)),
-        ));
-    }
+    check_engine(extensions, build.engine)?;
     if !build.capabilities.contains(&Capability::UnpackedExtensions) {
         return Err(Error::EngineUnsupported {
             capability: Capability::UnpackedExtensions,
@@ -533,7 +602,8 @@ pub fn check_enable(extensions: &[Extension], build: Option<&Build>) -> Result<(
     Ok(())
 }
 
-// E2a for a list about to be saved on a Profile; a channel without an installed Build is re-checked at launch.
+// E2a for a list about to be saved on a Profile or Template. The engine follows from the build
+// choice even when nothing of it is installed; capabilities need a Build and are re-checked at launch.
 pub fn check_list(
     c: &Connection,
     list: &[ProfileExtension],
@@ -546,13 +616,24 @@ pub fn check_list(
         .iter()
         .map(|entry| extension::get(c, &entry.extension_id))
         .collect::<Result<Vec<_>, _>>()?;
-    let build = match resolve_build(c, &settings.build) {
-        Ok(build) => Some(build),
-        Err(Error::BuildMissing { .. }) => None,
-        Err(error) => return Err(error),
-    };
 
-    check_enable(&extensions, build.as_ref())
+    let engine = match &settings.build {
+        BuildChoice::Channel(channel) => Some(engine_of(channel.source)),
+        BuildChoice::BuildId(build_id) => match build::get(c, build_id) {
+            Ok(found) => Some(found.engine),
+            Err(Error::NotFound { .. }) => None,
+            Err(error) => return Err(error),
+        },
+    };
+    if let Some(engine) = engine {
+        check_engine(&extensions, engine)?;
+    }
+
+    match resolve_build(c, &settings.build) {
+        Ok(build) => check_enable(&extensions, &build),
+        Err(Error::BuildMissing { .. }) => Ok(()),
+        Err(error) => Err(error),
+    }
 }
 
 // Each update runs in its own task: a launch that stops waiting at the budget leaves the download
@@ -581,18 +662,19 @@ async fn auto_update(app: &Arc<App>, ids: Vec<ExtensionId>) {
     }
 }
 
+// The directories to load and what they are, for the Instance's record.
 pub async fn launch_paths(
     app: &Arc<App>,
     profile: &Profile,
     build: &Build,
-) -> Result<Vec<PathBuf>, Error> {
+) -> Result<(Vec<PathBuf>, Vec<InstanceExtension>), Error> {
     let profile_id = profile.id;
     let enabled = app
         .store
         .run(move |c| profile_extension::get(c, &profile_id))
         .await?;
     if enabled.is_empty() {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), Vec::new()));
     }
 
     let load = |app: Arc<App>, enabled: Vec<ProfileExtension>| async move {
@@ -606,7 +688,7 @@ pub async fn launch_paths(
             .await
     };
     let extensions = load(Arc::clone(app), enabled.clone()).await?;
-    check_enable(&extensions, Some(build))?;
+    check_enable(&extensions, build)?;
 
     let stale: Vec<ExtensionId> = enabled
         .iter()
@@ -623,6 +705,7 @@ pub async fn launch_paths(
     };
 
     let mut paths = Vec::new();
+    let mut loaded = Vec::new();
     let mut used = Vec::new();
     for (entry, e) in enabled.iter().zip(&extensions) {
         let version = match &entry.pinned_version {
@@ -644,13 +727,18 @@ pub async fn launch_paths(
             })?,
         };
         paths.push(version.path.clone());
+        loaded.push(InstanceExtension {
+            id: e.id,
+            name: e.name.clone(),
+            version: version.version.clone(),
+        });
         used.push((e.id, version.version.clone()));
     }
     app.store
         .run(move |c| extension::touch_versions(c, &used, now_ms()))
         .await?;
 
-    Ok(paths)
+    Ok((paths, loaded))
 }
 
 pub async fn all(app: &Arc<App>) -> Result<Vec<Extension>, Error> {

@@ -14,7 +14,9 @@ use brr_store::{build, instance, profile};
 use futures::FutureExt;
 use serde_json::{Value, json};
 
-use common::{ctx, scratch_app};
+use common::{ctx, instance_row, scratch_app};
+
+const SOURCE_TEMPLATE: &str = "mine";
 
 async fn call(app: &Arc<App>, name: &str, input: Value) -> Result<Value, Error> {
     let op = ops::find(name).unwrap();
@@ -50,6 +52,7 @@ fn profile_row(name: &str, data_dir: Option<PathBuf>) -> Profile {
         name: name.to_string(),
         kind: ProfileKind::Persistent,
         template_id: None,
+        template_name: None,
         settings: Default::default(),
         pinned: false,
         notes: String::new(),
@@ -236,6 +239,65 @@ async fn templates_do_not_touch_existing_profiles() {
 }
 
 #[tokio::test]
+async fn deleting_a_template_unlinks_its_profiles_but_keeps_the_name() {
+    let (_dir, app) = scratch_app().await;
+    let template: Template = ok(
+        &app,
+        "template.create",
+        json!({"name": SOURCE_TEMPLATE, "settings": {"build": {"channel": "cft:stable"}, "display": "headless"}}),
+    )
+    .await;
+    call(
+        &app,
+        "profile.create",
+        json!({"name": "p", "template": template.id}),
+    )
+    .await
+    .unwrap();
+
+    call(
+        &app,
+        "template.delete",
+        json!({"template": SOURCE_TEMPLATE}),
+    )
+    .await
+    .unwrap();
+
+    let found: Profile = ok(&app, "profile.get", json!({"profile": "p"})).await;
+    assert_eq!(found.template_id, None);
+    assert_eq!(found.template_name.as_deref(), Some(SOURCE_TEMPLATE));
+}
+
+#[tokio::test]
+async fn template_description_is_kept_and_limited_to_one_line() {
+    let (_dir, app) = scratch_app().await;
+    let created: Template = ok(
+        &app,
+        "template.create",
+        json!({"name": SOURCE_TEMPLATE, "description": "for logins", "settings": {"build": {"channel": "cft:stable"}, "display": "headless"}}),
+    )
+    .await;
+    let multi_line = call(
+        &app,
+        "template.update",
+        json!({"template": SOURCE_TEMPLATE, "description": "two\nlines"}),
+    )
+    .await;
+    let cleared: Template = ok(
+        &app,
+        "template.update",
+        json!({"template": SOURCE_TEMPLATE, "description": null}),
+    )
+    .await;
+
+    assert_eq!(created.description.as_deref(), Some("for logins"));
+    assert!(
+        matches!(multi_line, Err(Error::InvalidArgument { field, .. }) if field == "description")
+    );
+    assert_eq!(cleared.description, None);
+}
+
+#[tokio::test]
 async fn save_from_profile_copies_settings() {
     let (_dir, app) = scratch_app().await;
     let created: Profile = ok(
@@ -397,6 +459,14 @@ async fn delete_guards() {
         end_reason: None,
         error: None,
         profile_name: None,
+        settings: None,
+        template_id: None,
+        template_name: None,
+        extensions: None,
+        proxy_id: None,
+        sandbox: None,
+        traffic: None,
+        host_id: None,
         build: None,
         tab_count: 0,
         lease_count: 0,
@@ -551,4 +621,127 @@ async fn events_name_the_client_that_caused_them() {
     };
     assert_eq!(actor("profile.created"), json!(caller_id));
     assert_eq!(actor("profile.deleted"), Value::Null);
+}
+
+async fn from_source_template(app: &Arc<App>, name: &str) -> Profile {
+    ok(
+        app,
+        "profile.create",
+        json!({"name": name, "template": SOURCE_TEMPLATE}),
+    )
+    .await
+}
+
+async fn create_source_template(app: &Arc<App>) {
+    call(
+        app,
+        "template.create",
+        json!({"name": SOURCE_TEMPLATE, "settings": {"build": {"channel": "cft:stable"}, "display": "headless"}}),
+    )
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn reapply_template_shows_the_diff_then_writes_it() {
+    let (_dir, app) = scratch_app().await;
+    create_source_template(&app).await;
+    let created = from_source_template(&app, "p").await;
+    call(
+        &app,
+        "template.update",
+        json!({"template": SOURCE_TEMPLATE, "settings": {"build": {"channel": "cft:beta"}, "display": "visible", "block_ads": true}}),
+    )
+    .await
+    .unwrap();
+    let template: Template = ok(&app, "template.get", json!({"template": SOURCE_TEMPLATE})).await;
+
+    let preview = call(
+        &app,
+        "profile.reapply_template",
+        json!({"profile": "p", "dry_run": true}),
+    )
+    .await
+    .unwrap();
+    let untouched: Profile = ok(&app, "profile.get", json!({"profile": "p"})).await;
+
+    let fields: Vec<&str> = preview["changes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|change| change["field"].as_str().unwrap())
+        .collect();
+    assert_eq!(fields, ["block_ads", "build.channel", "display"]);
+    assert_eq!(
+        preview["changes"][0],
+        json!({"field": "block_ads", "from": false, "to": true})
+    );
+    assert_eq!(
+        preview["changes"][2],
+        json!({"field": "display", "from": "headless", "to": "visible"})
+    );
+    assert_eq!(preview["extensions"], json!({"added": [], "removed": []}));
+    assert_eq!(untouched.settings, created.settings);
+    assert_eq!(published(&app, "profile.updated").await, 0);
+
+    let applied = call(&app, "profile.reapply_template", json!({"profile": "p"}))
+        .await
+        .unwrap();
+    let found: Profile = ok(&app, "profile.get", json!({"profile": "p"})).await;
+    let again = call(
+        &app,
+        "profile.reapply_template",
+        json!({"profile": "p", "dry_run": true}),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(applied, preview);
+    assert_eq!(found.settings, template.settings);
+    assert_eq!(published(&app, "profile.updated").await, 1);
+    assert_eq!(again["changes"], json!([]));
+}
+
+#[tokio::test]
+async fn reapply_template_refuses_a_running_profile_or_a_missing_template() {
+    let (_dir, app) = scratch_app().await;
+    create_source_template(&app).await;
+    from_source_template(&app, "p").await;
+    let running = from_source_template(&app, "running").await;
+    let mut row = instance_row(InstanceState::Running, None);
+    row.profile_id = Some(running.id);
+    let orphan = profile_row("orphan", None);
+    let orphan_id = orphan.id;
+    app.store
+        .run(move |c| {
+            instance::insert(c, &row)?;
+            profile::insert(c, &orphan)
+        })
+        .await
+        .unwrap();
+
+    let while_running = call(
+        &app,
+        "profile.reapply_template",
+        json!({"profile": "running", "dry_run": true}),
+    )
+    .await;
+    let without_template = call(
+        &app,
+        "profile.reapply_template",
+        json!({"profile": orphan_id, "dry_run": true}),
+    )
+    .await;
+    call(
+        &app,
+        "template.delete",
+        json!({"template": SOURCE_TEMPLATE}),
+    )
+    .await
+    .unwrap();
+    let deleted = call(&app, "profile.reapply_template", json!({"profile": "p"})).await;
+
+    assert_eq!(conflict(while_running), ConflictReason::ProfileRunning);
+    assert_eq!(conflict(without_template), ConflictReason::TemplateGone);
+    assert_eq!(conflict(deleted), ConflictReason::TemplateGone);
 }

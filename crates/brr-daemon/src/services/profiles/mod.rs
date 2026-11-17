@@ -125,10 +125,13 @@ pub fn with_login_status(
     profile
 }
 
-// An id-shaped name would be taken for an id by the id-or-name lookups.
+// An id-shaped name would be taken for an id by the id-or-name lookups; "." and ".." read as paths
+// and a leading "-" as a CLI flag.
 pub fn validate_name(name: &str, field: &str) -> Result<(), Error> {
     let valid = (1..=MAX_NAME_LEN).contains(&name.len())
         && name.parse::<ProfileId>().is_err()
+        && !matches!(name, "." | "..")
+        && !name.starts_with('-')
         && name
             .chars()
             .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '_' | '-'));
@@ -138,7 +141,9 @@ pub fn validate_name(name: &str, field: &str) -> Result<(), Error> {
 
     Err(Error::InvalidArgument {
         field: field.to_string(),
-        message: format!("use 1 to {MAX_NAME_LEN} characters from A-Z, a-z, 0-9, `.`, `_`, `-`"),
+        message: format!(
+            "use 1 to {MAX_NAME_LEN} characters from A-Z, a-z, 0-9, `.`, `_`, `-`, not starting with `-` and not `.` or `..`"
+        ),
     })
 }
 

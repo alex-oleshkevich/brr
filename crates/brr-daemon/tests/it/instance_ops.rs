@@ -57,6 +57,7 @@ async fn add_ephemeral_profile(app: &Arc<App>, build_id: BuildId, name: &str) ->
         name: name.to_owned(),
         kind: ProfileKind::Ephemeral,
         template_id: None,
+        template_name: None,
         settings: ProfileSettings {
             build: BuildChoice::BuildId(build_id),
             display: Display::Headless,
