@@ -36,7 +36,7 @@ The image never runs as root, because Chrome refuses to start as root without `-
 
 ## Data and the vault key
 
-`BRR_VAULT__KEY_SOURCE=file`: the Credential vault key is a file in the volume (`/data/config`). Back up the whole
+`BRR_VAULT__KEY_SOURCE=file`: the Credential vault key is a file in the volume (`/data/data/brr/vault.key`). Back up the whole
 volume; without the key file the stored Credentials cannot be decrypted. Config, data and state are
 `/data/config`, `/data/data` and `/data/state`; the socket and lock are in `/run/brr` (mode 0700).
 

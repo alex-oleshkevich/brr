@@ -1,10 +1,12 @@
+use base64::{Engine, engine::general_purpose::STANDARD};
 use serde_json::json;
+use test_case::test_case;
 
-use std::path::Path;
-
-use super::{Plan, Printed, file_output, plan, require_path, written};
+use super::{Plan, Printed, file_output, plan, written};
 use crate::cli::args::OutputFile;
 use crate::cli::format::render_list;
+
+const MARKDOWN: &str = "# Example Domain\n";
 
 #[test]
 fn list_output_prints_header_name_and_cells() {
@@ -94,13 +96,21 @@ fn file_out() {
     assert_eq!(text, "<html>\n<p>");
 }
 
-#[test]
-fn binary_output_without_a_path_is_refused_before_the_call() {
-    let error = require_path(&data_field(true), None, false).expect_err("refused");
+#[test_case("text/markdown", Some(MARKDOWN) ; "text prints")]
+#[test_case("application/json", Some(MARKDOWN) ; "json prints")]
+#[test_case("image/png", None ; "binary needs a path")]
+fn base64_output_without_a_path(mime: &str, expected: Option<&str>) {
+    let value = json!({"mime": mime, "data": STANDARD.encode(MARKDOWN)});
 
-    assert!(error.to_string().contains("pass -o"));
-    assert_eq!(error.exit_code(), 2);
-    assert!(require_path(&data_field(true), None, true).is_ok());
-    assert!(require_path(&data_field(true), Some(Path::new("out")), false).is_ok());
-    assert!(require_path(&data_field(false), None, false).is_ok());
+    let printed = file_output(&value, false, &data_field(true), None);
+
+    match (printed, expected) {
+        (Ok(Some(Printed::Text(text))), Some(expected)) => assert_eq!(text, expected),
+        (Err(error), None) => assert!(error.to_string().contains("pass -o")),
+        _ => panic!("unexpected output for {mime}"),
+    }
+    assert!(matches!(
+        file_output(&value, true, &data_field(true), None),
+        Ok(None)
+    ));
 }

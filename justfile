@@ -103,6 +103,10 @@ install *ARGS:
 build-release-arm64:
     scripts/build-arm64.sh
 
+[doc("pack target/release/brr and its licenses into dist/brr-VERSION-TARGET.tar.gz with a .sha256")]
+package VERSION TARGET:
+    scripts/package.sh "$@"
+
 [doc("build the Docker image brr:dev; extra args go to buildx, e.g. --platform linux/arm64")]
 docker-build *ARGS:
     scripts/docker-build.sh "$@"

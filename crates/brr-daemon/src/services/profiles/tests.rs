@@ -96,7 +96,7 @@ async fn resolve_build_missing() {
 
     assert_eq!(
         reason(none),
-        "no cft stable build installed; run brr build install cft --channel stable"
+        "no cft stable build installed; run brr build install --source cft --channel stable"
     );
     assert!(reason(other_source).starts_with("no camoufox latest-compatible build installed"));
     reason(not_ready);

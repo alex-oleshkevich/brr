@@ -1,5 +1,7 @@
 use std::{collections::BTreeSet, path::Path};
 
+use base64::{Engine, engine::general_purpose::STANDARD};
+
 use brr_core::Error;
 
 use serde_json::{Map, Value};
@@ -19,6 +21,8 @@ const NAME_FIELDS: [&str; 3] = ["name", "id", "seq"];
 const ID_FIELD: &str = "id";
 const CELL_FIELDS: [&str; 7] = ["id", "engine", "state", "kind", "source", "version", "url"];
 const EMPTY_PREFIX: &str = "No";
+const MIME_FIELD: &str = "mime";
+const TEXT_MIMES: [&str; 2] = ["text/", "application/json"];
 
 pub enum Plan<'a> {
     List {
@@ -32,18 +36,6 @@ pub enum Plan<'a> {
 pub enum Printed {
     Wrote { path: String, bytes: u64 },
     Text(String),
-}
-
-// Binary output has nowhere to go without -o, so this runs before the op does.
-pub fn require_path(file: &OutputFile, path: Option<&Path>, json: bool) -> Result<(), Error> {
-    if file.base64 && path.is_none() && !json {
-        return Err(Error::InvalidArgument {
-            field: "output".to_string(),
-            message: "binary output; pass -o <path>".to_string(),
-        });
-    }
-
-    Ok(())
 }
 
 pub fn output(
@@ -90,11 +82,34 @@ pub fn file_output(
         }));
     }
 
-    if json || file.base64 {
+    if json {
         return Ok(None);
     }
 
+    if file.base64 {
+        return match decoded_text(value, field) {
+            Some(text) => Ok(Some(Printed::Text(text))),
+            None => Err(Error::InvalidArgument {
+                field: "output".to_string(),
+                message: "binary output; pass -o <path>".to_string(),
+            }
+            .into()),
+        };
+    }
+
     Ok(Some(Printed::Text(text(field))))
+}
+
+// A text delivery (Markdown, HTML, links) prints like any text; only real binaries need -o.
+fn decoded_text(value: &Value, field: &Value) -> Option<String> {
+    let mime = value.get(MIME_FIELD)?.as_str()?;
+    if !TEXT_MIMES.iter().any(|prefix| mime.starts_with(prefix)) {
+        return None;
+    }
+
+    let bytes = STANDARD.decode(field.as_str()?).ok()?;
+
+    String::from_utf8(bytes).ok()
 }
 
 // The output with its file field replaced, without copying the file's bytes.

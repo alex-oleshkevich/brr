@@ -397,7 +397,8 @@ fn chromium_build_status(builds: &[Build]) -> (CheckStatus, String) {
 
     (
         CheckStatus::Fail,
-        "no Chromium-family Build; run brr build detect or brr build install cft".to_owned(),
+        "no Chromium-family Build; run brr build detect or brr build install --source cft"
+            .to_owned(),
     )
 }
 

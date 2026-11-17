@@ -93,7 +93,7 @@ fn pick_build(builds: &[Build], choice: &BuildChoice) -> Result<Build, Error> {
                 .or_else(|| fallback.cloned())
                 .ok_or_else(|| Error::BuildMissing {
                     reason: format!(
-                        "no {} {} build installed; run brr build install {} --channel {}",
+                        "no {} {} build installed; run brr build install --source {} --channel {}",
                         channel.source, channel.name, channel.source, channel.name
                     ),
                 })

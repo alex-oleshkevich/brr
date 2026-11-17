@@ -11,3 +11,4 @@
 /web/.svelte-kit/
 extension/dist/
 /web/test-results/
+/dist/

@@ -202,9 +202,6 @@ async fn run_op(
         .as_ref()
         .and_then(|_| matches.get_one::<PathBuf>(args::OUTPUT))
         .map(PathBuf::as_path);
-    if let Some(file) = &file {
-        render::require_path(file, path, json)?;
-    }
     let remote = daemon::ensure_daemon(&boot.paths, &boot.settings).await?;
 
     if spec.name == EVENTS_LIST && matches.get_flag(FOLLOW) {
