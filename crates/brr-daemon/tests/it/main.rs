@@ -29,6 +29,7 @@ mod login;
 mod login_checks;
 mod mcp;
 mod metrics;
+mod oauth;
 mod oneshot;
 mod parity;
 mod profiles;

@@ -111,7 +111,7 @@ package VERSION TARGET:
 docker-build *ARGS:
     scripts/docker-build.sh "$@"
 
-[doc("deploy deploy/compose.yaml with uncloud and delete unused brr images on the machine (BRR_DEPLOY_SSH, BRR_DEPLOY_CONTEXT)")]
+[doc("deploy deploy/compose.yaml with uncloud and delete unused brr images on the machine (BRR_DEPLOY_SSH, BRR_DEPLOY_CONTEXT, BRR_DEPLOY_COMPOSE)")]
 deploy *ARGS:
     scripts/deploy.sh "$@"
 

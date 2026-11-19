@@ -8,6 +8,7 @@ The daemon serves everything on one address, `http://127.0.0.1:9898` by default 
 | `/v1/...` | REST API |
 | `/openapi.json` | OpenAPI description of every REST route |
 | `/mcp` | MCP over streamable HTTP |
+| `/oauth/...`, `/.well-known/oauth-*` | OAuth for MCP clients that require it; grants everything |
 | `/v1/events/stream` | Server-sent events for everything that happens |
 
 The same API is also on the unix socket `$XDG_RUNTIME_DIR/brr/brr.sock` (setting `server.socket`), which is what the CLI uses:
@@ -91,3 +92,7 @@ The CLI maps the same codes to [exit codes](cli.md#exit-codes).
 - A tool call without `client_id` runs as a one-off client. Call `client_create` first and pass the returned `id` as the `client_id` argument of later calls to keep a current tab and hold leases. The client ends after `client.mcp_http_idle_min` (10) minutes without a call, or with `client_end`.
 
 See [Connect an AI agent](../how-to/connect-an-ai-agent.md) for client configuration.
+
+### OAuth
+
+Some MCP clients connect only through OAuth. For them the daemon is its own authorization server: `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource` describe it, `POST /oauth/register` registers any client, `GET /oauth/authorize` shows one **Allow** button that redirects back with a code, and `POST /oauth/token` returns a token for any request. Nothing is checked and `/mcp` ignores the token, so this adds no protection. Behind a reverse proxy, the URLs come from the `Host` and `X-Forwarded-Proto` headers.

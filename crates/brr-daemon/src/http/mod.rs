@@ -14,6 +14,7 @@ use crate::{app::App, mcp};
 mod artifacts;
 mod cdp;
 mod metrics;
+mod oauth;
 mod oneshot;
 mod openapi;
 mod ops;
@@ -39,6 +40,7 @@ pub fn router(app: Arc<App>) -> Router {
         .merge(relay::routes())
         .merge(screencast::routes())
         .merge(profile_archive::routes())
+        .merge(oauth::routes())
         .route("/openapi.json", get(|| async { Json(openapi()) }))
         .route("/metrics", get(metrics::serve))
         .route("/v1/events/stream", get(sse::stream))
